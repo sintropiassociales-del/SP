@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOYN Track — Sintropía Social</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Open+Sauce+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --purple:#631EEB; --purple-dark:#4B14B8;
+    --orange:#FF7929; --orange-dark:#B5591A; --orange-light:#FFEEE1;
+    --purple-light:#F1EBFD;
+    --ink:#1F1B2E; --grey:#6B6878; --line:#E7E2F3; --white:#FFFFFF;
+    --ok:#1F9D6B; --ok-light:#E6F6EE;
+    --pending:#B7B2C6; --pending-light:#F1F0F4;
+    --wa:#25D366;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Open Sans', sans-serif; color:var(--ink); background:var(--white);}
+  h1,h2,h3,.brand,.tab,.stat-num{font-family:'Open Sauce Sans', sans-serif;}
+
+  /* ---- site gate ---- */
+  #gate{position:fixed; inset:0; background:var(--ink); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .gate-card{background:var(--white); border-radius:14px; padding:40px 36px; width:100%; max-width:380px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .gate-eyebrow{font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--orange); font-weight:700;}
+  .gate-title{font-family:'Open Sauce Sans'; font-size:22px; font-weight:700; color:var(--purple); margin:6px 0 4px;}
+  .gate-sub{font-size:13px; color:var(--grey); margin-bottom:22px;}
+  #gateInput{width:100%; text-align:center; letter-spacing:.04em; font-size:14.5px; padding:12px 14px; border:1.5px solid var(--line); border-radius:9px; font-family:'Open Sans'; margin-bottom:12px;}
+  #gateInput:focus{outline:none; border-color:var(--purple);}
+  .gate-btn{width:100%; background:var(--purple); color:var(--white); border:none; font-family:'Open Sauce Sans'; font-weight:700; font-size:14px; padding:12px; border-radius:9px; cursor:pointer;}
+  .gate-btn:hover{background:var(--purple-dark);}
+  .gate-error{color:var(--orange-dark); font-size:12.5px; margin-top:10px; min-height:16px; font-weight:600;}
+
+  /* ---- shell ---- */
+  #app{display:none;}
+  .shell{max-width:1100px; margin:0 auto; padding:0 28px 60px;}
+  header.top{padding:30px 0 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;}
+  .brandblock .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--orange); font-weight:600;}
+  .brand{font-size:26px; font-weight:700; color:var(--purple); margin:4px 0 2px;}
+  .brand span{color:var(--ink);}
+  .subtitle{font-size:14px; color:var(--grey);}
+  .top-right{display:flex; flex-direction:column; align-items:flex-end; gap:10px;}
+  .project-meta{text-align:right; font-size:12.5px; color:var(--grey); line-height:1.6;}
+  .project-meta b{color:var(--ink);}
+
+  .session-pill{
+    font-size:12px; font-weight:600; padding:6px 13px; border-radius:20px; cursor:pointer; border:1px solid var(--line);
+    display:flex; align-items:center; gap:7px; background:var(--white); color:var(--grey);
+  }
+  .session-pill.admin{background:var(--purple); color:var(--white); border-color:var(--purple);}
+  .session-pill:hover{border-color:var(--purple);}
+
+  /* ---- login modal ---- */
+  .modal-bg{position:fixed; inset:0; background:rgba(31,27,46,.55); z-index:500; display:none; align-items:center; justify-content:center; padding:20px;}
+  .modal-bg.show{display:flex;}
+  .modal-card{background:var(--white); border-radius:14px; padding:30px 30px 26px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal-title{font-family:'Open Sauce Sans'; font-weight:700; color:var(--purple); font-size:18px; margin-bottom:4px;}
+  .modal-sub{font-size:12.5px; color:var(--grey); margin-bottom:18px;}
+  .modal-card label{font-size:12px; font-weight:600; color:var(--grey); display:block; margin:12px 0 5px;}
+  .modal-card input{width:100%; font-family:'Open Sans'; font-size:13.5px; padding:9px 11px; border:1px solid var(--line); border-radius:8px;}
+  .modal-actions{display:flex; gap:10px; margin-top:20px;}
+  .btn{font-family:'Open Sauce Sans'; font-weight:600; font-size:13px; padding:9px 16px; border-radius:8px; cursor:pointer; border:1px solid var(--line); background:var(--white); color:var(--ink);}
+  .btn.primary{background:var(--purple); color:var(--white); border-color:var(--purple);}
+  .btn.primary:hover{background:var(--purple-dark);}
+  .btn.ghost:hover{border-color:var(--purple); color:var(--purple);}
+  .modal-error{color:var(--orange-dark); font-size:12px; font-weight:600; margin-top:10px; min-height:16px;}
+  .admin-note{font-size:11px; color:var(--grey); margin-top:14px; line-height:1.5; border-top:1px solid var(--line); padding-top:12px;}
+
+  /* ---- overview strip ---- */
+  .overview{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:24px 0 28px;}
+  .stat{background:var(--white); padding:16px 18px;}
+  .stat-num{font-size:26px; font-weight:700; color:var(--purple);}
+  .stat-label{font-size:12px; color:var(--grey); margin-top:2px;}
+
+  /* ---- tabs ---- */
+  nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:24px; flex-wrap:wrap;}
+  .tab{font-size:14px; font-weight:600; color:var(--grey); background:none; border:none; padding:11px 15px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;}
+  .tab:hover{color:var(--purple);}
+  .tab.active{color:var(--purple); border-bottom-color:var(--purple);}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+  h2.panel-title{font-size:18px; margin:0 0 4px;}
+  .panel-desc{font-size:13.5px; color:var(--grey); margin:0 0 18px; max-width:660px;}
+  .panel-header-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+
+  /* ---- badges ---- */
+  .badge{font-size:11px; font-weight:600; padding:3px 9px; border-radius:14px; white-space:nowrap; display:inline-block;}
+  .badge.entregado{background:var(--ok-light); color:var(--ok);}
+  .badge.revision{background:var(--orange-light); color:var(--orange-dark);}
+  .badge.pendiente{background:var(--pending-light); color:var(--pending);}
+  select.status-edit{font-family:'Open Sans'; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:var(--white); cursor:pointer; color:var(--ink);}
+
+  /* ---- entregables ---- */
+  .deliv-block{border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden;}
+  .deliv-head{padding:15px 18px; display:grid; grid-template-columns:auto 1fr auto auto; gap:14px; align-items:center; cursor:pointer; background:var(--white);}
+  .deliv-head:hover{background:var(--purple-light);}
+  .deliv-index{width:32px; height:32px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; flex:none;}
+  .deliv-name{font-weight:600; font-size:14.5px;}
+  .deliv-dates{font-size:12px; color:var(--grey); margin-top:2px;}
+  .chevron{color:var(--grey); font-size:12px; transition:transform .2s ease; flex:none;}
+  .deliv-block.open .chevron{transform:rotate(180deg);}
+  .activities{max-height:0; overflow:hidden; transition:max-height .25s ease; background:#FBFAFE;}
+  .deliv-block.open .activities{max-height:2000px;}
+  .activity{padding:13px 18px 13px 68px; border-top:1px solid var(--line); display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center;}
+  .act-name{font-weight:600; font-size:13px;}
+  .act-desc{font-size:12px; color:var(--grey); margin-top:2px; line-height:1.5;}
+  .act-link{font-size:11.5px; font-weight:600; color:var(--purple); text-decoration:none; white-space:nowrap; border:1px solid var(--purple-light); padding:5px 10px; border-radius:8px;}
+  .act-link:hover{background:var(--purple-light);}
+  .act-link.disabled{color:var(--pending); border-color:var(--line); pointer-events:none;}
+  .act-edit-link{width:150px; font-size:11.5px; padding:6px 8px;}
+
+  /* ---- bitacora ---- */
+  .toolbar-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+  .form-card{border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:22px;}
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .form-grid .full{grid-column:1/-1;}
+  label{font-size:12px; font-weight:600; color:var(--grey); display:block; margin-bottom:5px;}
+  input, textarea{width:100%; font-family:'Open Sans'; font-size:13.5px; padding:9px 11px; border:1px solid var(--line); border-radius:8px; color:var(--ink); background:var(--white);}
+  textarea{resize:vertical; min-height:56px;}
+  button.primary{margin-top:14px; background:var(--purple); color:var(--white); border:none; font-family:'Open Sauce Sans'; font-weight:600; font-size:13px; padding:10px 20px; border-radius:8px; cursor:pointer;}
+  button.primary:hover{background:var(--purple-dark);}
+  .toggle-row{display:flex; align-items:center; gap:9px; margin:14px 0 4px;}
+  .switch{position:relative; width:38px; height:21px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:var(--pending-light); border-radius:20px; cursor:pointer; transition:.2s;}
+  .slider:before{content:""; position:absolute; height:15px; width:15px; left:3px; top:3px; background:var(--white); border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider{background:var(--purple);}
+  .switch input:checked + .slider:before{transform:translateX(17px);}
+  .attendee-row{display:grid; grid-template-columns:1fr 1fr auto; gap:8px; margin-bottom:8px;}
+  .attendee-chip{display:inline-flex; align-items:center; gap:6px; background:var(--purple-light); color:var(--purple); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:14px; margin:0 6px 6px 0;}
+  .log-entry{border-left:3px solid var(--orange); padding:10px 0 10px 16px; margin-bottom:14px;}
+  .log-date{font-size:12px; color:var(--grey); font-weight:600;}
+  .log-title{font-weight:600; margin:2px 0 4px;}
+  .log-detail{font-size:13px; color:var(--ink); line-height:1.5;}
+  .empty{color:var(--grey); font-size:13px; font-style:italic;}
+
+  /* ---- caja de herramientas ---- */
+  .tool-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .tool-card{border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
+  .tool-tag{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--purple);}
+  .tool-name{font-weight:600; margin:5px 0 4px; font-size:14px;}
+  .tool-note{font-size:12px; color:var(--grey);}
+  .tool-notice{margin-top:10px; background:var(--orange-light); color:var(--orange-dark); font-size:12px; font-weight:600; padding:8px 10px; border-radius:8px;}
+  .tool-actions{margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .dl-btn{font-size:12px; font-weight:600; color:var(--white); background:var(--purple); text-decoration:none; padding:7px 14px; border-radius:8px;}
+  .dl-btn.disabled{background:var(--pending-light); color:var(--pending); pointer-events:none;}
+  .dyn-list{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px;}
+  .dyn-item{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12.5px;}
+  .dyn-item-name{color:var(--ink);}
+  .dyn-admin-controls{display:flex; gap:6px; align-items:center;}
+
+  /* ---- planeacion estrategica ---- */
+  table.smart{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:34px;}
+  table.smart th{text-align:left; background:var(--purple); color:var(--white); padding:10px 12px; font-weight:600; font-size:12px;}
+  table.smart td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  table.smart tr:nth-child(even) td{background:var(--purple-light);}
+
+  .gantt{border:1px solid var(--line); border-radius:12px; padding:20px 22px;}
+  .gantt-months{display:grid; margin-left:190px; font-size:11px; color:var(--grey); position:relative; height:18px; margin-bottom:6px;}
+  .gantt-month-label{position:absolute; top:0;}
+  .gantt-row{display:grid; grid-template-columns:180px 1fr; gap:10px; align-items:center; margin-bottom:10px;}
+  .gantt-label{font-size:12.5px; font-weight:600;}
+  .gantt-track{position:relative; height:26px; background:var(--pending-light); border-radius:6px; overflow:visible;}
+  .gantt-bar{position:absolute; top:0; height:100%; border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:10.5px; color:var(--white); font-weight:600; white-space:nowrap; overflow:hidden;}
+  .gantt-bar.pendiente{background:var(--pending);}
+  .gantt-bar.revision{background:var(--orange);}
+  .gantt-bar.entregado{background:var(--ok);}
+  .gantt-obs-row{grid-column:1/-1; display:flex; gap:10px; align-items:flex-start; margin:-2px 0 14px 190px;}
+  .obs-btn{font-size:11px; font-weight:600; color:var(--purple); background:none; border:1px dashed var(--purple-light); padding:5px 10px; border-radius:7px; cursor:pointer;}
+  .obs-btn:hover{background:var(--purple-light);}
+  .obs-box{flex:1; font-size:12px; background:var(--purple-light); border-radius:8px; padding:8px 10px; color:var(--ink); line-height:1.5;}
+  .obs-required{display:inline-block; background:var(--orange); color:var(--white); font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:6px;}
+
+  /* ---- evaluacion ---- */
+  .comp{margin-bottom:16px;}
+  .comp-label{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;}
+  .comp-label b{font-weight:600;}
+  .bar-track{height:8px; background:var(--line); border-radius:6px; overflow:hidden; position:relative;}
+  .bar-fill{height:100%; border-radius:6px; background:var(--pending);}
+  .bar-fill.post{background:linear-gradient(90deg,var(--purple),var(--orange));}
+  .legend{display:flex; gap:18px; font-size:12px; color:var(--grey); margin-top:16px;}
+  .legend span{display:flex; align-items:center; gap:6px;}
+  .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .comp-admin-inputs{display:flex; gap:8px; margin-top:6px;}
+  .comp-admin-inputs input{width:70px; font-size:12px; padding:5px 7px;}
+  .tip-box{border:1px solid var(--purple-light); background:var(--purple-light); border-radius:10px; padding:14px 16px; font-size:12.5px; color:var(--ink); line-height:1.55; margin-top:22px;}
+  .tip-box b{color:var(--purple);}
+
+  footer.foot{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); font-size:12px; color:var(--grey); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+  #waBtn{position:fixed; bottom:24px; right:24px; z-index:200; display:flex; align-items:center; gap:9px; background:var(--wa); color:var(--white); text-decoration:none; padding:13px 18px 13px 14px; border-radius:30px; font-family:'Open Sauce Sans'; font-weight:600; font-size:13.5px; box-shadow:0 8px 22px rgba(37,211,102,.4); transition:transform .15s ease;}
+  #waBtn:hover{transform:translateY(-2px);}
+  #waBtn svg{width:20px; height:20px; flex:none;}
+
+  .synctag{font-size:10.5px; color:var(--pending); margin-top:4px;}
+</style>
+</head>
+<body>
+
+<!-- SITE ACCESS GATE -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-eyebrow">Sintropía Social</div>
+    <div class="gate-title">GOYN Track</div>
+    <div class="gate-sub">Acceso restringido al equipo YouthBuild México / GOYN CDMX. Ingresa el código de acceso compartido en la propuesta.</div>
+    <input type="text" id="gateInput" placeholder="Código de acceso" autocomplete="off">
+    <button class="gate-btn" onclick="checkGateCode()">Entrar</button>
+    <div class="gate-error" id="gateError"></div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-bg" id="loginModal">
+  <div class="modal-card">
+    <div class="modal-title">Acceso administrador</div>
+    <div class="modal-sub">Solo el equipo consultor de Sintropía Social puede editar contenido desde aquí.</div>
+    <label>Correo</label>
+    <input type="email" id="adminEmail" placeholder="correo@dominio.com" autocomplete="off">
+    <label>Contraseña</label>
+    <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
+    <div class="modal-error" id="loginError"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeLogin()">Cancelar</button>
+      <button class="btn primary" onclick="doLogin()">Entrar</button>
+    </div>
+    <div class="admin-note">Nota: este acceso valida un usuario/contraseña definidos en el código del prototipo (útil para esta demo). Para producción con datos sensibles se recomienda mover la autenticación a un backend (Apps Script + verificación de sesión), como en el resto de las plataformas de Sintropía Social.</div>
+  </div>
+</div>
+
+<div id="app">
+<div class="shell">
+
+  <header class="top">
+    <div class="brandblock">
+      <div class="eyebrow">Sintropía Social</div>
+      <div class="brand">GOYN <span>Track</span></div>
+      <div class="subtitle">Seguimiento de la consultoría de Educación Popular y Planeación Estratégica</div>
+    </div>
+    <div class="top-right">
+      <div class="session-pill" id="sessionPill" onclick="onSessionPillClick()">Modo visitante · Iniciar sesión</div>
+      <div class="project-meta">
+        <div><b>Cliente:</b> YouthBuild México · Red GOYN CDMX</div>
+        <div><b>Consultor:</b> David Salgado López — Sintropía Social</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="overview">
+    <div class="stat"><div class="stat-num" id="statTotal">4</div><div class="stat-label">Entregables contratados</div></div>
+    <div class="stat"><div class="stat-num" id="statActivities">0</div><div class="stat-label">Actividades totales</div></div>
+    <div class="stat"><div class="stat-num" id="statDoneAct">0</div><div class="stat-label">Actividades entregadas</div></div>
+    <div class="stat"><div class="stat-num" id="statSessions">0</div><div class="stat-label">Sesiones registradas</div></div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="entregables">Entregables</button>
+    <button class="tab" data-tab="bitacora">Bitácora de sesiones</button>
+    <button class="tab" data-tab="caja">Caja de Herramientas</button>
+    <button class="tab" data-tab="planeacion">Planeación Estratégica</button>
+    <button class="tab" data-tab="evaluacion">Evaluación de competencias</button>
+  </nav>
+
+  <!-- ENTREGABLES -->
+  <section class="panel active" id="panel-entregables">
+    <h2 class="panel-title">Entregables y actividades de la consultoría</h2>
+    <p class="panel-desc">Cada entregable se abre en sus actividades, incluida la línea de consolidación de la planeación estratégica. Solo el administrador puede modificar estatus y ligas de evidencia.</p>
+    <div id="deliverables"></div>
+  </section>
+
+  <!-- BITACORA -->
+  <section class="panel" id="panel-bitacora">
+    <h2 class="panel-title">Bitácora de sesiones</h2>
+    <p class="panel-desc">Cualquier persona puede consultar las bitácoras. Solo el administrador puede registrar nuevas sesiones.</p>
+    <div class="toolbar-row">
+      <button class="btn ghost" onclick="exportPDF()">Descargar PDF</button>
+      <button class="btn ghost" onclick="exportWord()">Descargar Word</button>
+      <button class="btn ghost" onclick="exportExcel()">Descargar Excel</button>
+      <button class="btn primary" id="editModeBtn" style="display:none;" onclick="toggleEditMode()">Habilitar edición</button>
+    </div>
+    <div class="form-card" id="logForm" style="display:none;">
+      <div class="form-grid">
+        <div><label>Fecha</label><input type="date" id="logDate"></div>
+        <div><label>Dinámica / actividad aplicada</label><input type="text" id="logDyn" placeholder="Ej. Taller de Facilitación — sesión 2"></div>
+        <div class="full">
+          <div class="toggle-row">
+            <label class="switch"><input type="checkbox" id="attendeeToggle" onchange="onAttendeeToggle()"><span class="slider"></span></label>
+            <label style="margin:0;">Agregar asistentes por nombre e institución</label>
+          </div>
+        </div>
+        <div class="full" id="simpleAttendWrap"><label>Asistencia (GAJ)</label><input type="number" id="logAttend" placeholder="Ej. 12 personas"></div>
+        <div class="full" id="detailedAttendWrap" style="display:none;">
+          <div class="attendee-row">
+            <input type="text" id="attName" placeholder="Nombre">
+            <input type="text" id="attInst" placeholder="Institución">
+            <button class="btn ghost" onclick="addAttendee()">+ Agregar</button>
+          </div>
+          <div id="attendeeChips"></div>
+        </div>
+        <div class="full"><label>Acuerdos y observaciones</label><textarea id="logNotes" placeholder="Acuerdos tomados, evidencias, siguientes pasos..."></textarea></div>
+      </div>
+      <button class="primary" onclick="addLog()">Registrar sesión</button>
+    </div>
+    <div id="logList"></div>
+  </section>
+
+  <!-- CAJA DE HERRAMIENTAS -->
+  <section class="panel" id="panel-caja">
+    <h2 class="panel-title">Caja de Herramientas y Manual de Facilitación</h2>
+    <p class="panel-desc">Repositorio de guías y dinámicas entregadas al GAJ. Los avisos de fecha desaparecen automáticamente al subir el material.</p>
+    <div class="tool-grid" id="toolGrid"></div>
+  </section>
+
+  <!-- PLANEACION -->
+  <section class="panel" id="panel-planeacion">
+    <h2 class="panel-title">Panel de Planeación Estratégica 2026–2029</h2>
+    <p class="panel-desc">Objetivos y metas SMART trabajados por el GAJ en el taller de co-creación, visibles para todo el equipo GOYN.</p>
+    <table class="smart">
+      <thead><tr><th style="width:22%">Prioridad de incidencia</th><th style="width:38%">Meta SMART</th><th style="width:18%">Responsable</th><th style="width:22%">Horizonte</th></tr></thead>
+      <tbody id="smartBody"></tbody>
+    </table>
+
+    <h2 class="panel-title">Cronograma general (Gantt automático)</h2>
+    <p class="panel-desc">Se actualiza solo con el estatus que el administrador asigna a cada entregable en la pestaña Entregables.</p>
+    <div class="gantt">
+      <div class="gantt-months" id="ganttMonths"></div>
+      <div id="ganttRows"></div>
+    </div>
+  </section>
+
+  <!-- EVALUACION -->
+  <section class="panel" id="panel-evaluacion">
+    <h2 class="panel-title">Evaluación de competencias de facilitación</h2>
+    <p class="panel-desc">Comparativo pre / post taller, exigido para el Informe Final de la Consultoría.</p>
+    <div id="compList"></div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--pending)"></i> Antes del taller</span>
+      <span><i class="dot" style="background:linear-gradient(90deg,var(--purple),var(--orange))"></i> Después del taller</span>
+    </div>
+    <div class="tip-box" id="evalTip" style="display:none;">
+      <b>Sugerencia técnica (visible solo para administrador):</b> hoy estos valores se editan a mano como demostración. La ruta recomendada para producción es un Google Form pre/post que el GAJ responde directamente, con las respuestas cayendo en una Google Sheet; un script de Apps Script calcula los promedios y los expone como JSON para que esta gráfica se actualice sola, sin subir Excel manualmente — el mismo patrón que ya usas en SintropíaDash y JobMatch Pro.
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Prototipo funcional — GOYN Track · Sintropía Social</span>
+    <span id="syncFooter">Desplegable en GitHub Pages con respaldo en Google Sheets / Apps Script</span>
+  </footer>
+</div>
+</div>
+
+<a id="waBtn" href="https://wa.me/525563414907?text=Hola%20David%2C%20tengo%20una%20duda%20sobre%20la%20consultor%C3%ADa%20YouthBuild%20M%C3%A9xico%20%7C%20GOYN%20CDMX." target="_blank" rel="noopener">
+  <svg viewBox="0 0 32 32" fill="currentColor"><path d="M16.001 3C9.373 3 4 8.373 4 15c0 2.386.702 4.607 1.912 6.47L4 29l7.72-1.876A11.94 11.94 0 0 0 16.001 27C22.628 27 28 21.627 28 15S22.628 3 16.001 3zm0 21.75a9.71 9.71 0 0 1-4.95-1.354l-.355-.21-4.583 1.113 1.144-4.463-.232-.366A9.72 9.72 0 0 1 5.75 15c0-5.66 4.59-10.25 10.251-10.25S26.25 9.34 26.25 15 21.662 24.75 16.001 24.75zm5.633-7.646c-.309-.155-1.828-.902-2.111-1.005-.283-.103-.489-.155-.695.155-.206.31-.798 1.005-.978 1.211-.18.206-.36.232-.669.077-.309-.155-1.305-.481-2.486-1.534-.919-.82-1.539-1.833-1.72-2.143-.18-.31-.019-.477.136-.631.14-.14.309-.361.463-.542.155-.18.206-.31.309-.516.103-.206.052-.387-.026-.542-.077-.155-.695-1.675-.953-2.293-.251-.601-.506-.52-.695-.53-.18-.008-.386-.01-.592-.01a1.14 1.14 0 0 0-.824.386c-.283.31-1.08 1.056-1.08 2.576s1.106 2.988 1.26 3.194c.155.206 2.176 3.322 5.27 4.658.736.318 1.31.508 1.758.65.738.235 1.41.202 1.941.123.592-.089 1.828-.747 2.086-1.469.258-.722.258-1.34.18-1.469-.077-.129-.283-.206-.592-.361z"/></svg>
+  Escríbeme por WhatsApp
+</a>
+
+<script>
+/* =========================================================
+   CONFIG
+========================================================= */
+const SITE_CODE = "tijro6-gistyd-Tivrem";
+const ADMIN_EMAIL = "dsalgado@intropiasocial.com";
+const ADMIN_PASS = "poccaf-qopmyb-6xeJzu";
+const STORAGE_KEY = "goyntrack-state-v2";
+
+let isAdmin = false;
+let editModeOn = false;
+let attendeesDraft = [];
+let openObs = {}; // track which observation boxes are in edit mode
+
+/* =========================================================
+   DEFAULT STATE
+========================================================= */
+function defaultState(){
+  return {
+    deliverables: [
+      {
+        name:"1. Plan de Trabajo y Diseño Metodológico",
+        dates:"Entrega 24 ago · Revisión 28 ago · Pago 4 sep (30%)",
+        start:"2026-08-01", end:"2026-08-24",
+        status:"entregado",
+        activities:[
+          {name:"1.1 Diagnóstico rápido con el GAJ", desc:"Grupo focal y entrevistas breves con integrantes del GAJ y equipo técnico para identificar tensiones de liderazgo y lenguaje propio del colectivo.", status:"entregado", link:""},
+          {name:"1.2 Guiones de sesión", desc:"Guiones detallados del Taller de Facilitación, Forma a Formadores y Planeación Estratégica, listos para revisión de GOYN.", status:"entregado", link:""},
+          {name:"1.3 Cronograma validado", desc:"Calendario operativo con fechas de entrega, revisión y pago alineado a esta convocatoria.", status:"entregado", link:""},
+          {name:"1.4 Validación del enfoque de planeación con GOYN", desc:"Sesión breve para acordar con la Dirección de GOYN CDMX el alcance de la planeación estratégica que se co-creará con el GAJ.", status:"entregado", link:""},
+          {name:"1.5 Definición de indicadores de seguimiento", desc:"Batería inicial de indicadores para dar trazabilidad a la hoja de ruta 2026–2029 desde el arranque del proyecto.", status:"revision", link:""},
+        ]
+      },
+      {
+        name:"2. Caja de Herramientas y Manual de Facilitación",
+        dates:"Entrega 14 sep · Revisión 18 sep · Pago 25 sep (30%)",
+        start:"2026-08-25", end:"2026-09-14",
+        status:"revision",
+        activities:[
+          {name:"2.1 Taller de Facilitación (3 sesiones)", desc:"Metodologías participativas, manejo de grupos juveniles y co-creación, impartidas al GAJ y equipo técnico.", status:"entregado", link:""},
+          {name:"2.2 Ciclo de práctica supervisada (Forma a Formadores)", desc:"Cada integrante del GAJ facilita una dinámica ante el grupo con retroalimentación estructurada del equipo consultor.", status:"revision", link:""},
+          {name:"2.3 Manual de Facilitación y Caja de Herramientas", desc:"Guía práctica en lenguaje accesible con dinámicas de grupo, gestión de plenarias y repositorio descargable para el GAJ.", status:"pendiente", link:""},
+          {name:"2.4 Mapeo de capacidades instaladas en el GAJ", desc:"Registro de qué integrantes quedan habilitados para replicar cada tipo de dinámica, insumo para la planeación de sostenibilidad.", status:"pendiente", link:""},
+          {name:"2.5 Diseño del mecanismo de acompañamiento post-taller", desc:"Define cómo el GAJ podrá resolver dudas de facilitación una vez cerrada la consultoría, conectando con la planeación estratégica.", status:"pendiente", link:""},
+        ]
+      },
+      {
+        name:"3. Guía metodológica de Planeación Estratégica",
+        dates:"Entrega 5 oct · Revisión 9 oct · Pago 16 oct (30%)",
+        start:"2026-09-15", end:"2026-10-05",
+        status:"pendiente",
+        activities:[
+          {name:"3.1 Taller de Planeación Estratégica participativa", desc:"El GAJ, ya formado como facilitador, conduce las sesiones de planeación con el equipo GOYN.", status:"pendiente", link:""},
+          {name:"3.2 Sistematización de objetivos y metas SMART", desc:"Vaciado y depuración de los acuerdos del taller en el panel de Planeación Estratégica.", status:"pendiente", link:""},
+          {name:"3.3 Redacción de la Guía Metodológica", desc:"Documento con instrumentos que garantizan que el GAJ pueda replicar el proceso de planeación en próximos ciclos.", status:"pendiente", link:""},
+          {name:"3.4 Validación de metas SMART con la Dirección GOYN CDMX", desc:"Sesión de cierre donde la Dirección revisa y avala la hoja de ruta 2026–2029 antes de su publicación interna.", status:"pendiente", link:""},
+          {name:"3.5 Diseño del mecanismo de monitoreo trimestral", desc:"Formato y calendario para que GOYN dé seguimiento a las metas SMART sin depender de la consultoría externa.", status:"pendiente", link:""},
+        ]
+      },
+      {
+        name:"4. Informe Final de la Consultoría",
+        dates:"Entrega 12 oct · Revisión 16 oct · Pago 23 oct (10%)",
+        start:"2026-10-06", end:"2026-10-12",
+        status:"pendiente",
+        activities:[
+          {name:"4.1 Evaluación de competencias (pre/post)", desc:"Aplicación y análisis del instrumento de competencias de facilitación transferidas al GAJ.", status:"pendiente", link:""},
+          {name:"4.2 Memoria de sesiones", desc:"Sistematización narrativa y fotográfica de todas las sesiones impartidas durante la consultoría.", status:"pendiente", link:""},
+          {name:"4.3 Recomendaciones de sostenibilidad", desc:"Cierre del informe con recomendaciones para que GOYN y el GAJ den continuidad al proceso sin acompañamiento externo.", status:"pendiente", link:""},
+          {name:"4.4 Presentación de la hoja de ruta ante el equipo GOYN", desc:"Sesión final de socialización de la planeación estratégica 2026–2029 con todo el equipo GOYN CDMX.", status:"pendiente", link:""},
+          {name:"4.5 Plan de transferencia y cierre de acompañamiento", desc:"Documento breve que formaliza qué queda en manos del GAJ y qué requeriría, en su caso, una siguiente fase de consultoría.", status:"pendiente", link:""},
+        ]
+      },
+    ],
+    tools: {
+      educacionPopular:{tag:"Educación Popular", name:"Guía de apertura y cierre de plenarias", note:"Formato imprimible, lenguaje accesible.", due:"14 de septiembre de 2026", status:"pendiente", link:""},
+      facilitacion:{tag:"Facilitación", name:"Repertorio de dinámicas para grupos juveniles", note:"12 dinámicas clasificadas por objetivo.", due:"14 de septiembre de 2026",
+        dinamicas: Array.from({length:12}, (_,i)=>({name:"Dinámica "+(i+1), status:"pendiente", link:""}))
+      },
+      formaFormadores:{tag:"Forma a Formadores", name:"Rúbrica de retroalimentación entre pares", note:"Usada en la práctica supervisada del GAJ.", due:"14 de septiembre de 2026", status:"pendiente", link:""},
+      planeacionTpl:{tag:"Planeación Estratégica", name:"Plantilla de metas SMART", note:"Vinculada al panel de Planeación Estratégica.", due:"5 de octubre de 2026", status:"pendiente", link:""},
+    },
+    logs: [
+      {date:"2026-08-24", mode:"simple", attendCount:14, attendees:[], dyn:"Diagnóstico rápido — grupo focal inicial", notes:"Se identifican tres tensiones internas de liderazgo; el GAJ nombra la falta de espacios propios de decisión como reto principal."}
+    ],
+    goals: [
+      {area:"Inclusión socioproductiva juvenil", meta:"Aumentar en 20% la vinculación laboral formal de jóvenes atendidos por el GAJ en 12 meses.", resp:"GAJ + equipo GOYN", horizonte:"2026–2027"},
+      {area:"Fortalecimiento del GAJ", meta:"Formar a 8 integrantes del GAJ como facilitadores certificados internamente.", resp:"GAJ", horizonte:"2026 (Fase 2)"},
+      {area:"Sostenibilidad de la Red", meta:"Institucionalizar 2 alianzas territoriales nuevas para la Red GOYN CDMX.", resp:"Dirección GOYN CDMX", horizonte:"2027–2029"},
+    ],
+    ganttObs: {0:{text:"", required:false}, 1:{text:"", required:false}, 2:{text:"", required:false}, 3:{text:"", required:false}},
+    comps: [
+      {name:"Manejo de plenarias", pre:35, post:80},
+      {name:"Diseño de dinámicas participativas", pre:40, post:85},
+      {name:"Gestión de conflictos en el grupo", pre:30, post:70},
+      {name:"Facilitación de planeación estratégica", pre:20, post:75},
+    ],
+  };
+}
+
+let state = defaultState();
+
+/* =========================================================
+   STORAGE (shared across all viewers of this artifact)
+========================================================= */
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      state = Object.assign(defaultState(), parsed);
+    }
+  }catch(e){
+    // no remote state yet, or storage unavailable — keep local defaults
+    console.log("Sin estado remoto todavía, usando valores iniciales.");
+  }
+}
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+  }catch(e){
+    console.log("No se pudo guardar en almacenamiento compartido; los cambios solo viven en esta sesión.", e);
+  }
+}
+
+/* =========================================================
+   SITE GATE
+========================================================= */
+function checkGateCode(){
+  const val = document.getElementById('gateInput').value.trim();
+  if(val === SITE_CODE){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    boot();
+  } else {
+    document.getElementById('gateError').textContent = 'Código incorrecto. Verifica mayúsculas y guiones.';
+  }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('gateInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkGateCode(); });
+});
+
+/* =========================================================
+   ADMIN LOGIN
+========================================================= */
+function onSessionPillClick(){
+  if(isAdmin){ logout(); } else { openLogin(); }
+}
+function openLogin(){ document.getElementById('loginModal').classList.add('show'); }
+function closeLogin(){
+  document.getElementById('loginModal').classList.remove('show');
+  document.getElementById('loginError').textContent='';
+}
+function doLogin(){
+  const email = document.getElementById('adminEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('adminPass').value;
+  if(email === ADMIN_EMAIL.toLowerCase() && pass === ADMIN_PASS){
+    isAdmin = true;
+    closeLogin();
+    updateSessionUI();
+    renderAll();
+  } else {
+    document.getElementById('loginError').textContent = 'Correo o contraseña incorrectos.';
+  }
+}
+function logout(){
+  isAdmin = false;
+  editModeOn = false;
+  updateSessionUI();
+  renderAll();
+}
+function updateSessionUI(){
+  const pill = document.getElementById('sessionPill');
+  if(isAdmin){
+    pill.textContent = 'Administrador · Cerrar sesión';
+    pill.classList.add('admin');
+  } else {
+    pill.textContent = 'Modo visitante · Iniciar sesión';
+    pill.classList.remove('admin');
+  }
+  document.getElementById('editModeBtn').style.display = isAdmin ? 'inline-block' : 'none';
+  document.getElementById('evalTip').style.display = isAdmin ? 'block' : 'none';
+  if(!isAdmin){ document.getElementById('logForm').style.display='none'; }
+}
+
+/* =========================================================
+   TABS
+========================================================= */
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+    });
+  });
+});
+
+/* =========================================================
+   ENTREGABLES
+========================================================= */
+function statusLabel(s){ return s==='entregado' ? 'Entregado' : (s==='revision' ? 'En revisión' : 'Pendiente'); }
+
+function renderDeliverables(){
+  const wrap = document.getElementById('deliverables');
+  wrap.innerHTML = '';
+  let totalAct = 0, doneAct = 0;
+  state.deliverables.forEach((d,i)=>{
+    d.activities.forEach(a=>{ totalAct++; if(a.status==='entregado') doneAct++; });
+
+    const block = document.createElement('div');
+    block.className = 'deliv-block';
+    block.id = 'block-'+i;
+
+    const head = document.createElement('div');
+    head.className = 'deliv-head';
+    const statusHtml = isAdmin
+      ? `<select class="status-edit" onclick="event.stopPropagation()" onchange="setDelivStatus(${i}, this.value)">
+           <option value="pendiente" ${d.status==='pendiente'?'selected':''}>Pendiente</option>
+           <option value="revision" ${d.status==='revision'?'selected':''}>En revisión</option>
+           <option value="entregado" ${d.status==='entregado'?'selected':''}>Entregado</option>
+         </select>`
+      : `<span class="badge ${d.status}">${statusLabel(d.status)}</span>`;
+    head.innerHTML = `
+      <div class="deliv-index">${i+1}</div>
+      <div><div class="deliv-name">${d.name}</div><div class="deliv-dates">${d.dates}</div></div>
+      ${statusHtml}
+      <span class="chevron">▾</span>
+    `;
+    head.addEventListener('click', (e)=>{ if(e.target.tagName!=='SELECT') block.classList.toggle('open'); });
+
+    const acts = document.createElement('div');
+    acts.className = 'activities';
+    d.activities.forEach((a,j)=>{
+      const row = document.createElement('div');
+      row.className = 'activity';
+      const linkHtml = isAdmin
+        ? `<input type="text" class="act-edit-link" placeholder="Pegar liga de evidencia" value="${a.link ? a.link.replace(/"/g,'&quot;') : ''}" onchange="setActLink(${i},${j}, this.value)">`
+        : (a.link ? `<a class="act-link" href="${a.link}" target="_blank" rel="noopener">Ver evidencia ↗</a>` : `<span class="act-link disabled">Sin evidencia</span>`);
+      const statusHtmlAct = isAdmin
+        ? `<select class="status-edit" onchange="setActStatus(${i},${j}, this.value)">
+             <option value="pendiente" ${a.status==='pendiente'?'selected':''}>Pendiente</option>
+             <option value="revision" ${a.status==='revision'?'selected':''}>En revisión</option>
+             <option value="entregado" ${a.status==='entregado'?'selected':''}>Entregado</option>
+           </select>`
+        : `<span class="badge ${a.status}">${statusLabel(a.status)}</span>`;
+      row.innerHTML = `
+        <div><div class="act-name">${a.name}</div><div class="act-desc">${a.desc}</div></div>
+        ${statusHtmlAct}
+        ${linkHtml}
+      `;
+      acts.appendChild(row);
+    });
+
+    block.appendChild(head);
+    block.appendChild(acts);
+    wrap.appendChild(block);
+  });
+  document.getElementById('statActivities').textContent = totalAct;
+  document.getElementById('statDoneAct').textContent = doneAct;
+  document.getElementById('statSessions').textContent = state.logs.length;
+}
+function setDelivStatus(i,val){ state.deliverables[i].status = val; saveState(); renderAll(); }
+function setActStatus(i,j,val){ state.deliverables[i].activities[j].status = val; saveState(); renderAll(); }
+function setActLink(i,j,val){ state.deliverables[i].activities[j].link = val; saveState(); renderDeliverables(); }
+
+/* keep first block open by default on first render */
+let firstDelivRender = true;
+
+/* =========================================================
+   BITÁCORA
+========================================================= */
+function toggleEditMode(){
+  editModeOn = !editModeOn;
+  document.getElementById('logForm').style.display = editModeOn ? 'block' : 'none';
+  document.getElementById('editModeBtn').textContent = editModeOn ? 'Ocultar edición' : 'Habilitar edición';
+}
+function onAttendeeToggle(){
+  const on = document.getElementById('attendeeToggle').checked;
+  document.getElementById('simpleAttendWrap').style.display = on ? 'none' : 'block';
+  document.getElementById('detailedAttendWrap').style.display = on ? 'block' : 'none';
+}
+function addAttendee(){
+  const name = document.getElementById('attName').value.trim();
+  const inst = document.getElementById('attInst').value.trim();
+  if(!name){ return; }
+  attendeesDraft.push({name, inst});
+  document.getElementById('attName').value=''; document.getElementById('attInst').value='';
+  renderAttendeeChips();
+}
+function renderAttendeeChips(){
+  const wrap = document.getElementById('attendeeChips');
+  wrap.innerHTML = attendeesDraft.map((a,idx)=>
+    `<span class="attendee-chip">${a.name}${a.inst? ' · '+a.inst:''} <span style="cursor:pointer" onclick="removeAttendee(${idx})">✕</span></span>`
+  ).join('');
+}
+function removeAttendee(idx){ attendeesDraft.splice(idx,1); renderAttendeeChips(); }
+
+function addLog(){
+  if(!isAdmin) return;
+  const date = document.getElementById('logDate').value;
+  const dyn = document.getElementById('logDyn').value.trim();
+  const notes = document.getElementById('logNotes').value.trim();
+  const detailed = document.getElementById('attendeeToggle').checked;
+  if(!date || !dyn){ alert('Indica al menos la fecha y la dinámica aplicada.'); return; }
+  let entry;
+  if(detailed){
+    if(attendeesDraft.length===0){ alert('Agrega al menos una persona asistente.'); return; }
+    entry = {date, mode:"detailed", attendCount: attendeesDraft.length, attendees:[...attendeesDraft], dyn, notes};
+  } else {
+    const attend = document.getElementById('logAttend').value;
+    entry = {date, mode:"simple", attendCount: attend?parseInt(attend):0, attendees:[], dyn, notes};
+  }
+  state.logs.push(entry);
+  document.getElementById('logDate').value='';
+  document.getElementById('logDyn').value='';
+  document.getElementById('logNotes').value='';
+  document.getElementById('logAttend').value='';
+  attendeesDraft = [];
+  renderAttendeeChips();
+  document.getElementById('attendeeToggle').checked=false;
+  onAttendeeToggle();
+  saveState();
+  renderAll();
+}
+function renderLogs(){
+  const wrap = document.getElementById('logList');
+  wrap.innerHTML='';
+  if(state.logs.length===0){ wrap.innerHTML = '<p class="empty">Aún no hay sesiones registradas.</p>'; return; }
+  [...state.logs].reverse().forEach(l=>{
+    const el = document.createElement('div');
+    el.className='log-entry';
+    let attendHtml;
+    if(l.mode==='detailed' && l.attendees && l.attendees.length){
+      attendHtml = 'Asistentes ('+l.attendCount+'): ' + l.attendees.map(a=> a.name + (a.inst? ' — '+a.inst:'')).join(', ');
+    } else {
+      attendHtml = 'Asistencia: ' + (l.attendCount || 0) + ' personas';
+    }
+    el.innerHTML = `<div class="log-date">${l.date}</div><div class="log-title">${l.dyn}</div><div class="log-detail">${attendHtml}<br>${l.notes||''}</div>`;
+    wrap.appendChild(el);
+  });
+}
+
+/* ---- exports ---- */
+function exportPDF(){
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 16;
+    doc.setFontSize(14); doc.text("Bitácora de sesiones — GOYN Track", 14, y); y+=8;
+    doc.setFontSize(9); doc.text("Sintropía Social · Consultoría YouthBuild México | GOYN CDMX", 14, y); y+=10;
+    doc.setFontSize(10);
+    state.logs.forEach(l=>{
+      if(y > 270){ doc.addPage(); y = 16; }
+      const attend = l.mode==='detailed' ? (l.attendCount+' asistentes con nombre e institución') : (l.attendCount+' asistentes');
+      const lines = doc.splitTextToSize(`${l.date} — ${l.dyn}\n${attend}\n${l.notes||''}`, 180);
+      doc.text(lines, 14, y);
+      y += lines.length*5 + 4;
+    });
+    doc.save('bitacora_goyn_track.pdf');
+  }catch(e){ alert('No se pudo generar el PDF en este navegador.'); }
+}
+function exportWord(){
+  try{
+    let rows = state.logs.map(l=>{
+      const attend = l.mode==='detailed' ? (l.attendCount+' asistentes: '+l.attendees.map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join(', ')) : (l.attendCount+' asistentes');
+      return `<tr><td>${l.date}</td><td>${l.dyn}</td><td>${attend}</td><td>${l.notes||''}</td></tr>`;
+    }).join('');
+    const html = `<html><head><meta charset="utf-8"></head><body>
+      <h2>Bitácora de sesiones — GOYN Track</h2>
+      <p>Sintropía Social · Consultoría YouthBuild México | GOYN CDMX</p>
+      <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;">
+        <tr><th>Fecha</th><th>Dinámica</th><th>Asistencia</th><th>Notas</th></tr>
+        ${rows}
+      </table></body></html>`;
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='bitacora_goyn_track.doc'; document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ alert('No se pudo generar el documento Word.'); }
+}
+function exportExcel(){
+  try{
+    const rows = state.logs.map(l=>({
+      Fecha: l.date,
+      Dinamica: l.dyn,
+      Asistencia: l.attendCount,
+      Detalle_asistentes: l.mode==='detailed' ? l.attendees.map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join('; ') : '',
+      Notas: l.notes||''
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
+    XLSX.writeFile(wb, "bitacora_goyn_track.xlsx");
+  }catch(e){ alert('No se pudo generar el archivo Excel.'); }
+}
+
+/* =========================================================
+   CAJA DE HERRAMIENTAS
+========================================================= */
+function toolNoticeHtml(due, status){
+  if(status==='disponible' || status==='entregado') return '';
+  return `<div class="tool-notice">Disponible a partir del ${due}.</div>`;
+}
+function renderTools(){
+  const wrap = document.getElementById('toolGrid');
+  wrap.innerHTML='';
+  const t = state.tools;
+
+  // simple single-item tools
+  ['educacionPopular','formaFormadores','planeacionTpl'].forEach(key=>{
+    const item = t[key];
+    const delivered = item.status === 'disponible' || item.status === 'entregado';
+    const card = document.createElement('div');
+    card.className = 'tool-card';
+    const adminCtrls = isAdmin ? `
+      <div class="tool-actions">
+        <input type="text" placeholder="Liga de descarga" value="${item.link ? item.link.replace(/"/g,'&quot;') : ''}" style="max-width:220px;" onchange="setToolLink('${key}', this.value)">
+        <select class="status-edit" onchange="setToolStatus('${key}', this.value)">
+          <option value="pendiente" ${item.status==='pendiente'?'selected':''}>Pendiente</option>
+          <option value="disponible" ${item.status==='disponible'?'selected':''}>Disponible</option>
+        </select>
+      </div>` : '';
+    card.innerHTML = `
+      <div class="tool-tag">${item.tag}</div>
+      <div class="tool-name">${item.name}</div>
+      <div class="tool-note">${item.note}</div>
+      ${toolNoticeHtml(item.due, item.status)}
+      <div class="tool-actions">
+        <a class="dl-btn ${delivered && item.link ? '' : 'disabled'}" href="${item.link||'#'}" target="_blank" rel="noopener">Descargar</a>
+      </div>
+      ${adminCtrls}
+    `;
+    wrap.appendChild(card);
+  });
+
+  // facilitacion tool with 12 dinamicas checklist
+  const fac = t.facilitacion;
+  const uploaded = fac.dinamicas.filter(d=>d.status==='disponible').length;
+  let facMsg;
+  if(uploaded===0){ facMsg = `Aún no hay dinámicas disponibles. Estarán disponibles a partir del ${fac.due}.`; }
+  else if(uploaded < 12){ facMsg = `Ya ${uploaded===1?'está disponible 1':'están disponibles '+uploaded} de las 12, las próximas a la brevedad estarán.`; }
+  else { facMsg = `Las 12 dinámicas ya están disponibles.`; }
+
+  const facCard = document.createElement('div');
+  facCard.className = 'tool-card';
+  facCard.style.gridColumn = '1 / -1';
+  let dynListHtml = fac.dinamicas.map((d,idx)=>{
+    const adminRow = isAdmin ? `
+      <div class="dyn-admin-controls">
+        <input type="text" placeholder="Liga" style="width:130px; font-size:11.5px; padding:5px 7px;" value="${d.link? d.link.replace(/"/g,'&quot;'):''}" onchange="setDinamicaLink(${idx}, this.value)">
+        <select class="status-edit" onchange="setDinamicaStatus(${idx}, this.value)">
+          <option value="pendiente" ${d.status==='pendiente'?'selected':''}>Pendiente</option>
+          <option value="disponible" ${d.status==='disponible'?'selected':''}>Disponible</option>
+        </select>
+      </div>` : `<span class="badge ${d.status==='disponible'?'entregado':'pendiente'}">${d.status==='disponible'?'Disponible':'Pendiente'}</span>`;
+    const dlLink = d.status==='disponible' && d.link ? `<a class="dl-btn" style="padding:4px 10px; font-size:11px;" href="${d.link}" target="_blank" rel="noopener">Descargar</a>` : '';
+    return `<div class="dyn-item"><span class="dyn-item-name">${d.name}</span><span style="display:flex; gap:8px; align-items:center;">${dlLink}${adminRow}</span></div>`;
+  }).join('');
+
+  facCard.innerHTML = `
+    <div class="tool-tag">${fac.tag}</div>
+    <div class="tool-name">${fac.name}</div>
+    <div class="tool-note">${fac.note}</div>
+    <div class="tool-notice" style="background:${uploaded>0?'var(--purple-light)':'var(--orange-light)'}; color:${uploaded>0?'var(--purple)':'var(--orange-dark)'};">${facMsg}</div>
+    <div class="dyn-list">${dynListHtml}</div>
+  `;
+  wrap.appendChild(facCard);
+}
+function setToolStatus(key,val){ state.tools[key].status = val; saveState(); renderTools(); }
+function setToolLink(key,val){ state.tools[key].link = val; saveState(); renderTools(); }
+function setDinamicaStatus(idx,val){ state.tools.facilitacion.dinamicas[idx].status = val; saveState(); renderTools(); }
+function setDinamicaLink(idx,val){ state.tools.facilitacion.dinamicas[idx].link = val; saveState(); renderTools(); }
+
+/* =========================================================
+   PLANEACIÓN ESTRATÉGICA + GANTT
+========================================================= */
+function renderGoals(){
+  const body = document.getElementById('smartBody');
+  body.innerHTML='';
+  state.goals.forEach(g=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${g.area}</td><td>${g.meta}</td><td>${g.resp}</td><td>${g.horizonte}</td>`;
+    body.appendChild(tr);
+  });
+}
+function dayOffset(dateStr, baseStr){
+  return (new Date(dateStr) - new Date(baseStr)) / 86400000;
+}
+function renderGantt(){
+  const base = "2026-08-01";
+  const totalDays = dayOffset("2026-10-23", base);
+
+  // month labels
+  const months = [["Agosto","2026-08-01"],["Septiembre","2026-09-01"],["Octubre","2026-10-01"]];
+  const monthsWrap = document.getElementById('ganttMonths');
+  monthsWrap.innerHTML = months.map(m=>{
+    const pct = (dayOffset(m[1], base)/totalDays)*100;
+    return `<span class="gantt-month-label" style="left:${pct}%">${m[0]}</span>`;
+  }).join('');
+
+  const rowsWrap = document.getElementById('ganttRows');
+  rowsWrap.innerHTML = '';
+  state.deliverables.forEach((d,i)=>{
+    const startPct = Math.max(0,(dayOffset(d.start, base)/totalDays)*100);
+    const endPct = Math.min(100,(dayOffset(d.end, base)/totalDays)*100);
+    const widthPct = Math.max(2, endPct - startPct);
+
+    const row = document.createElement('div');
+    row.className = 'gantt-row';
+    row.innerHTML = `
+      <div class="gantt-label">${d.name.replace(/^\d\.\s*/,'')}</div>
+      <div class="gantt-track">
+        <div class="gantt-bar ${d.status}" style="left:${startPct}%; width:${widthPct}%;">${statusLabel(d.status)}</div>
+      </div>
+    `;
+    rowsWrap.appendChild(row);
+
+    const obs = state.ganttObs[i] || {text:"", required:false};
+    const obsRow = document.createElement('div');
+    obsRow.className = 'gantt-obs-row';
+    const isOpen = !!openObs[i];
+    if(isAdmin && isOpen){
+      obsRow.innerHTML = `
+        <div style="flex:1;">
+          <textarea id="obsInput${i}" placeholder="Escribe una observación para este entregable...">${obs.text||''}</textarea>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; margin:0;">
+              <input type="checkbox" id="obsReq${i}" ${obs.required?'checked':''} style="width:auto;"> Marcar como observación que requiere atención
+            </label>
+            <button class="btn primary" style="padding:6px 12px; font-size:11.5px;" onclick="saveObs(${i})">Guardar</button>
+            <button class="btn ghost" style="padding:6px 12px; font-size:11.5px;" onclick="closeObs(${i})">Cerrar</button>
+          </div>
+        </div>`;
+    } else {
+      obsRow.innerHTML = `
+        ${isAdmin ? `<button class="obs-btn" onclick="openObsBox(${i})">${obs.text? 'Editar observación':'Agregar observación'}</button>` : ''}
+        ${obs.text ? `<div class="obs-box">${obs.required?'<span class="obs-required">Requiere atención</span>':''}${obs.text}</div>` : (isAdmin? '' : '<div class="synctag">Sin observaciones registradas.</div>')}
+      `;
+    }
+    rowsWrap.appendChild(obsRow);
+  });
+}
+function openObsBox(i){ openObs[i]=true; renderGantt(); }
+function closeObs(i){ openObs[i]=false; renderGantt(); }
+function saveObs(i){
+  const text = document.getElementById('obsInput'+i).value.trim();
+  const required = document.getElementById('obsReq'+i).checked;
+  state.ganttObs[i] = {text, required};
+  openObs[i] = false;
+  saveState();
+  renderGantt();
+}
+
+/* =========================================================
+   EVALUACIÓN
+========================================================= */
+function renderComps(){
+  const wrap = document.getElementById('compList');
+  wrap.innerHTML='';
+  state.comps.forEach((c,idx)=>{
+    const el = document.createElement('div');
+    el.className='comp';
+    const adminInputs = isAdmin ? `
+      <div class="comp-admin-inputs">
+        <input type="number" min="0" max="100" value="${c.pre}" onchange="setCompVal(${idx},'pre',this.value)"> pre
+        <input type="number" min="0" max="100" value="${c.post}" onchange="setCompVal(${idx},'post',this.value)"> post
+      </div>` : '';
+    el.innerHTML = `
+      <div class="comp-label"><span>${c.name}</span><b>${c.pre}% → ${c.post}%</b></div>
+      <div class="bar-track" style="margin-bottom:5px;"><div class="bar-fill" style="width:${c.pre}%"></div></div>
+      <div class="bar-track"><div class="bar-fill post" style="width:${c.post}%"></div></div>
+      ${adminInputs}
+    `;
+    wrap.appendChild(el);
+  });
+}
+function setCompVal(idx, field, val){
+  let n = parseInt(val); if(isNaN(n)) n=0; if(n<0)n=0; if(n>100)n=100;
+  state.comps[idx][field] = n;
+  saveState();
+  renderComps();
+}
+
+/* =========================================================
+   BOOT / RENDER ALL
+========================================================= */
+function renderAll(){
+  renderDeliverables();
+  if(firstDelivRender){ const b0=document.getElementById('block-0'); if(b0) b0.classList.add('open'); firstDelivRender=false; }
+  renderLogs();
+  renderTools();
+  renderGoals();
+  renderGantt();
+  renderComps();
+  updateSessionUI();
+}
+
+async function boot(){
+  await loadState();
+  renderAll();
+  // light polling so visitors see admin updates without a manual reload
+  setInterval(async ()=>{
+    try{
+      const res = await window.storage.get(STORAGE_KEY, true);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        if(JSON.stringify(parsed) !== JSON.stringify(state)){
+          state = Object.assign(defaultState(), parsed);
+          renderAll();
+        }
+      }
+    }catch(e){ /* storage not available; skip silently */ }
+  }, 20000);
+}
+</script>
+</body>
+</html>
