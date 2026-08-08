@@ -16,7 +16,7 @@
     --ink:#1F1B2E; --grey:#6B6878; --line:#E7E2F3; --white:#FFFFFF;
     --ok:#1F9D6B; --ok-light:#E6F6EE;
     --pending:#B7B2C6; --pending-light:#F1F0F4;
-    --wa:#25D366;
+    --wa:#25D366; --red:#D9483D; --yellow:#E0982A;
   }
   *{box-sizing:border-box;}
   body{margin:0; font-family:'Open Sans', sans-serif; color:var(--ink); background:var(--white);}
@@ -26,13 +26,12 @@
   #gate{position:fixed; inset:0; background:var(--ink); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px;}
   .gate-card{background:var(--white); border-radius:14px; padding:40px 36px; width:100%; max-width:380px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.35);}
   .gate-eyebrow{font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--orange); font-weight:700;}
-  .gate-title{font-family:'Open Sauce Sans'; font-size:22px; font-weight:700; color:var(--purple); margin:6px 0 4px;}
-  .gate-sub{font-size:13px; color:var(--grey); margin-bottom:22px;}
-  #gateInput{width:100%; text-align:center; letter-spacing:.04em; font-size:14.5px; padding:12px 14px; border:1.5px solid var(--line); border-radius:9px; font-family:'Open Sans'; margin-bottom:12px;}
+  #gateInput{width:100%; text-align:center; letter-spacing:.04em; font-size:14.5px; padding:12px 14px; border:1.5px solid var(--line); border-radius:9px; font-family:'Open Sans'; margin:20px 0 12px;}
   #gateInput:focus{outline:none; border-color:var(--purple);}
   .gate-btn{width:100%; background:var(--purple); color:var(--white); border:none; font-family:'Open Sauce Sans'; font-weight:700; font-size:14px; padding:12px; border-radius:9px; cursor:pointer;}
   .gate-btn:hover{background:var(--purple-dark);}
   .gate-error{color:var(--orange-dark); font-size:12.5px; margin-top:10px; min-height:16px; font-weight:600;}
+  .gate-footer-note{font-size:12px; color:var(--grey); margin-top:18px; line-height:1.5;}
 
   /* ---- shell ---- */
   #app{display:none;}
@@ -42,18 +41,17 @@
   .brand{font-size:26px; font-weight:700; color:var(--purple); margin:4px 0 2px;}
   .brand span{color:var(--ink);}
   .subtitle{font-size:14px; color:var(--grey);}
-  .top-right{display:flex; flex-direction:column; align-items:flex-end; gap:10px;}
+  .top-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
   .project-meta{text-align:right; font-size:12.5px; color:var(--grey); line-height:1.6;}
   .project-meta b{color:var(--ink);}
+  .sync-status{font-size:11px; color:var(--grey);}
+  .sync-status.ok{color:var(--ok);}
+  .sync-status.err{color:var(--orange-dark);}
 
-  .session-pill{
-    font-size:12px; font-weight:600; padding:6px 13px; border-radius:20px; cursor:pointer; border:1px solid var(--line);
-    display:flex; align-items:center; gap:7px; background:var(--white); color:var(--grey);
-  }
+  .session-pill{font-size:12px; font-weight:600; padding:6px 13px; border-radius:20px; cursor:pointer; border:1px solid var(--line); display:flex; align-items:center; gap:7px; background:var(--white); color:var(--grey);}
   .session-pill.admin{background:var(--purple); color:var(--white); border-color:var(--purple);}
   .session-pill:hover{border-color:var(--purple);}
 
-  /* ---- login modal ---- */
   .modal-bg{position:fixed; inset:0; background:rgba(31,27,46,.55); z-index:500; display:none; align-items:center; justify-content:center; padding:20px;}
   .modal-bg.show{display:flex;}
   .modal-card{background:var(--white); border-radius:14px; padding:30px 30px 26px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,.3);}
@@ -66,16 +64,17 @@
   .btn.primary{background:var(--purple); color:var(--white); border-color:var(--purple);}
   .btn.primary:hover{background:var(--purple-dark);}
   .btn.ghost:hover{border-color:var(--purple); color:var(--purple);}
+  .btn.danger{color:var(--red); border-color:var(--orange-light);}
+  .btn.danger:hover{background:#FBEAE8;}
+  .btn.small{padding:5px 11px; font-size:11.5px;}
   .modal-error{color:var(--orange-dark); font-size:12px; font-weight:600; margin-top:10px; min-height:16px;}
   .admin-note{font-size:11px; color:var(--grey); margin-top:14px; line-height:1.5; border-top:1px solid var(--line); padding-top:12px;}
 
-  /* ---- overview strip ---- */
   .overview{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:24px 0 28px;}
   .stat{background:var(--white); padding:16px 18px;}
   .stat-num{font-size:26px; font-weight:700; color:var(--purple);}
   .stat-label{font-size:12px; color:var(--grey); margin-top:2px;}
 
-  /* ---- tabs ---- */
   nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:24px; flex-wrap:wrap;}
   .tab{font-size:14px; font-weight:600; color:var(--grey); background:none; border:none; padding:11px 15px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;}
   .tab:hover{color:var(--purple);}
@@ -85,16 +84,21 @@
   @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
   h2.panel-title{font-size:18px; margin:0 0 4px;}
   .panel-desc{font-size:13.5px; color:var(--grey); margin:0 0 18px; max-width:660px;}
-  .panel-header-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .panel-header-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
 
-  /* ---- badges ---- */
   .badge{font-size:11px; font-weight:600; padding:3px 9px; border-radius:14px; white-space:nowrap; display:inline-block;}
   .badge.entregado{background:var(--ok-light); color:var(--ok);}
   .badge.revision{background:var(--orange-light); color:var(--orange-dark);}
   .badge.pendiente{background:var(--pending-light); color:var(--pending);}
   select.status-edit{font-family:'Open Sans'; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:var(--white); cursor:pointer; color:var(--ink);}
 
-  /* ---- entregables ---- */
+  .report-box{border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--purple-light); margin-bottom:20px;}
+  .report-box .rtitle{font-weight:600; font-size:13.5px;}
+  .report-box .rnote{font-size:11.5px; color:var(--grey);}
+  .dl-btn{font-size:12px; font-weight:600; color:var(--white); background:var(--purple); text-decoration:none; padding:8px 16px; border-radius:8px;}
+  .dl-btn.disabled{background:var(--pending-light); color:var(--pending); pointer-events:none;}
+  .dl-btn.outline{background:var(--white); color:var(--purple); border:1px solid var(--purple);}
+
   .deliv-block{border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden;}
   .deliv-head{padding:15px 18px; display:grid; grid-template-columns:auto 1fr auto auto; gap:14px; align-items:center; cursor:pointer; background:var(--white);}
   .deliv-head:hover{background:var(--purple-light);}
@@ -104,16 +108,16 @@
   .chevron{color:var(--grey); font-size:12px; transition:transform .2s ease; flex:none;}
   .deliv-block.open .chevron{transform:rotate(180deg);}
   .activities{max-height:0; overflow:hidden; transition:max-height .25s ease; background:#FBFAFE;}
-  .deliv-block.open .activities{max-height:2000px;}
+  .deliv-block.open .activities{max-height:2400px;}
   .activity{padding:13px 18px 13px 68px; border-top:1px solid var(--line); display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center;}
   .act-name{font-weight:600; font-size:13px;}
   .act-desc{font-size:12px; color:var(--grey); margin-top:2px; line-height:1.5;}
+  .act-date{font-size:11px; color:var(--purple); margin-top:2px; font-weight:600;}
   .act-link{font-size:11.5px; font-weight:600; color:var(--purple); text-decoration:none; white-space:nowrap; border:1px solid var(--purple-light); padding:5px 10px; border-radius:8px;}
   .act-link:hover{background:var(--purple-light);}
   .act-link.disabled{color:var(--pending); border-color:var(--line); pointer-events:none;}
   .act-edit-link{width:150px; font-size:11.5px; padding:6px 8px;}
 
-  /* ---- bitacora ---- */
   .toolbar-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
   .form-card{border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:22px;}
   .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
@@ -132,13 +136,13 @@
   .switch input:checked + .slider:before{transform:translateX(17px);}
   .attendee-row{display:grid; grid-template-columns:1fr 1fr auto; gap:8px; margin-bottom:8px;}
   .attendee-chip{display:inline-flex; align-items:center; gap:6px; background:var(--purple-light); color:var(--purple); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:14px; margin:0 6px 6px 0;}
-  .log-entry{border-left:3px solid var(--orange); padding:10px 0 10px 16px; margin-bottom:14px;}
+  .log-entry{border-left:3px solid var(--orange); padding:10px 0 10px 16px; margin-bottom:14px; display:flex; justify-content:space-between; gap:12px; align-items:flex-start;}
   .log-date{font-size:12px; color:var(--grey); font-weight:600;}
   .log-title{font-weight:600; margin:2px 0 4px;}
   .log-detail{font-size:13px; color:var(--ink); line-height:1.5;}
+  .log-actions{display:flex; gap:6px; flex:none;}
   .empty{color:var(--grey); font-size:13px; font-style:italic;}
 
-  /* ---- caja de herramientas ---- */
   .tool-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .tool-card{border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
   .tool-tag{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--purple);}
@@ -146,43 +150,65 @@
   .tool-note{font-size:12px; color:var(--grey);}
   .tool-notice{margin-top:10px; background:var(--orange-light); color:var(--orange-dark); font-size:12px; font-weight:600; padding:8px 10px; border-radius:8px;}
   .tool-actions{margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-  .dl-btn{font-size:12px; font-weight:600; color:var(--white); background:var(--purple); text-decoration:none; padding:7px 14px; border-radius:8px;}
-  .dl-btn.disabled{background:var(--pending-light); color:var(--pending); pointer-events:none;}
-  .dyn-list{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px;}
-  .dyn-item{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12.5px;}
+  .dyn-toggle{font-size:12px; font-weight:600; color:var(--purple); background:none; border:1px solid var(--purple-light); padding:6px 12px; border-radius:8px; cursor:pointer; margin-top:12px;}
+  .dyn-toggle:hover{background:var(--purple-light);}
+  .dyn-list{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px; max-height:0; overflow:hidden; transition:max-height .25s ease;}
+  .dyn-list.open{max-height:900px;}
+  .dyn-item{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12.5px; gap:8px; flex-wrap:wrap;}
   .dyn-item-name{color:var(--ink);}
   .dyn-admin-controls{display:flex; gap:6px; align-items:center;}
 
-  /* ---- planeacion estrategica ---- */
-  table.smart{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:34px;}
+  table.smart{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:8px;}
   table.smart th{text-align:left; background:var(--purple); color:var(--white); padding:10px 12px; font-weight:600; font-size:12px;}
   table.smart td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
   table.smart tr:nth-child(even) td{background:var(--purple-light);}
+  .smart-note{font-size:12px; color:var(--grey); font-style:italic; margin:0 0 34px;}
+
+  .gantt-top{display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:18px;}
+  .progress-card{flex:1; min-width:220px; border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+  .progress-head{display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:8px;}
+  .progress-track{height:10px; background:var(--pending-light); border-radius:6px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--purple),var(--orange)); border-radius:6px;}
+  .semaforo-card{border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; min-width:230px;}
+  .light{width:16px; height:16px; border-radius:50%; flex:none;}
+  .light.green{background:var(--ok); box-shadow:0 0 8px var(--ok);}
+  .light.yellow{background:var(--yellow); box-shadow:0 0 8px var(--yellow);}
+  .light.red{background:var(--red); box-shadow:0 0 8px var(--red);}
+  .semaforo-text b{display:block; font-size:13px;}
+  .semaforo-text span{font-size:11.5px; color:var(--grey);}
 
   .gantt{border:1px solid var(--line); border-radius:12px; padding:20px 22px;}
   .gantt-months{display:grid; margin-left:190px; font-size:11px; color:var(--grey); position:relative; height:18px; margin-bottom:6px;}
   .gantt-month-label{position:absolute; top:0;}
-  .gantt-row{display:grid; grid-template-columns:180px 1fr; gap:10px; align-items:center; margin-bottom:10px;}
-  .gantt-label{font-size:12.5px; font-weight:600;}
+  .gantt-row{display:grid; grid-template-columns:180px 1fr; gap:10px; align-items:center; margin-bottom:6px;}
+  .gantt-label{font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .gantt-label .mini-chevron{font-size:10px; color:var(--grey); transition:transform .2s ease;}
+  .gantt-label.open .mini-chevron{transform:rotate(90deg);}
   .gantt-track{position:relative; height:26px; background:var(--pending-light); border-radius:6px; overflow:visible;}
   .gantt-bar{position:absolute; top:0; height:100%; border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:10.5px; color:var(--white); font-weight:600; white-space:nowrap; overflow:hidden;}
   .gantt-bar.pendiente{background:var(--pending);}
   .gantt-bar.revision{background:var(--orange);}
   .gantt-bar.entregado{background:var(--ok);}
+  .gantt-today{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); opacity:.5;}
+  .sub-timeline{display:none; grid-column:1/-1; margin:0 0 12px 190px; position:relative; height:20px; background:transparent;}
+  .sub-timeline.show{display:block;}
+  .sub-dot{position:absolute; top:2px; width:9px; height:9px; border-radius:50%; transform:translateX(-50%); cursor:default;}
+  .sub-dot.pendiente{background:var(--pending);}
+  .sub-dot.revision{background:var(--orange);}
+  .sub-dot.entregado{background:var(--ok);}
   .gantt-obs-row{grid-column:1/-1; display:flex; gap:10px; align-items:flex-start; margin:-2px 0 14px 190px;}
   .obs-btn{font-size:11px; font-weight:600; color:var(--purple); background:none; border:1px dashed var(--purple-light); padding:5px 10px; border-radius:7px; cursor:pointer;}
   .obs-btn:hover{background:var(--purple-light);}
   .obs-box{flex:1; font-size:12px; background:var(--purple-light); border-radius:8px; padding:8px 10px; color:var(--ink); line-height:1.5;}
   .obs-required{display:inline-block; background:var(--orange); color:var(--white); font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:6px;}
 
-  /* ---- evaluacion ---- */
   .comp{margin-bottom:16px;}
   .comp-label{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;}
   .comp-label b{font-weight:600;}
   .bar-track{height:8px; background:var(--line); border-radius:6px; overflow:hidden; position:relative;}
   .bar-fill{height:100%; border-radius:6px; background:var(--pending);}
   .bar-fill.post{background:linear-gradient(90deg,var(--purple),var(--orange));}
-  .legend{display:flex; gap:18px; font-size:12px; color:var(--grey); margin-top:16px;}
+  .legend{display:flex; gap:18px; font-size:12px; color:var(--grey); margin-top:16px; flex-wrap:wrap;}
   .legend span{display:flex; align-items:center; gap:6px;}
   .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
   .comp-admin-inputs{display:flex; gap:8px; margin-top:6px;}
@@ -195,8 +221,6 @@
   #waBtn{position:fixed; bottom:24px; right:24px; z-index:200; display:flex; align-items:center; gap:9px; background:var(--wa); color:var(--white); text-decoration:none; padding:13px 18px 13px 14px; border-radius:30px; font-family:'Open Sauce Sans'; font-weight:600; font-size:13.5px; box-shadow:0 8px 22px rgba(37,211,102,.4); transition:transform .15s ease;}
   #waBtn:hover{transform:translateY(-2px);}
   #waBtn svg{width:20px; height:20px; flex:none;}
-
-  .synctag{font-size:10.5px; color:var(--pending); margin-top:4px;}
 </style>
 </head>
 <body>
@@ -205,11 +229,10 @@
 <div id="gate">
   <div class="gate-card">
     <div class="gate-eyebrow">Sintropía Social</div>
-    <div class="gate-title">GOYN Track</div>
-    <div class="gate-sub">Acceso restringido al equipo YouthBuild México / GOYN CDMX. Ingresa el código de acceso compartido en la propuesta.</div>
     <input type="text" id="gateInput" placeholder="Código de acceso" autocomplete="off">
     <button class="gate-btn" onclick="checkGateCode()">Entrar</button>
     <div class="gate-error" id="gateError"></div>
+    <div class="gate-footer-note">Plataforma de seguimiento para GOYN CDMX y YouthBuild México</div>
   </div>
 </div>
 
@@ -227,7 +250,7 @@
       <button class="btn ghost" onclick="closeLogin()">Cancelar</button>
       <button class="btn primary" onclick="doLogin()">Entrar</button>
     </div>
-    <div class="admin-note">Nota: este acceso valida un usuario/contraseña definidos en el código del prototipo (útil para esta demo). Para producción con datos sensibles se recomienda mover la autenticación a un backend (Apps Script + verificación de sesión), como en el resto de las plataformas de Sintropía Social.</div>
+    <div class="admin-note">Este acceso valida un usuario/contraseña definidos en el código del prototipo. Para producción con datos sensibles se recomienda mover la autenticación a un backend (Apps Script + verificación de sesión).</div>
   </div>
 </div>
 
@@ -246,6 +269,7 @@
         <div><b>Cliente:</b> YouthBuild México · Red GOYN CDMX</div>
         <div><b>Consultor:</b> David Salgado López — Sintropía Social</div>
       </div>
+      <div class="sync-status" id="syncStatus">Cargando información…</div>
     </div>
   </header>
 
@@ -267,14 +291,27 @@
   <!-- ENTREGABLES -->
   <section class="panel active" id="panel-entregables">
     <h2 class="panel-title">Entregables y actividades de la consultoría</h2>
-    <p class="panel-desc">Cada entregable se abre en sus actividades, incluida la línea de consolidación de la planeación estratégica. Solo el administrador puede modificar estatus y ligas de evidencia.</p>
+    <p class="panel-desc">Cada entregable se abre en sus actividades. Solo el administrador puede modificar estatus y ligas de evidencia.</p>
+
+    <div class="report-box">
+      <div style="flex:1; min-width:200px;">
+        <div class="rtitle">Informe Final de la Consultoría</div>
+        <div class="rnote" id="reportNote">El administrador podrá adjuntar aquí la liga del informe final.</div>
+      </div>
+      <a class="dl-btn" id="reportDlBtn" href="#" target="_blank" rel="noopener">Descargar reporte final</a>
+      <div id="reportAdminControls" style="display:none;">
+        <input type="text" id="reportLinkInput" placeholder="Pegar liga del informe final" style="width:230px; display:inline-block;">
+        <button class="btn primary small" onclick="setReportLink()">Guardar</button>
+      </div>
+    </div>
+
     <div id="deliverables"></div>
   </section>
 
   <!-- BITACORA -->
   <section class="panel" id="panel-bitacora">
     <h2 class="panel-title">Bitácora de sesiones</h2>
-    <p class="panel-desc">Cualquier persona puede consultar las bitácoras. Solo el administrador puede registrar nuevas sesiones.</p>
+    <p class="panel-desc">Cualquier persona puede consultar las bitácoras. Solo el administrador puede registrar, editar o eliminar sesiones.</p>
     <div class="toolbar-row">
       <button class="btn ghost" onclick="exportPDF()">Descargar PDF</button>
       <button class="btn ghost" onclick="exportWord()">Descargar Word</button>
@@ -302,7 +339,10 @@
         </div>
         <div class="full"><label>Acuerdos y observaciones</label><textarea id="logNotes" placeholder="Acuerdos tomados, evidencias, siguientes pasos..."></textarea></div>
       </div>
-      <button class="primary" onclick="addLog()">Registrar sesión</button>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" onclick="submitLog()" id="submitLogBtn">Registrar sesión</button>
+        <button class="btn ghost" id="cancelEditBtn" style="display:none; margin-top:14px;" onclick="cancelLogEdit()">Cancelar edición</button>
+      </div>
     </div>
     <div id="logList"></div>
   </section>
@@ -322,12 +362,31 @@
       <thead><tr><th style="width:22%">Prioridad de incidencia</th><th style="width:38%">Meta SMART</th><th style="width:18%">Responsable</th><th style="width:22%">Horizonte</th></tr></thead>
       <tbody id="smartBody"></tbody>
     </table>
+    <p class="smart-note">Este cuadro es una base que se puede trabajar y adaptar a las necesidades detectadas en las sesiones de trabajo.</p>
 
-    <h2 class="panel-title">Cronograma general (Gantt automático)</h2>
-    <p class="panel-desc">Se actualiza solo con el estatus que el administrador asigna a cada entregable en la pestaña Entregables.</p>
+    <h2 class="panel-title">Cronograma general (Gantt automatizado)</h2>
+    <p class="panel-desc">Se actualiza solo con el estatus que el administrador asigna a cada entregable y actividad en la pestaña Entregables. Da clic en el nombre de un entregable para ver sus actividades sobre la línea de tiempo.</p>
+
+    <div class="gantt-top">
+      <div class="progress-card">
+        <div class="progress-head"><span>Avance general del proyecto</span><span id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <div class="semaforo-card">
+        <div class="light" id="semaforoLight"></div>
+        <div class="semaforo-text"><b id="semaforoTitle">Calculando…</b><span id="semaforoDesc"></span></div>
+      </div>
+    </div>
+
     <div class="gantt">
       <div class="gantt-months" id="ganttMonths"></div>
       <div id="ganttRows"></div>
+      <div class="legend" style="margin-top:6px;">
+        <span><i class="dot" style="background:var(--pending)"></i> Pendiente</span>
+        <span><i class="dot" style="background:var(--orange)"></i> En revisión</span>
+        <span><i class="dot" style="background:var(--ok)"></i> Entregado</span>
+        <span><i style="display:inline-block; width:2px; height:10px; background:var(--ink); opacity:.5;"></i> Hoy</span>
+      </div>
     </div>
   </section>
 
@@ -346,7 +405,7 @@
   </section>
 
   <footer class="foot">
-    <span>Prototipo funcional — GOYN Track · Sintropía Social</span>
+    <span>Sintropía Social — Plataforma de seguimiento</span>
     <span id="syncFooter">Desplegable en GitHub Pages con respaldo en Google Sheets / Apps Script</span>
   </footer>
 </div>
@@ -364,18 +423,23 @@
 const SITE_CODE = "tijro6-gistyd-Tivrem";
 const ADMIN_EMAIL = "dsalgado@intropiasocial.com";
 const ADMIN_PASS = "poccaf-qopmyb-6xeJzu";
-const STORAGE_KEY = "goyntrack-state-v2";
+const STORAGE_KEY = "goyntrack-state-v3";
+const TODAY = new Date(); // fecha real del navegador
 
 let isAdmin = false;
 let editModeOn = false;
 let attendeesDraft = [];
-let openObs = {}; // track which observation boxes are in edit mode
+let editingLogId = null;
+let openObs = {};
+let openGanttSub = {};
+let dynListOpen = false;
 
 /* =========================================================
    DEFAULT STATE
 ========================================================= */
 function defaultState(){
   return {
+    reportFinal: { link:"", status:"pendiente" },
     deliverables: [
       {
         name:"1. Plan de Trabajo y Diseño Metodológico",
@@ -383,11 +447,11 @@ function defaultState(){
         start:"2026-08-01", end:"2026-08-24",
         status:"entregado",
         activities:[
-          {name:"1.1 Diagnóstico rápido con el GAJ", desc:"Grupo focal y entrevistas breves con integrantes del GAJ y equipo técnico para identificar tensiones de liderazgo y lenguaje propio del colectivo.", status:"entregado", link:""},
-          {name:"1.2 Guiones de sesión", desc:"Guiones detallados del Taller de Facilitación, Forma a Formadores y Planeación Estratégica, listos para revisión de GOYN.", status:"entregado", link:""},
-          {name:"1.3 Cronograma validado", desc:"Calendario operativo con fechas de entrega, revisión y pago alineado a esta convocatoria.", status:"entregado", link:""},
-          {name:"1.4 Validación del enfoque de planeación con GOYN", desc:"Sesión breve para acordar con la Dirección de GOYN CDMX el alcance de la planeación estratégica que se co-creará con el GAJ.", status:"entregado", link:""},
-          {name:"1.5 Definición de indicadores de seguimiento", desc:"Batería inicial de indicadores para dar trazabilidad a la hoja de ruta 2026–2029 desde el arranque del proyecto.", status:"revision", link:""},
+          {name:"1.1 Diagnóstico rápido con el GAJ", desc:"Grupo focal y entrevistas breves con integrantes del GAJ y equipo técnico para identificar tensiones de liderazgo y lenguaje propio del colectivo.", date:"2026-08-06", status:"entregado", link:""},
+          {name:"1.2 Guiones de sesión", desc:"Guiones detallados del Taller de Facilitación, Forma a Formadores y Planeación Estratégica, listos para revisión de GOYN.", date:"2026-08-11", status:"entregado", link:""},
+          {name:"1.3 Cronograma validado", desc:"Calendario operativo con fechas de entrega, revisión y pago alineado a esta convocatoria.", date:"2026-08-14", status:"entregado", link:""},
+          {name:"1.4 Validación del enfoque de planeación con GOYN", desc:"Sesión breve para acordar con la Dirección de GOYN CDMX el alcance de la planeación estratégica que se co-creará con el GAJ.", date:"2026-08-18", status:"entregado", link:""},
+          {name:"1.5 Definición de indicadores de seguimiento", desc:"Batería inicial de indicadores para dar trazabilidad a la hoja de ruta 2026–2029 desde el arranque del proyecto.", date:"2026-08-21", status:"revision", link:""},
         ]
       },
       {
@@ -396,11 +460,11 @@ function defaultState(){
         start:"2026-08-25", end:"2026-09-14",
         status:"revision",
         activities:[
-          {name:"2.1 Taller de Facilitación (3 sesiones)", desc:"Metodologías participativas, manejo de grupos juveniles y co-creación, impartidas al GAJ y equipo técnico.", status:"entregado", link:""},
-          {name:"2.2 Ciclo de práctica supervisada (Forma a Formadores)", desc:"Cada integrante del GAJ facilita una dinámica ante el grupo con retroalimentación estructurada del equipo consultor.", status:"revision", link:""},
-          {name:"2.3 Manual de Facilitación y Caja de Herramientas", desc:"Guía práctica en lenguaje accesible con dinámicas de grupo, gestión de plenarias y repositorio descargable para el GAJ.", status:"pendiente", link:""},
-          {name:"2.4 Mapeo de capacidades instaladas en el GAJ", desc:"Registro de qué integrantes quedan habilitados para replicar cada tipo de dinámica, insumo para la planeación de sostenibilidad.", status:"pendiente", link:""},
-          {name:"2.5 Diseño del mecanismo de acompañamiento post-taller", desc:"Define cómo el GAJ podrá resolver dudas de facilitación una vez cerrada la consultoría, conectando con la planeación estratégica.", status:"pendiente", link:""},
+          {name:"2.1 Taller de Facilitación (3 sesiones)", desc:"Metodologías participativas y manejo de grupos juveniles, con co-creación.", date:"2026-08-28", status:"entregado", link:""},
+          {name:"2.2 Ciclo de práctica supervisada (Forma a Formadores)", desc:"Cada integrante del GAJ facilita una dinámica ante el grupo con retroalimentación estructurada.", date:"2026-09-02", status:"revision", link:""},
+          {name:"2.3 Manual de Facilitación y Caja de Herramientas", desc:"Guía práctica en lenguaje accesible con dinámicas de grupo, gestión de plenarias y repositorio descargable.", date:"2026-09-08", status:"pendiente", link:""},
+          {name:"2.4 Mapeo de capacidades instaladas en el GAJ", desc:"Registro de qué integrantes quedan habilitados para replicar cada tipo de dinámica.", date:"2026-09-10", status:"pendiente", link:""},
+          {name:"2.5 Diseño del mecanismo de acompañamiento post-taller", desc:"Define cómo el GAJ podrá resolver dudas de facilitación una vez cerrada la consultoría.", date:"2026-09-12", status:"pendiente", link:""},
         ]
       },
       {
@@ -409,11 +473,11 @@ function defaultState(){
         start:"2026-09-15", end:"2026-10-05",
         status:"pendiente",
         activities:[
-          {name:"3.1 Taller de Planeación Estratégica participativa", desc:"El GAJ, ya formado como facilitador, conduce las sesiones de planeación con el equipo GOYN.", status:"pendiente", link:""},
-          {name:"3.2 Sistematización de objetivos y metas SMART", desc:"Vaciado y depuración de los acuerdos del taller en el panel de Planeación Estratégica.", status:"pendiente", link:""},
-          {name:"3.3 Redacción de la Guía Metodológica", desc:"Documento con instrumentos que garantizan que el GAJ pueda replicar el proceso de planeación en próximos ciclos.", status:"pendiente", link:""},
-          {name:"3.4 Validación de metas SMART con la Dirección GOYN CDMX", desc:"Sesión de cierre donde la Dirección revisa y avala la hoja de ruta 2026–2029 antes de su publicación interna.", status:"pendiente", link:""},
-          {name:"3.5 Diseño del mecanismo de monitoreo trimestral", desc:"Formato y calendario para que GOYN dé seguimiento a las metas SMART sin depender de la consultoría externa.", status:"pendiente", link:""},
+          {name:"3.1 Taller de Planeación Estratégica participativa", desc:"El GAJ, ya formado como facilitador, conduce las sesiones de planeación con el equipo GOYN.", date:"2026-09-18", status:"pendiente", link:""},
+          {name:"3.2 Sistematización de objetivos y metas SMART", desc:"Vaciado y depuración de los acuerdos del taller en el panel de Planeación Estratégica.", date:"2026-09-23", status:"pendiente", link:""},
+          {name:"3.3 Redacción de la Guía Metodológica", desc:"Documento con instrumentos que garantizan que el GAJ pueda replicar el proceso de planeación.", date:"2026-09-28", status:"pendiente", link:""},
+          {name:"3.4 Validación de metas SMART con GOYN CDMX", desc:"Sesión de cierre donde la Dirección revisa y avala la hoja de ruta 2026–2029.", date:"2026-10-01", status:"pendiente", link:""},
+          {name:"3.5 Diseño del mecanismo de monitoreo trimestral", desc:"Formato y calendario para que GOYN dé seguimiento a las metas SMART.", date:"2026-10-03", status:"pendiente", link:""},
         ]
       },
       {
@@ -422,11 +486,11 @@ function defaultState(){
         start:"2026-10-06", end:"2026-10-12",
         status:"pendiente",
         activities:[
-          {name:"4.1 Evaluación de competencias (pre/post)", desc:"Aplicación y análisis del instrumento de competencias de facilitación transferidas al GAJ.", status:"pendiente", link:""},
-          {name:"4.2 Memoria de sesiones", desc:"Sistematización narrativa y fotográfica de todas las sesiones impartidas durante la consultoría.", status:"pendiente", link:""},
-          {name:"4.3 Recomendaciones de sostenibilidad", desc:"Cierre del informe con recomendaciones para que GOYN y el GAJ den continuidad al proceso sin acompañamiento externo.", status:"pendiente", link:""},
-          {name:"4.4 Presentación de la hoja de ruta ante el equipo GOYN", desc:"Sesión final de socialización de la planeación estratégica 2026–2029 con todo el equipo GOYN CDMX.", status:"pendiente", link:""},
-          {name:"4.5 Plan de transferencia y cierre de acompañamiento", desc:"Documento breve que formaliza qué queda en manos del GAJ y qué requeriría, en su caso, una siguiente fase de consultoría.", status:"pendiente", link:""},
+          {name:"4.1 Evaluación de competencias (pre/post)", desc:"Aplicación y análisis del instrumento de competencias de facilitación transferidas al GAJ.", date:"2026-10-06", status:"pendiente", link:""},
+          {name:"4.2 Memoria de sesiones", desc:"Sistematización narrativa y fotográfica de todas las sesiones impartidas.", date:"2026-10-08", status:"pendiente", link:""},
+          {name:"4.3 Recomendaciones de sostenibilidad", desc:"Cierre del informe con recomendaciones para dar continuidad al proceso.", date:"2026-10-09", status:"pendiente", link:""},
+          {name:"4.4 Presentación de la hoja de ruta ante el equipo GOYN", desc:"Sesión final de socialización de la planeación estratégica 2026–2029.", date:"2026-10-10", status:"pendiente", link:""},
+          {name:"4.5 Plan de transferencia y cierre de acompañamiento", desc:"Formaliza qué queda en manos del GAJ y qué requeriría una siguiente fase.", date:"2026-10-12", status:"pendiente", link:""},
         ]
       },
     ],
@@ -439,12 +503,14 @@ function defaultState(){
       planeacionTpl:{tag:"Planeación Estratégica", name:"Plantilla de metas SMART", note:"Vinculada al panel de Planeación Estratégica.", due:"5 de octubre de 2026", status:"pendiente", link:""},
     },
     logs: [
-      {date:"2026-08-24", mode:"simple", attendCount:14, attendees:[], dyn:"Diagnóstico rápido — grupo focal inicial", notes:"Se identifican tres tensiones internas de liderazgo; el GAJ nombra la falta de espacios propios de decisión como reto principal."}
+      {id:1, date:"2026-08-24", mode:"simple", attendCount:14, attendees:[], dyn:"Diagnóstico rápido — grupo focal inicial", notes:"Se identifican tres tensiones internas de liderazgo; el GAJ nombra la falta de espacios propios de decisión como reto principal."}
     ],
     goals: [
       {area:"Inclusión socioproductiva juvenil", meta:"Aumentar en 20% la vinculación laboral formal de jóvenes atendidos por el GAJ en 12 meses.", resp:"GAJ + equipo GOYN", horizonte:"2026–2027"},
       {area:"Fortalecimiento del GAJ", meta:"Formar a 8 integrantes del GAJ como facilitadores certificados internamente.", resp:"GAJ", horizonte:"2026 (Fase 2)"},
       {area:"Sostenibilidad de la Red", meta:"Institucionalizar 2 alianzas territoriales nuevas para la Red GOYN CDMX.", resp:"Dirección GOYN CDMX", horizonte:"2027–2029"},
+      {area:"Incidencia territorial", meta:"Posicionar al GAJ como interlocutor reconocido ante 3 actores clave del ecosistema de empleabilidad juvenil en CDMX.", resp:"GAJ + Dirección GOYN CDMX", horizonte:"2026–2028"},
+      {area:"Gestión del conocimiento", meta:"Documentar y publicar 1 sistematización anual de aprendizajes del GAJ para replicabilidad en otras ciudades GOYN.", resp:"Equipo técnico GOYN", horizonte:"2027–2029"},
     ],
     ganttObs: {0:{text:"", required:false}, 1:{text:"", required:false}, 2:{text:"", required:false}, 3:{text:"", required:false}},
     comps: [
@@ -459,25 +525,40 @@ function defaultState(){
 let state = defaultState();
 
 /* =========================================================
-   STORAGE (shared across all viewers of this artifact)
+   STORAGE
 ========================================================= */
+function setSyncStatus(kind){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.classList.remove('ok','err');
+  if(kind==='ok'){ el.textContent = 'Cambios guardados ✓'; el.classList.add('ok'); }
+  else if(kind==='err'){ el.textContent = 'Sin conexión al almacenamiento — los cambios solo viven en esta sesión'; el.classList.add('err'); }
+  else if(kind==='loading'){ el.textContent = 'Cargando información…'; }
+  else if(kind==='saving'){ el.textContent = 'Guardando…'; }
+}
 async function loadState(){
+  setSyncStatus('loading');
   try{
     const res = await window.storage.get(STORAGE_KEY, true);
     if(res && res.value){
       const parsed = JSON.parse(res.value);
       state = Object.assign(defaultState(), parsed);
     }
+    setSyncStatus('ok');
   }catch(e){
-    // no remote state yet, or storage unavailable — keep local defaults
-    console.log("Sin estado remoto todavía, usando valores iniciales.");
+    console.log("Sin estado remoto todavía o almacenamiento no disponible en este entorno.", e);
+    setSyncStatus('err');
   }
 }
 async function saveState(){
+  setSyncStatus('saving');
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+    if(!result) throw new Error('sin resultado');
+    setSyncStatus('ok');
   }catch(e){
-    console.log("No se pudo guardar en almacenamiento compartido; los cambios solo viven en esta sesión.", e);
+    console.log("No se pudo guardar en almacenamiento compartido.", e);
+    setSyncStatus('err');
   }
 }
 
@@ -501,44 +582,27 @@ document.addEventListener('DOMContentLoaded', ()=>{
 /* =========================================================
    ADMIN LOGIN
 ========================================================= */
-function onSessionPillClick(){
-  if(isAdmin){ logout(); } else { openLogin(); }
-}
+function onSessionPillClick(){ if(isAdmin){ logout(); } else { openLogin(); } }
 function openLogin(){ document.getElementById('loginModal').classList.add('show'); }
-function closeLogin(){
-  document.getElementById('loginModal').classList.remove('show');
-  document.getElementById('loginError').textContent='';
-}
+function closeLogin(){ document.getElementById('loginModal').classList.remove('show'); document.getElementById('loginError').textContent=''; }
 function doLogin(){
   const email = document.getElementById('adminEmail').value.trim().toLowerCase();
   const pass = document.getElementById('adminPass').value;
   if(email === ADMIN_EMAIL.toLowerCase() && pass === ADMIN_PASS){
-    isAdmin = true;
-    closeLogin();
-    updateSessionUI();
-    renderAll();
+    isAdmin = true; closeLogin(); renderAll();
   } else {
     document.getElementById('loginError').textContent = 'Correo o contraseña incorrectos.';
   }
 }
-function logout(){
-  isAdmin = false;
-  editModeOn = false;
-  updateSessionUI();
-  renderAll();
-}
+function logout(){ isAdmin = false; editModeOn = false; renderAll(); }
 function updateSessionUI(){
   const pill = document.getElementById('sessionPill');
-  if(isAdmin){
-    pill.textContent = 'Administrador · Cerrar sesión';
-    pill.classList.add('admin');
-  } else {
-    pill.textContent = 'Modo visitante · Iniciar sesión';
-    pill.classList.remove('admin');
-  }
+  if(isAdmin){ pill.textContent = 'Administrador · Cerrar sesión'; pill.classList.add('admin'); }
+  else { pill.textContent = 'Modo visitante · Iniciar sesión'; pill.classList.remove('admin'); }
   document.getElementById('editModeBtn').style.display = isAdmin ? 'inline-block' : 'none';
   document.getElementById('evalTip').style.display = isAdmin ? 'block' : 'none';
-  if(!isAdmin){ document.getElementById('logForm').style.display='none'; }
+  document.getElementById('reportAdminControls').style.display = isAdmin ? 'flex' : 'none';
+  if(!isAdmin){ document.getElementById('logForm').style.display='none'; editModeOn=false; }
 }
 
 /* =========================================================
@@ -554,6 +618,27 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
   });
 });
+
+/* =========================================================
+   INFORME FINAL
+========================================================= */
+function renderReport(){
+  const r = state.reportFinal;
+  const has = r.link && r.link.trim().length>0;
+  document.getElementById('reportNote').textContent = has
+    ? 'Informe final disponible para descarga.'
+    : 'El administrador podrá adjuntar aquí la liga del informe final.';
+  const btn = document.getElementById('reportDlBtn');
+  btn.href = has ? r.link : '#';
+  btn.classList.toggle('disabled', !has);
+  document.getElementById('reportLinkInput').value = r.link || '';
+}
+function setReportLink(){
+  const val = document.getElementById('reportLinkInput').value.trim();
+  state.reportFinal.link = val;
+  state.reportFinal.status = val ? 'entregado' : 'pendiente';
+  saveState(); renderReport();
+}
 
 /* =========================================================
    ENTREGABLES
@@ -604,7 +689,7 @@ function renderDeliverables(){
            </select>`
         : `<span class="badge ${a.status}">${statusLabel(a.status)}</span>`;
       row.innerHTML = `
-        <div><div class="act-name">${a.name}</div><div class="act-desc">${a.desc}</div></div>
+        <div><div class="act-name">${a.name}</div><div class="act-desc">${a.desc}</div><div class="act-date">${formatDate(a.date)}</div></div>
         ${statusHtmlAct}
         ${linkHtml}
       `;
@@ -623,8 +708,12 @@ function setDelivStatus(i,val){ state.deliverables[i].status = val; saveState();
 function setActStatus(i,j,val){ state.deliverables[i].activities[j].status = val; saveState(); renderAll(); }
 function setActLink(i,j,val){ state.deliverables[i].activities[j].link = val; saveState(); renderDeliverables(); }
 
-/* keep first block open by default on first render */
 let firstDelivRender = true;
+function formatDate(iso){
+  const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const d = new Date(iso+"T00:00:00");
+  return d.getDate()+" "+meses[d.getMonth()];
+}
 
 /* =========================================================
    BITÁCORA
@@ -633,6 +722,7 @@ function toggleEditMode(){
   editModeOn = !editModeOn;
   document.getElementById('logForm').style.display = editModeOn ? 'block' : 'none';
   document.getElementById('editModeBtn').textContent = editModeOn ? 'Ocultar edición' : 'Habilitar edición';
+  if(!editModeOn) cancelLogEdit();
 }
 function onAttendeeToggle(){
   const on = document.getElementById('attendeeToggle').checked;
@@ -655,22 +745,7 @@ function renderAttendeeChips(){
 }
 function removeAttendee(idx){ attendeesDraft.splice(idx,1); renderAttendeeChips(); }
 
-function addLog(){
-  if(!isAdmin) return;
-  const date = document.getElementById('logDate').value;
-  const dyn = document.getElementById('logDyn').value.trim();
-  const notes = document.getElementById('logNotes').value.trim();
-  const detailed = document.getElementById('attendeeToggle').checked;
-  if(!date || !dyn){ alert('Indica al menos la fecha y la dinámica aplicada.'); return; }
-  let entry;
-  if(detailed){
-    if(attendeesDraft.length===0){ alert('Agrega al menos una persona asistente.'); return; }
-    entry = {date, mode:"detailed", attendCount: attendeesDraft.length, attendees:[...attendeesDraft], dyn, notes};
-  } else {
-    const attend = document.getElementById('logAttend').value;
-    entry = {date, mode:"simple", attendCount: attend?parseInt(attend):0, attendees:[], dyn, notes};
-  }
-  state.logs.push(entry);
+function resetLogForm(){
   document.getElementById('logDate').value='';
   document.getElementById('logDyn').value='';
   document.getElementById('logNotes').value='';
@@ -679,6 +754,69 @@ function addLog(){
   renderAttendeeChips();
   document.getElementById('attendeeToggle').checked=false;
   onAttendeeToggle();
+}
+function submitLog(){
+  if(!isAdmin) return;
+  const date = document.getElementById('logDate').value;
+  const dyn = document.getElementById('logDyn').value.trim();
+  const notes = document.getElementById('logNotes').value.trim();
+  const detailed = document.getElementById('attendeeToggle').checked;
+  if(!date || !dyn){ alert('Indica al menos la fecha y la dinámica aplicada.'); return; }
+  let payload;
+  if(detailed){
+    if(attendeesDraft.length===0){ alert('Agrega al menos una persona asistente.'); return; }
+    payload = { date, mode:"detailed", attendCount: attendeesDraft.length, attendees:[...attendeesDraft], dyn, notes };
+  } else {
+    const attend = document.getElementById('logAttend').value;
+    payload = { date, mode:"simple", attendCount: attend?parseInt(attend):0, attendees:[], dyn, notes };
+  }
+  if(editingLogId !== null){
+    const idx = state.logs.findIndex(l=>l.id===editingLogId);
+    if(idx>-1){ state.logs[idx] = Object.assign({id:editingLogId}, payload); }
+    editingLogId = null;
+    document.getElementById('submitLogBtn').textContent = 'Registrar sesión';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+  } else {
+    payload.id = Date.now();
+    state.logs.push(payload);
+  }
+  resetLogForm();
+  saveState();
+  renderAll();
+}
+function editLog(id){
+  const l = state.logs.find(x=>x.id===id);
+  if(!l) return;
+  editModeOn = true;
+  document.getElementById('logForm').style.display='block';
+  document.getElementById('editModeBtn').textContent='Ocultar edición';
+  editingLogId = id;
+  document.getElementById('logDate').value = l.date;
+  document.getElementById('logDyn').value = l.dyn;
+  document.getElementById('logNotes').value = l.notes || '';
+  if(l.mode==='detailed'){
+    document.getElementById('attendeeToggle').checked = true;
+    attendeesDraft = [...l.attendees];
+    renderAttendeeChips();
+  } else {
+    document.getElementById('attendeeToggle').checked = false;
+    document.getElementById('logAttend').value = l.attendCount || '';
+  }
+  onAttendeeToggle();
+  document.getElementById('submitLogBtn').textContent = 'Guardar cambios';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  window.scrollTo({top: document.getElementById('logForm').offsetTop - 90, behavior:'smooth'});
+}
+function cancelLogEdit(){
+  editingLogId = null;
+  resetLogForm();
+  document.getElementById('submitLogBtn').textContent = 'Registrar sesión';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+function deleteLog(id){
+  if(!isAdmin) return;
+  if(!confirm('¿Eliminar esta bitácora de forma permanente?')) return;
+  state.logs = state.logs.filter(l=>l.id!==id);
   saveState();
   renderAll();
 }
@@ -695,7 +833,11 @@ function renderLogs(){
     } else {
       attendHtml = 'Asistencia: ' + (l.attendCount || 0) + ' personas';
     }
-    el.innerHTML = `<div class="log-date">${l.date}</div><div class="log-title">${l.dyn}</div><div class="log-detail">${attendHtml}<br>${l.notes||''}</div>`;
+    const adminBtns = isAdmin ? `<div class="log-actions">
+        <button class="btn small ghost" onclick="editLog(${l.id})">Editar</button>
+        <button class="btn small danger" onclick="deleteLog(${l.id})">Eliminar</button>
+      </div>` : '';
+    el.innerHTML = `<div style="flex:1;"><div class="log-date">${l.date}</div><div class="log-title">${l.dyn}</div><div class="log-detail">${attendHtml}<br>${l.notes||''}</div></div>${adminBtns}`;
     wrap.appendChild(el);
   });
 }
@@ -765,7 +907,6 @@ function renderTools(){
   wrap.innerHTML='';
   const t = state.tools;
 
-  // simple single-item tools
   ['educacionPopular','formaFormadores','planeacionTpl'].forEach(key=>{
     const item = t[key];
     const delivered = item.status === 'disponible' || item.status === 'entregado';
@@ -786,13 +927,13 @@ function renderTools(){
       ${toolNoticeHtml(item.due, item.status)}
       <div class="tool-actions">
         <a class="dl-btn ${delivered && item.link ? '' : 'disabled'}" href="${item.link||'#'}" target="_blank" rel="noopener">Descargar</a>
+        <a class="dl-btn outline ${delivered && item.link ? '' : 'disabled'}" href="${item.link||'#'}" target="_blank" rel="noopener">Vista previa</a>
       </div>
       ${adminCtrls}
     `;
     wrap.appendChild(card);
   });
 
-  // facilitacion tool with 12 dinamicas checklist
   const fac = t.facilitacion;
   const uploaded = fac.dinamicas.filter(d=>d.status==='disponible').length;
   let facMsg;
@@ -804,6 +945,7 @@ function renderTools(){
   facCard.className = 'tool-card';
   facCard.style.gridColumn = '1 / -1';
   let dynListHtml = fac.dinamicas.map((d,idx)=>{
+    const delivered = d.status==='disponible';
     const adminRow = isAdmin ? `
       <div class="dyn-admin-controls">
         <input type="text" placeholder="Liga" style="width:130px; font-size:11.5px; padding:5px 7px;" value="${d.link? d.link.replace(/"/g,'&quot;'):''}" onchange="setDinamicaLink(${idx}, this.value)">
@@ -811,8 +953,8 @@ function renderTools(){
           <option value="pendiente" ${d.status==='pendiente'?'selected':''}>Pendiente</option>
           <option value="disponible" ${d.status==='disponible'?'selected':''}>Disponible</option>
         </select>
-      </div>` : `<span class="badge ${d.status==='disponible'?'entregado':'pendiente'}">${d.status==='disponible'?'Disponible':'Pendiente'}</span>`;
-    const dlLink = d.status==='disponible' && d.link ? `<a class="dl-btn" style="padding:4px 10px; font-size:11px;" href="${d.link}" target="_blank" rel="noopener">Descargar</a>` : '';
+      </div>` : `<span class="badge ${delivered?'entregado':'pendiente'}">${delivered?'Disponible':'Pendiente'}</span>`;
+    const dlLink = delivered && d.link ? `<a class="dl-btn" style="padding:4px 10px; font-size:11px;" href="${d.link}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline" style="padding:4px 10px; font-size:11px;" href="${d.link}" target="_blank" rel="noopener">Preview</a>` : '';
     return `<div class="dyn-item"><span class="dyn-item-name">${d.name}</span><span style="display:flex; gap:8px; align-items:center;">${dlLink}${adminRow}</span></div>`;
   }).join('');
 
@@ -821,10 +963,12 @@ function renderTools(){
     <div class="tool-name">${fac.name}</div>
     <div class="tool-note">${fac.note}</div>
     <div class="tool-notice" style="background:${uploaded>0?'var(--purple-light)':'var(--orange-light)'}; color:${uploaded>0?'var(--purple)':'var(--orange-dark)'};">${facMsg}</div>
-    <div class="dyn-list">${dynListHtml}</div>
+    <button class="dyn-toggle" onclick="toggleDynList()">${dynListOpen? 'Ocultar las 12 dinámicas ▲' : 'Ver las 12 dinámicas ▼'}</button>
+    <div class="dyn-list ${dynListOpen?'open':''}" id="dynListBox">${dynListHtml}</div>
   `;
   wrap.appendChild(facCard);
 }
+function toggleDynList(){ dynListOpen = !dynListOpen; renderTools(); }
 function setToolStatus(key,val){ state.tools[key].status = val; saveState(); renderTools(); }
 function setToolLink(key,val){ state.tools[key].link = val; saveState(); renderTools(); }
 function setDinamicaStatus(idx,val){ state.tools.facilitacion.dinamicas[idx].status = val; saveState(); renderTools(); }
@@ -842,14 +986,40 @@ function renderGoals(){
     body.appendChild(tr);
   });
 }
-function dayOffset(dateStr, baseStr){
-  return (new Date(dateStr) - new Date(baseStr)) / 86400000;
+function dayOffset(dateStr, baseStr){ return (new Date(dateStr+"T00:00:00") - new Date(baseStr+"T00:00:00")) / 86400000; }
+
+function renderProgressAndSemaforo(){
+  let totalAct=0, doneAct=0;
+  state.deliverables.forEach(d=> d.activities.forEach(a=>{ totalAct++; if(a.status==='entregado') doneAct++; }));
+  const pct = totalAct ? Math.round((doneAct/totalAct)*100) : 0;
+  document.getElementById('progressPct').textContent = pct+'%';
+  document.getElementById('progressFill').style.width = pct+'%';
+
+  const base = "2026-08-01", end = "2026-10-23";
+  const totalDays = dayOffset(end, base);
+  const elapsed = Math.min(totalDays, Math.max(0, dayOffset(TODAY.toISOString().slice(0,10), base)));
+  const expectedPct = totalDays>0 ? (elapsed/totalDays)*100 : 0;
+
+  const light = document.getElementById('semaforoLight');
+  const title = document.getElementById('semaforoTitle');
+  const desc = document.getElementById('semaforoDesc');
+  light.className = 'light';
+  if(pct >= expectedPct - 5){
+    light.classList.add('green'); title.textContent = 'En tiempo';
+    desc.textContent = 'El avance real va igual o mejor que lo esperado para la fecha de hoy.';
+  } else if(pct >= expectedPct - 15){
+    light.classList.add('yellow'); title.textContent = 'Atención';
+    desc.textContent = 'El avance va ligeramente por debajo de lo esperado para la fecha de hoy.';
+  } else {
+    light.classList.add('red'); title.textContent = 'Riesgo de retraso';
+    desc.textContent = 'El avance real está notablemente por debajo de lo esperado para la fecha de hoy.';
+  }
 }
+
 function renderGantt(){
   const base = "2026-08-01";
   const totalDays = dayOffset("2026-10-23", base);
 
-  // month labels
   const months = [["Agosto","2026-08-01"],["Septiembre","2026-09-01"],["Octubre","2026-10-01"]];
   const monthsWrap = document.getElementById('ganttMonths');
   monthsWrap.innerHTML = months.map(m=>{
@@ -859,6 +1029,8 @@ function renderGantt(){
 
   const rowsWrap = document.getElementById('ganttRows');
   rowsWrap.innerHTML = '';
+  const todayPct = Math.min(100, Math.max(0, (dayOffset(TODAY.toISOString().slice(0,10), base)/totalDays)*100));
+
   state.deliverables.forEach((d,i)=>{
     const startPct = Math.max(0,(dayOffset(d.start, base)/totalDays)*100);
     const endPct = Math.min(100,(dayOffset(d.end, base)/totalDays)*100);
@@ -866,13 +1038,23 @@ function renderGantt(){
 
     const row = document.createElement('div');
     row.className = 'gantt-row';
+    const isOpenSub = !!openGanttSub[i];
     row.innerHTML = `
-      <div class="gantt-label">${d.name.replace(/^\d\.\s*/,'')}</div>
+      <div class="gantt-label ${isOpenSub?'open':''}" onclick="toggleGanttSub(${i})"><span class="mini-chevron">▶</span> ${d.name.replace(/^\d\.\s*/,'')}</div>
       <div class="gantt-track">
         <div class="gantt-bar ${d.status}" style="left:${startPct}%; width:${widthPct}%;">${statusLabel(d.status)}</div>
+        <div class="gantt-today" style="left:${todayPct}%;"></div>
       </div>
     `;
     rowsWrap.appendChild(row);
+
+    const sub = document.createElement('div');
+    sub.className = 'sub-timeline' + (isOpenSub ? ' show' : '');
+    sub.innerHTML = d.activities.map(a=>{
+      const pct = Math.min(100, Math.max(0,(dayOffset(a.date, base)/totalDays)*100));
+      return `<div class="sub-dot ${a.status}" style="left:${pct}%;" title="${a.name} — ${formatDate(a.date)} — ${statusLabel(a.status)}"></div>`;
+    }).join('');
+    rowsWrap.appendChild(sub);
 
     const obs = state.ganttObs[i] || {text:"", required:false};
     const obsRow = document.createElement('div');
@@ -893,12 +1075,15 @@ function renderGantt(){
     } else {
       obsRow.innerHTML = `
         ${isAdmin ? `<button class="obs-btn" onclick="openObsBox(${i})">${obs.text? 'Editar observación':'Agregar observación'}</button>` : ''}
-        ${obs.text ? `<div class="obs-box">${obs.required?'<span class="obs-required">Requiere atención</span>':''}${obs.text}</div>` : (isAdmin? '' : '<div class="synctag">Sin observaciones registradas.</div>')}
+        ${obs.text ? `<div class="obs-box">${obs.required?'<span class="obs-required">Requiere atención</span>':''}${obs.text}</div>` : ''}
       `;
     }
     rowsWrap.appendChild(obsRow);
   });
+
+  renderProgressAndSemaforo();
 }
+function toggleGanttSub(i){ openGanttSub[i] = !openGanttSub[i]; renderGantt(); }
 function openObsBox(i){ openObs[i]=true; renderGantt(); }
 function closeObs(i){ openObs[i]=false; renderGantt(); }
 function saveObs(i){
@@ -944,6 +1129,8 @@ function setCompVal(idx, field, val){
    BOOT / RENDER ALL
 ========================================================= */
 function renderAll(){
+  updateSessionUI();
+  renderReport();
   renderDeliverables();
   if(firstDelivRender){ const b0=document.getElementById('block-0'); if(b0) b0.classList.add('open'); firstDelivRender=false; }
   renderLogs();
@@ -951,13 +1138,11 @@ function renderAll(){
   renderGoals();
   renderGantt();
   renderComps();
-  updateSessionUI();
 }
 
 async function boot(){
   await loadState();
   renderAll();
-  // light polling so visitors see admin updates without a manual reload
   setInterval(async ()=>{
     try{
       const res = await window.storage.get(STORAGE_KEY, true);
@@ -968,7 +1153,7 @@ async function boot(){
           renderAll();
         }
       }
-    }catch(e){ /* storage not available; skip silently */ }
+    }catch(e){ /* almacenamiento no disponible; se omite el sondeo */ }
   }, 20000);
 }
 </script>
