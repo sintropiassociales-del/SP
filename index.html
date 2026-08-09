@@ -244,7 +244,10 @@
     <label>Correo</label>
     <input type="email" id="adminEmail" placeholder="correo@dominio.com" autocomplete="off">
     <label>Contraseña</label>
-    <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
+    <div style="position:relative;">
+      <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off" style="padding-right:70px;">
+      <button type="button" onclick="togglePassVisibility()" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); border:none; background:none; color:var(--purple); font-size:11px; font-weight:600; cursor:pointer;" id="togglePassBtn">Mostrar</button>
+    </div>
     <div class="modal-error" id="loginError"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeLogin()">Cancelar</button>
@@ -423,8 +426,12 @@
 const SITE_CODE = "tijro6-gistyd-Tivrem";
 const ADMIN_EMAIL = "dsalgado@intropiasocial.com";
 const ADMIN_PASS = "poccaf-qopmyb-6xeJzu";
-const STORAGE_KEY = "goyntrack-state-v3";
 const TODAY = new Date(); // fecha real del navegador
+
+/* Pega aquí la URL de tu Web App de Apps Script (ver GOYN_Track_backend.gs).
+   Mientras esté vacía, la plataforma funciona solo en memoria: los cambios
+   se ven durante la sesión pero no se guardan al cerrar la pestaña. */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTpKk8Apjp13v8ZKZikc80FbgmIyOwli_P83QYon1I5Y8yEnRERHXeFyrDJ9tvH1hRiw/exec";
 
 let isAdmin = false;
 let editModeOn = false;
@@ -532,32 +539,39 @@ function setSyncStatus(kind){
   if(!el) return;
   el.classList.remove('ok','err');
   if(kind==='ok'){ el.textContent = 'Cambios guardados ✓'; el.classList.add('ok'); }
-  else if(kind==='err'){ el.textContent = 'Sin conexión al almacenamiento — los cambios solo viven en esta sesión'; el.classList.add('err'); }
+  else if(kind==='err'){ el.textContent = 'No se pudo conectar con el backend — los cambios solo viven en esta sesión'; el.classList.add('err'); }
   else if(kind==='loading'){ el.textContent = 'Cargando información…'; }
   else if(kind==='saving'){ el.textContent = 'Guardando…'; }
+  else if(kind==='unconfigured'){ el.textContent = 'Backend no configurado — los cambios solo viven en esta sesión'; el.classList.add('err'); }
 }
 async function loadState(){
+  if(!APPS_SCRIPT_URL){ setSyncStatus('unconfigured'); return; }
   setSyncStatus('loading');
   try{
-    const res = await window.storage.get(STORAGE_KEY, true);
-    if(res && res.value){
-      const parsed = JSON.parse(res.value);
+    const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now());
+    const text = await res.text();
+    const parsed = JSON.parse(text);
+    if(parsed && Object.keys(parsed).length){
       state = Object.assign(defaultState(), parsed);
     }
     setSyncStatus('ok');
   }catch(e){
-    console.log("Sin estado remoto todavía o almacenamiento no disponible en este entorno.", e);
+    console.log("No se pudo leer el backend de Apps Script.", e);
     setSyncStatus('err');
   }
 }
 async function saveState(){
+  if(!APPS_SCRIPT_URL){ setSyncStatus('unconfigured'); return; }
   setSyncStatus('saving');
   try{
-    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
-    if(!result) throw new Error('sin resultado');
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS con Apps Script
+      body: JSON.stringify(state),
+    });
     setSyncStatus('ok');
   }catch(e){
-    console.log("No se pudo guardar en almacenamiento compartido.", e);
+    console.log("No se pudo guardar en el backend de Apps Script.", e);
     setSyncStatus('err');
   }
 }
@@ -585,9 +599,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
 function onSessionPillClick(){ if(isAdmin){ logout(); } else { openLogin(); } }
 function openLogin(){ document.getElementById('loginModal').classList.add('show'); }
 function closeLogin(){ document.getElementById('loginModal').classList.remove('show'); document.getElementById('loginError').textContent=''; }
+function togglePassVisibility(){
+  const field = document.getElementById('adminPass');
+  const btn = document.getElementById('togglePassBtn');
+  if(field.type==='password'){ field.type='text'; btn.textContent='Ocultar'; }
+  else{ field.type='password'; btn.textContent='Mostrar'; }
+}
 function doLogin(){
   const email = document.getElementById('adminEmail').value.trim().toLowerCase();
-  const pass = document.getElementById('adminPass').value;
+  const pass = document.getElementById('adminPass').value.trim();
   if(email === ADMIN_EMAIL.toLowerCase() && pass === ADMIN_PASS){
     isAdmin = true; closeLogin(); renderAll();
   } else {
@@ -1143,17 +1163,17 @@ function renderAll(){
 async function boot(){
   await loadState();
   renderAll();
+  if(!APPS_SCRIPT_URL) return; // sin backend configurado, no hay nada que sondear
   setInterval(async ()=>{
     try{
-      const res = await window.storage.get(STORAGE_KEY, true);
-      if(res && res.value){
-        const parsed = JSON.parse(res.value);
-        if(JSON.stringify(parsed) !== JSON.stringify(state)){
-          state = Object.assign(defaultState(), parsed);
-          renderAll();
-        }
+      const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now());
+      const text = await res.text();
+      const parsed = JSON.parse(text);
+      if(parsed && Object.keys(parsed).length && JSON.stringify(parsed) !== JSON.stringify(state)){
+        state = Object.assign(defaultState(), parsed);
+        renderAll();
       }
-    }catch(e){ /* almacenamiento no disponible; se omite el sondeo */ }
+    }catch(e){ /* backend no disponible temporalmente; se omite este sondeo */ }
   }, 20000);
 }
 </script>
