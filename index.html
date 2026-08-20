@@ -478,6 +478,7 @@
       <h3 style="margin:0; font-size:15px;">Proyectos existentes</h3>
       <button class="btn ghost" onclick="loadProjectsList()">Actualizar lista</button>
     </div>
+    <div id="newProjectResult"></div>
     <table class="proj-table">
       <thead><tr><th>Proyecto</th><th>Liga</th><th>Código</th><th>Coordinador</th><th>Vigencia</th><th>Estatus</th><th></th></tr></thead>
       <tbody id="projectsTableBody"></tbody>
@@ -727,8 +728,9 @@ function renderProjectGate(gateTab){
   if(codeField) codeField.addEventListener('keydown', e=>{ if(e.key==='Enter') submitCodeGate(); });
 }
 function submitCodeGate(){
-  const val = document.getElementById('gateCodeInput').value.trim();
-  if(val && val === project.accessCode){
+  const val = document.getElementById('gateCodeInput').value.trim().toLowerCase();
+  const expected = (project.accessCode || '').trim().toLowerCase();
+  if(val && val === expected){
     role = 'coordinador';
     enterDashboard();
   } else {
@@ -881,7 +883,7 @@ async function loadProjectsList(){
       tr.innerHTML = `
         <td><b>${p.name}</b></td>
         <td><button class="proj-link-copy" onclick="copyProjectLink('${p.slug}')">Copiar liga</button></td>
-        <td>${p.accessCode}</td>
+        <td>${p.accessCode} <button class="proj-link-copy" onclick="copyText('${p.accessCode}')">copiar</button></td>
         <td>${p.coordinatorEmail || '<span class="empty">Sin asignar</span>'}</td>
         <td>${p.expiresAt || '<span class="empty">Sin vigencia</span>'}</td>
         <td>${statusChip}</td>
@@ -896,9 +898,12 @@ async function loadProjectsList(){
     body.innerHTML = '<tr><td colspan="7" class="empty">No se pudo cargar la lista de proyectos.</td></tr>';
   }
 }
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=> alert('Copiado:\n'+text)).catch(()=> prompt('Copia el texto:', text));
+}
 function copyProjectLink(slug){
   const link = window.location.origin + window.location.pathname + '?p=' + slug;
-  navigator.clipboard.writeText(link).then(()=> alert('Liga copiada:\n'+link)).catch(()=> prompt('Copia la liga:', link));
+  copyText(link);
 }
 function openProjectFromAdmin(slug){ navigateToProject(slug); }
 async function toggleArchive(slug, newArchivedValue){
@@ -939,7 +944,19 @@ async function createProject(){
     document.getElementById('npName').value=''; document.getElementById('npClient').value='';
     document.getElementById('npCode').value=''; document.getElementById('npExpires').value='';
     document.getElementById('npCoordEmail').value=''; document.getElementById('npCoordPass').value='';
-    alert('Proyecto creado. Su liga es:\n'+window.location.origin + window.location.pathname + '?p=' + rec.slug+'\n\nCódigo de acceso: '+rec.accessCode);
+    const link = window.location.origin + window.location.pathname + '?p=' + rec.slug;
+    document.getElementById('newProjectResult').innerHTML = `
+      <div class="new-project-card" style="background:var(--ok-light); border-color:var(--ok);">
+        <b>Proyecto creado: ${rec.name}</b>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <span>Liga: <code>${link}</code></span>
+          <button class="btn small ghost" onclick="copyText('${link}')">Copiar liga</button>
+        </div>
+        <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <span>Código: <code>${rec.accessCode}</code></span>
+          <button class="btn small ghost" onclick="copyText('${rec.accessCode}')">Copiar código</button>
+        </div>
+      </div>`;
     loadProjectsList();
   }catch(e){ alert('No se pudo crear el proyecto. Verifica la conexión con el backend.'); }
 }
