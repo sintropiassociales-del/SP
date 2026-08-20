@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GOYN Track — Sintropía Social</title>
+<title>Sintropía Track</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Open+Sauce+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -21,17 +21,24 @@
   *{box-sizing:border-box;}
   body{margin:0; font-family:'Open Sans', sans-serif; color:var(--ink); background:var(--white);}
   h1,h2,h3,.brand,.tab,.stat-num{font-family:'Open Sauce Sans', sans-serif;}
+  .hidden{display:none !important;}
 
-  /* ---- site gate ---- */
-  #gate{position:fixed; inset:0; background:var(--ink); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px;}
-  .gate-card{background:var(--white); border-radius:14px; padding:40px 36px; width:100%; max-width:380px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.35);}
-  .gate-eyebrow{font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--orange); font-weight:700;}
-  #gateInput{width:100%; text-align:center; letter-spacing:.04em; font-size:14.5px; padding:12px 14px; border:1.5px solid var(--line); border-radius:9px; font-family:'Open Sans'; margin:20px 0 12px;}
-  #gateInput:focus{outline:none; border-color:var(--purple);}
-  .gate-btn{width:100%; background:var(--purple); color:var(--white); border:none; font-family:'Open Sauce Sans'; font-weight:700; font-size:14px; padding:12px; border-radius:9px; cursor:pointer;}
+  /* ---- centered screens (no project / gate / not found / archived) ---- */
+  .center-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:var(--ink);}
+  .center-card{background:var(--white); border-radius:14px; padding:40px 36px; width:100%; max-width:400px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .center-eyebrow{font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--orange); font-weight:700;}
+  .center-title{font-family:'Open Sauce Sans'; font-size:20px; font-weight:700; color:var(--purple); margin:6px 0 4px;}
+  .center-sub{font-size:13px; color:var(--grey); margin-bottom:20px; line-height:1.5;}
+  .gate-tabs{display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; margin-bottom:16px;}
+  .gate-tab{flex:1; padding:9px; font-size:12.5px; font-weight:600; color:var(--grey); background:var(--white); border:none; cursor:pointer;}
+  .gate-tab.active{background:var(--purple); color:var(--white);}
+  input.gate-field{width:100%; text-align:left; font-size:13.5px; padding:11px 13px; border:1.5px solid var(--line); border-radius:9px; font-family:'Open Sans'; margin-bottom:10px;}
+  input.gate-field:focus{outline:none; border-color:var(--purple);}
+  .gate-btn{width:100%; background:var(--purple); color:var(--white); border:none; font-family:'Open Sauce Sans'; font-weight:700; font-size:14px; padding:12px; border-radius:9px; cursor:pointer; margin-top:4px;}
   .gate-btn:hover{background:var(--purple-dark);}
   .gate-error{color:var(--orange-dark); font-size:12.5px; margin-top:10px; min-height:16px; font-weight:600;}
-  .gate-footer-note{font-size:12px; color:var(--grey); margin-top:18px; line-height:1.5;}
+  .gate-admin-link{display:block; margin-top:18px; font-size:12px; color:var(--grey); text-decoration:underline; cursor:pointer; background:none; border:none;}
+  .gate-admin-link:hover{color:var(--purple);}
 
   /* ---- shell ---- */
   #app{display:none;}
@@ -47,10 +54,15 @@
   .sync-status{font-size:11px; color:var(--grey);}
   .sync-status.ok{color:var(--ok);}
   .sync-status.err{color:var(--orange-dark);}
+  .top-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
 
   .session-pill{font-size:12px; font-weight:600; padding:6px 13px; border-radius:20px; cursor:pointer; border:1px solid var(--line); display:flex; align-items:center; gap:7px; background:var(--white); color:var(--grey);}
   .session-pill.admin{background:var(--purple); color:var(--white); border-color:var(--purple);}
+  .session-pill.coord{background:var(--orange); color:var(--white); border-color:var(--orange);}
   .session-pill:hover{border-color:var(--purple);}
+  .view-toggle-btn{font-size:12px; font-weight:600; padding:6px 13px; border-radius:20px; cursor:pointer; border:1px solid var(--purple); background:var(--white); color:var(--purple);}
+  .view-toggle-btn:hover{background:var(--purple-light);}
+  .archived-banner{background:var(--orange-light); color:var(--orange-dark); font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:8px; margin:16px 0;}
 
   .modal-bg{position:fixed; inset:0; background:rgba(31,27,46,.55); z-index:500; display:none; align-items:center; justify-content:center; padding:20px;}
   .modal-bg.show{display:flex;}
@@ -84,13 +96,14 @@
   @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
   h2.panel-title{font-size:18px; margin:0 0 4px;}
   .panel-desc{font-size:13.5px; color:var(--grey); margin:0 0 18px; max-width:660px;}
-  .panel-header-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
 
   .badge{font-size:11px; font-weight:600; padding:3px 9px; border-radius:14px; white-space:nowrap; display:inline-block;}
   .badge.entregado{background:var(--ok-light); color:var(--ok);}
   .badge.revision{background:var(--orange-light); color:var(--orange-dark);}
   .badge.pendiente{background:var(--pending-light); color:var(--pending);}
   select.status-edit{font-family:'Open Sans'; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:var(--white); cursor:pointer; color:var(--ink);}
+  input.mini-date{font-size:11.5px; padding:5px 7px; width:120px;}
+  input.mini-text{font-size:12px; padding:6px 8px;}
 
   .report-box{border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--purple-light); margin-bottom:20px;}
   .report-box .rtitle{font-weight:600; font-size:13.5px;}
@@ -100,23 +113,30 @@
   .dl-btn.outline{background:var(--white); color:var(--purple); border:1px solid var(--purple);}
 
   .deliv-block{border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden;}
-  .deliv-head{padding:15px 18px; display:grid; grid-template-columns:auto 1fr auto auto; gap:14px; align-items:center; cursor:pointer; background:var(--white);}
+  .deliv-head{padding:15px 18px; display:grid; grid-template-columns:auto 1fr auto auto auto; gap:14px; align-items:center; cursor:pointer; background:var(--white);}
   .deliv-head:hover{background:var(--purple-light);}
   .deliv-index{width:32px; height:32px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; flex:none;}
+  .deliv-name-input{font-weight:600; font-size:14px; border:1px solid transparent; padding:4px 6px; border-radius:6px; width:100%;}
+  .deliv-name-input:hover, .deliv-name-input:focus{border-color:var(--line);}
   .deliv-name{font-weight:600; font-size:14.5px;}
-  .deliv-dates{font-size:12px; color:var(--grey); margin-top:2px;}
+  .deliv-dates{font-size:12px; color:var(--grey); margin-top:2px; display:flex; gap:6px; align-items:center;}
   .chevron{color:var(--grey); font-size:12px; transition:transform .2s ease; flex:none;}
   .deliv-block.open .chevron{transform:rotate(180deg);}
-  .activities{max-height:0; overflow:hidden; transition:max-height .25s ease; background:#FBFAFE;}
-  .deliv-block.open .activities{max-height:2400px;}
-  .activity{padding:13px 18px 13px 68px; border-top:1px solid var(--line); display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center;}
-  .act-name{font-weight:600; font-size:13px;}
+  .activities{max-height:0; overflow:hidden; transition:max-height .3s ease; background:#FBFAFE;}
+  .deliv-block.open .activities{max-height:3000px;}
+  .activity{padding:13px 18px 13px 68px; border-top:1px solid var(--line); display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center;}
+  .act-name-input{font-weight:600; font-size:13px; border:1px solid transparent; padding:3px 5px; border-radius:5px; width:100%;}
+  .act-name-input:hover, .act-name-input:focus{border-color:var(--line);}
   .act-desc{font-size:12px; color:var(--grey); margin-top:2px; line-height:1.5;}
   .act-date{font-size:11px; color:var(--purple); margin-top:2px; font-weight:600;}
   .act-link{font-size:11.5px; font-weight:600; color:var(--purple); text-decoration:none; white-space:nowrap; border:1px solid var(--purple-light); padding:5px 10px; border-radius:8px;}
   .act-link:hover{background:var(--purple-light);}
   .act-link.disabled{color:var(--pending); border-color:var(--line); pointer-events:none;}
-  .act-edit-link{width:150px; font-size:11.5px; padding:6px 8px;}
+  .act-edit-link{width:140px; font-size:11.5px; padding:6px 8px;}
+  .add-row-btn{font-size:12px; font-weight:600; color:var(--purple); background:none; border:1px dashed var(--purple-light); padding:8px 14px; border-radius:8px; cursor:pointer; margin-top:6px;}
+  .add-row-btn:hover{background:var(--purple-light);}
+  .remove-x{font-size:12px; color:var(--pending); cursor:pointer; border:none; background:none; padding:4px;}
+  .remove-x:hover{color:var(--red);}
 
   .toolbar-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
   .form-card{border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:22px;}
@@ -145,24 +165,29 @@
 
   .tool-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .tool-card{border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
-  .tool-tag{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--purple);}
-  .tool-name{font-weight:600; margin:5px 0 4px; font-size:14px;}
+  .tool-tag-input{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--purple); border:1px solid transparent; padding:2px 4px; border-radius:5px; width:100%;}
+  .tool-tag-input:hover, .tool-tag-input:focus{border-color:var(--line);}
+  .tool-name-input{font-weight:600; font-size:14px; border:1px solid transparent; padding:3px 5px; border-radius:5px; width:100%; margin:5px 0 4px;}
+  .tool-name-input:hover, .tool-name-input:focus{border-color:var(--line);}
   .tool-note{font-size:12px; color:var(--grey);}
   .tool-notice{margin-top:10px; background:var(--orange-light); color:var(--orange-dark); font-size:12px; font-weight:600; padding:8px 10px; border-radius:8px;}
   .tool-actions{margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-  .dyn-toggle{font-size:12px; font-weight:600; color:var(--purple); background:none; border:1px solid var(--purple-light); padding:6px 12px; border-radius:8px; cursor:pointer; margin-top:12px;}
-  .dyn-toggle:hover{background:var(--purple-light);}
-  .dyn-list{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px; max-height:0; overflow:hidden; transition:max-height .25s ease;}
-  .dyn-list.open{max-height:900px;}
-  .dyn-item{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12.5px; gap:8px; flex-wrap:wrap;}
-  .dyn-item-name{color:var(--ink);}
-  .dyn-admin-controls{display:flex; gap:6px; align-items:center;}
+  .sub-toggle{font-size:12px; font-weight:600; color:var(--purple); background:none; border:1px solid var(--purple-light); padding:6px 12px; border-radius:8px; cursor:pointer; margin-top:12px;}
+  .sub-toggle:hover{background:var(--purple-light);}
+  .sub-list{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px; max-height:0; overflow:hidden; transition:max-height .25s ease;}
+  .sub-list.open{max-height:900px;}
+  .sub-item{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12.5px; gap:8px; flex-wrap:wrap;}
+  .sub-admin-controls{display:flex; gap:6px; align-items:center;}
+  .tool-card-remove{float:right; font-size:11px; color:var(--pending); cursor:pointer; border:none; background:none;}
+  .tool-card-remove:hover{color:var(--red);}
 
   table.smart{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:8px;}
   table.smart th{text-align:left; background:var(--purple); color:var(--white); padding:10px 12px; font-weight:600; font-size:12px;}
-  table.smart td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  table.smart td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
   table.smart tr:nth-child(even) td{background:var(--purple-light);}
-  .smart-note{font-size:12px; color:var(--grey); font-style:italic; margin:0 0 34px;}
+  table.smart td input, table.smart td textarea{border:1px solid transparent; padding:4px 5px; font-size:12.5px;}
+  table.smart td input:hover, table.smart td textarea:hover, table.smart td input:focus, table.smart td textarea:focus{border-color:var(--line);}
+  .smart-note{font-size:12px; color:var(--grey); font-style:italic; margin:0 0 20px;}
 
   .gantt-top{display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:18px;}
   .progress-card{flex:1; min-width:220px; border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
@@ -190,12 +215,13 @@
   .gantt-bar.revision{background:var(--orange);}
   .gantt-bar.entregado{background:var(--ok);}
   .gantt-today{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); opacity:.5;}
-  .sub-timeline{display:none; grid-column:1/-1; margin:0 0 12px 190px; position:relative; height:20px; background:transparent;}
+  .sub-timeline{display:none; grid-column:1/-1; margin:0 0 12px 190px; position:relative; height:20px;}
   .sub-timeline.show{display:block;}
-  .sub-dot{position:absolute; top:2px; width:9px; height:9px; border-radius:50%; transform:translateX(-50%); cursor:default;}
+  .sub-dot{position:absolute; top:2px; width:9px; height:9px; border-radius:50%; transform:translateX(-50%);}
   .sub-dot.pendiente{background:var(--pending);}
   .sub-dot.revision{background:var(--orange);}
   .sub-dot.entregado{background:var(--ok);}
+  .gantt-dates-row{grid-column:1/-1; display:flex; gap:8px; align-items:center; margin:0 0 12px 190px; font-size:11.5px; color:var(--grey);}
   .gantt-obs-row{grid-column:1/-1; display:flex; gap:10px; align-items:flex-start; margin:-2px 0 14px 190px;}
   .obs-btn{font-size:11px; font-weight:600; color:var(--purple); background:none; border:1px dashed var(--purple-light); padding:5px 10px; border-radius:7px; cursor:pointer;}
   .obs-btn:hover{background:var(--purple-light);}
@@ -203,37 +229,45 @@
   .obs-required{display:inline-block; background:var(--orange); color:var(--white); font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:6px;}
 
   .comp{margin-bottom:16px;}
-  .comp-label{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;}
+  .comp-label{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; gap:10px; align-items:center;}
   .comp-label b{font-weight:600;}
+  .comp-name-input{font-size:13px; border:1px solid transparent; padding:3px 5px; border-radius:5px; flex:1;}
+  .comp-name-input:hover, .comp-name-input:focus{border-color:var(--line);}
   .bar-track{height:8px; background:var(--line); border-radius:6px; overflow:hidden; position:relative;}
   .bar-fill{height:100%; border-radius:6px; background:var(--pending);}
   .bar-fill.post{background:linear-gradient(90deg,var(--purple),var(--orange));}
   .legend{display:flex; gap:18px; font-size:12px; color:var(--grey); margin-top:16px; flex-wrap:wrap;}
   .legend span{display:flex; align-items:center; gap:6px;}
   .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
-  .comp-admin-inputs{display:flex; gap:8px; margin-top:6px;}
+  .comp-admin-inputs{display:flex; gap:8px; margin-top:6px; align-items:center;}
   .comp-admin-inputs input{width:70px; font-size:12px; padding:5px 7px;}
   .tip-box{border:1px solid var(--purple-light); background:var(--purple-light); border-radius:10px; padding:14px 16px; font-size:12.5px; color:var(--ink); line-height:1.55; margin-top:22px;}
   .tip-box b{color:var(--purple);}
 
   footer.foot{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); font-size:12px; color:var(--grey); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
-
   #waBtn{position:fixed; bottom:24px; right:24px; z-index:200; display:flex; align-items:center; gap:9px; background:var(--wa); color:var(--white); text-decoration:none; padding:13px 18px 13px 14px; border-radius:30px; font-family:'Open Sauce Sans'; font-weight:600; font-size:13.5px; box-shadow:0 8px 22px rgba(37,211,102,.4); transition:transform .15s ease;}
   #waBtn:hover{transform:translateY(-2px);}
   #waBtn svg{width:20px; height:20px; flex:none;}
+
+  /* ---- projects admin page ---- */
+  .proj-toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
+  .proj-table{width:100%; border-collapse:collapse; font-size:13px;}
+  .proj-table th{text-align:left; background:var(--purple); color:var(--white); padding:10px 12px; font-size:12px; font-weight:600;}
+  .proj-table td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  .proj-table tr:hover td{background:var(--purple-light);}
+  .proj-link-copy{font-size:11px; color:var(--purple); cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;}
+  .status-chip{font-size:11px; font-weight:600; padding:3px 9px; border-radius:14px;}
+  .status-chip.active{background:var(--ok-light); color:var(--ok);}
+  .status-chip.archived{background:var(--pending-light); color:var(--pending);}
+  .status-chip.expired{background:var(--orange-light); color:var(--orange-dark);}
+  .new-project-card{border:1px solid var(--line); border-radius:12px; padding:22px; margin-bottom:26px; background:var(--purple-light);}
 </style>
 </head>
 <body>
 
-<!-- SITE ACCESS GATE -->
-<div id="gate">
-  <div class="gate-card">
-    <div class="gate-eyebrow">Sintropía Social</div>
-    <input type="text" id="gateInput" placeholder="Código de acceso" autocomplete="off">
-    <button class="gate-btn" onclick="checkGateCode()">Entrar</button>
-    <div class="gate-error" id="gateError"></div>
-    <div class="gate-footer-note">Plataforma de seguimiento para GOYN CDMX y YouthBuild México</div>
-  </div>
+<!-- CENTERED SCREENS -->
+<div id="centerScreens" class="center-screen">
+  <div class="center-card" id="centerCard"></div>
 </div>
 
 <!-- ADMIN LOGIN MODAL -->
@@ -253,7 +287,7 @@
       <button class="btn ghost" onclick="closeLogin()">Cancelar</button>
       <button class="btn primary" onclick="doLogin()">Entrar</button>
     </div>
-    <div class="admin-note">Este acceso valida un usuario/contraseña definidos en el código del prototipo. Para producción con datos sensibles se recomienda mover la autenticación a un backend (Apps Script + verificación de sesión).</div>
+    <div class="admin-note">Este acceso valida un usuario/contraseña definidos en el código del prototipo. Para producción con datos sensibles se recomienda mover la autenticación a un backend.</div>
   </div>
 </div>
 
@@ -263,158 +297,197 @@
   <header class="top">
     <div class="brandblock">
       <div class="eyebrow">Sintropía Social</div>
-      <div class="brand">GOYN <span>Track</span></div>
-      <div class="subtitle">Seguimiento de la consultoría de Educación Popular y Planeación Estratégica</div>
+      <div class="brand">Sintropía <span>Track</span></div>
+      <div class="subtitle" id="projectSubtitle">Plataforma de seguimiento de proyectos</div>
     </div>
     <div class="top-right">
-      <div class="session-pill" id="sessionPill" onclick="onSessionPillClick()">Modo visitante · Iniciar sesión</div>
-      <div class="project-meta">
-        <div><b>Cliente:</b> YouthBuild México · Red GOYN CDMX</div>
-        <div><b>Consultor:</b> David Salgado López — Sintropía Social</div>
+      <div class="top-actions">
+        <button class="view-toggle-btn hidden" id="viewToggleBtn" onclick="toggleAdminView()"></button>
+        <div class="session-pill" id="sessionPill" onclick="onSessionPillClick()"></div>
       </div>
+      <div class="project-meta" id="projectMeta"></div>
       <div class="sync-status" id="syncStatus">Cargando información…</div>
     </div>
   </header>
 
-  <section class="overview">
-    <div class="stat"><div class="stat-num" id="statTotal">4</div><div class="stat-label">Entregables contratados</div></div>
-    <div class="stat"><div class="stat-num" id="statActivities">0</div><div class="stat-label">Actividades totales</div></div>
-    <div class="stat"><div class="stat-num" id="statDoneAct">0</div><div class="stat-label">Actividades entregadas</div></div>
-    <div class="stat"><div class="stat-num" id="statSessions">0</div><div class="stat-label">Sesiones registradas</div></div>
-  </section>
+  <div id="archivedBanner" class="archived-banner hidden"></div>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="entregables">Entregables</button>
-    <button class="tab" data-tab="bitacora">Bitácora de sesiones</button>
-    <button class="tab" data-tab="caja">Caja de Herramientas</button>
-    <button class="tab" data-tab="planeacion">Planeación Estratégica</button>
-    <button class="tab" data-tab="evaluacion">Evaluación de competencias</button>
-  </nav>
+  <!-- ============ DASHBOARD VIEW ============ -->
+  <div id="dashboardView">
 
-  <!-- ENTREGABLES -->
-  <section class="panel active" id="panel-entregables">
-    <h2 class="panel-title">Entregables y actividades de la consultoría</h2>
-    <p class="panel-desc">Cada entregable se abre en sus actividades. Solo el administrador puede modificar estatus y ligas de evidencia.</p>
+    <section class="overview">
+      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Entregables</div></div>
+      <div class="stat"><div class="stat-num" id="statActivities">0</div><div class="stat-label">Actividades totales</div></div>
+      <div class="stat"><div class="stat-num" id="statDoneAct">0</div><div class="stat-label">Actividades entregadas</div></div>
+      <div class="stat"><div class="stat-num" id="statSessions">0</div><div class="stat-label">Sesiones registradas</div></div>
+    </section>
 
-    <div class="report-box">
-      <div style="flex:1; min-width:200px;">
-        <div class="rtitle">Informe Final de la Consultoría</div>
-        <div class="rnote" id="reportNote">El administrador podrá adjuntar aquí la liga del informe final.</div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="entregables">Entregables</button>
+      <button class="tab" data-tab="bitacora">Bitácora de sesiones</button>
+      <button class="tab" data-tab="caja">Caja de Herramientas</button>
+      <button class="tab" data-tab="planeacion">Planeación Estratégica</button>
+      <button class="tab" data-tab="evaluacion">Evaluación de competencias</button>
+    </nav>
+
+    <!-- ENTREGABLES -->
+    <section class="panel active" id="panel-entregables">
+      <h2 class="panel-title">Entregables y actividades del proyecto</h2>
+      <p class="panel-desc">Cada entregable se abre en sus actividades. Solo el administrador puede modificar nombres, fechas, estatus y ligas de evidencia.</p>
+
+      <div class="report-box">
+        <div style="flex:1; min-width:200px;">
+          <div class="rtitle">Informe / Reporte Final</div>
+          <div class="rnote" id="reportNote">El administrador podrá adjuntar aquí la liga del informe final.</div>
+        </div>
+        <a class="dl-btn" id="reportDlBtn" href="#" target="_blank" rel="noopener">Descargar reporte final</a>
+        <div id="reportAdminControls" class="hidden">
+          <input type="text" id="reportLinkInput" placeholder="Pegar liga del informe final" style="width:230px; display:inline-block;">
+          <button class="btn primary small" onclick="setReportLink()">Guardar</button>
+        </div>
       </div>
-      <a class="dl-btn" id="reportDlBtn" href="#" target="_blank" rel="noopener">Descargar reporte final</a>
-      <div id="reportAdminControls" style="display:none;">
-        <input type="text" id="reportLinkInput" placeholder="Pegar liga del informe final" style="width:230px; display:inline-block;">
-        <button class="btn primary small" onclick="setReportLink()">Guardar</button>
+
+      <div id="deliverables"></div>
+      <button class="add-row-btn hidden" id="addDelivBtn" onclick="addDeliverable()">+ Agregar entregable</button>
+    </section>
+
+    <!-- BITACORA -->
+    <section class="panel" id="panel-bitacora">
+      <h2 class="panel-title">Bitácora de sesiones</h2>
+      <p class="panel-desc">Cualquier persona con acceso al proyecto puede consultar las bitácoras. Solo el administrador puede registrar, editar o eliminar sesiones.</p>
+      <div class="toolbar-row">
+        <button class="btn ghost" onclick="exportPDF()">Descargar PDF</button>
+        <button class="btn ghost" onclick="exportWord()">Descargar Word</button>
+        <button class="btn ghost" onclick="exportExcel()">Descargar Excel</button>
+        <button class="btn primary hidden" id="editModeBtn" onclick="toggleEditMode()">Habilitar edición</button>
       </div>
-    </div>
+      <div class="form-card hidden" id="logForm">
+        <div class="form-grid">
+          <div><label>Fecha</label><input type="date" id="logDate"></div>
+          <div><label>Dinámica / actividad aplicada</label><input type="text" id="logDyn" placeholder="Ej. Sesión de trabajo 2"></div>
+          <div class="full">
+            <div class="toggle-row">
+              <label class="switch"><input type="checkbox" id="attendeeToggle" onchange="onAttendeeToggle()"><span class="slider"></span></label>
+              <label style="margin:0;">Agregar asistentes por nombre e institución</label>
+            </div>
+          </div>
+          <div class="full" id="simpleAttendWrap"><label>Asistencia</label><input type="number" id="logAttend" placeholder="Ej. 12 personas"></div>
+          <div class="full hidden" id="detailedAttendWrap">
+            <div class="attendee-row">
+              <input type="text" id="attName" placeholder="Nombre">
+              <input type="text" id="attInst" placeholder="Institución">
+              <button class="btn ghost" onclick="addAttendee()">+ Agregar</button>
+            </div>
+            <div id="attendeeChips"></div>
+          </div>
+          <div class="full"><label>Acuerdos y observaciones</label><textarea id="logNotes" placeholder="Acuerdos tomados, evidencias, siguientes pasos..."></textarea></div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="primary" onclick="submitLog()" id="submitLogBtn">Registrar sesión</button>
+          <button class="btn ghost hidden" id="cancelEditBtn" style="margin-top:14px;" onclick="cancelLogEdit()">Cancelar edición</button>
+        </div>
+      </div>
+      <div id="logList"></div>
+    </section>
 
-    <div id="deliverables"></div>
-  </section>
+    <!-- CAJA DE HERRAMIENTAS -->
+    <section class="panel" id="panel-caja">
+      <h2 class="panel-title">Caja de Herramientas</h2>
+      <p class="panel-desc">Repositorio de guías y materiales del proyecto. Los avisos de fecha desaparecen automáticamente al marcar el material como disponible.</p>
+      <div class="tool-grid" id="toolGrid"></div>
+      <button class="add-row-btn hidden" id="addToolBtn" onclick="addTool()">+ Agregar herramienta</button>
+    </section>
 
-  <!-- BITACORA -->
-  <section class="panel" id="panel-bitacora">
-    <h2 class="panel-title">Bitácora de sesiones</h2>
-    <p class="panel-desc">Cualquier persona puede consultar las bitácoras. Solo el administrador puede registrar, editar o eliminar sesiones.</p>
-    <div class="toolbar-row">
-      <button class="btn ghost" onclick="exportPDF()">Descargar PDF</button>
-      <button class="btn ghost" onclick="exportWord()">Descargar Word</button>
-      <button class="btn ghost" onclick="exportExcel()">Descargar Excel</button>
-      <button class="btn primary" id="editModeBtn" style="display:none;" onclick="toggleEditMode()">Habilitar edición</button>
-    </div>
-    <div class="form-card" id="logForm" style="display:none;">
+    <!-- PLANEACION -->
+    <section class="panel" id="panel-planeacion">
+      <h2 class="panel-title">Panel de Planeación Estratégica</h2>
+      <p class="panel-desc">Objetivos y metas SMART trabajados con el equipo del proyecto.</p>
+      <table class="smart">
+        <thead><tr><th style="width:22%">Prioridad de incidencia</th><th style="width:38%">Meta SMART</th><th style="width:18%">Responsable</th><th style="width:16%">Horizonte</th><th style="width:6%"></th></tr></thead>
+        <tbody id="smartBody"></tbody>
+      </table>
+      <button class="add-row-btn hidden" id="addGoalBtn" onclick="addGoal()">+ Agregar prioridad</button>
+      <p class="smart-note">Este cuadro es una base que se puede trabajar y adaptar a las necesidades detectadas en las sesiones de trabajo.</p>
+
+      <h2 class="panel-title">Cronograma general (Gantt automatizado)</h2>
+      <p class="panel-desc">El administrador puede modificar directamente las fechas de cada entregable; el color y el avance se actualizan solos según el estatus asignado en la pestaña Entregables.</p>
+
+      <div class="gantt-top">
+        <div class="progress-card">
+          <div class="progress-head"><span>Avance general del proyecto</span><span id="progressPct">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+        <div class="semaforo-card">
+          <div class="light" id="semaforoLight"></div>
+          <div class="semaforo-text"><b id="semaforoTitle">Calculando…</b><span id="semaforoDesc"></span></div>
+        </div>
+      </div>
+
+      <div class="gantt">
+        <div class="gantt-months" id="ganttMonths"></div>
+        <div id="ganttRows"></div>
+        <div class="legend" style="margin-top:6px;">
+          <span><i class="dot" style="background:var(--pending)"></i> Pendiente</span>
+          <span><i class="dot" style="background:var(--orange)"></i> En revisión</span>
+          <span><i class="dot" style="background:var(--ok)"></i> Entregado</span>
+          <span><i style="display:inline-block; width:2px; height:10px; background:var(--ink); opacity:.5;"></i> Hoy</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- EVALUACION -->
+    <section class="panel" id="panel-evaluacion">
+      <h2 class="panel-title">Evaluación de competencias</h2>
+      <p class="panel-desc">Comparativo pre / post del proceso formativo.</p>
+      <div id="compList"></div>
+      <button class="add-row-btn hidden" id="addCompBtn" onclick="addComp()">+ Agregar competencia</button>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--pending)"></i> Antes</span>
+        <span><i class="dot" style="background:linear-gradient(90deg,var(--purple),var(--orange))"></i> Después</span>
+      </div>
+      <div class="tip-box hidden" id="evalTip">
+        <b>Sugerencia técnica (visible solo para administrador):</b> hoy estos valores se editan a mano. La ruta recomendada para producción es un Google Form pre/post que las personas participantes respondan directamente, con las respuestas cayendo en una Google Sheet; un script de Apps Script calcula los promedios y los expone para que esta gráfica se actualice sola.
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Sintropía Social — Plataforma de seguimiento</span>
+      <span>Desplegable en GitHub Pages con respaldo en Google Sheets / Apps Script</span>
+    </footer>
+  </div>
+
+  <!-- ============ PROJECTS ADMIN VIEW ============ -->
+  <div id="projectsView" class="hidden">
+    <h2 class="panel-title">Gestión de proyectos</h2>
+    <p class="panel-desc">Crea, comparte, archiva o elimina proyectos. Cada proyecto tiene su propia liga y su propio código de acceso.</p>
+
+    <div class="new-project-card">
+      <h3 style="margin:0 0 12px; font-size:15px; color:var(--purple);">+ Nuevo proyecto</h3>
       <div class="form-grid">
-        <div><label>Fecha</label><input type="date" id="logDate"></div>
-        <div><label>Dinámica / actividad aplicada</label><input type="text" id="logDyn" placeholder="Ej. Taller de Facilitación — sesión 2"></div>
-        <div class="full">
-          <div class="toggle-row">
-            <label class="switch"><input type="checkbox" id="attendeeToggle" onchange="onAttendeeToggle()"><span class="slider"></span></label>
-            <label style="margin:0;">Agregar asistentes por nombre e institución</label>
-          </div>
-        </div>
-        <div class="full" id="simpleAttendWrap"><label>Asistencia (GAJ)</label><input type="number" id="logAttend" placeholder="Ej. 12 personas"></div>
-        <div class="full" id="detailedAttendWrap" style="display:none;">
-          <div class="attendee-row">
-            <input type="text" id="attName" placeholder="Nombre">
-            <input type="text" id="attInst" placeholder="Institución">
-            <button class="btn ghost" onclick="addAttendee()">+ Agregar</button>
-          </div>
-          <div id="attendeeChips"></div>
-        </div>
-        <div class="full"><label>Acuerdos y observaciones</label><textarea id="logNotes" placeholder="Acuerdos tomados, evidencias, siguientes pasos..."></textarea></div>
+        <div><label>Nombre del proyecto</label><input type="text" id="npName" placeholder="Ej. Diagnóstico organizacional — Cliente X"></div>
+        <div><label>Cliente</label><input type="text" id="npClient" placeholder="Nombre del cliente"></div>
+        <div><label>Código de acceso</label><input type="text" id="npCode" placeholder="Se genera automáticamente"></div>
+        <div><label>Vigencia (opcional)</label><input type="date" id="npExpires"></div>
+        <div><label>Correo del coordinador (opcional)</label><input type="email" id="npCoordEmail" placeholder="correo@cliente.com"></div>
+        <div><label>Contraseña del coordinador (opcional)</label><input type="text" id="npCoordPass" placeholder="Contraseña"></div>
       </div>
-      <div style="display:flex; gap:10px;">
-        <button class="primary" onclick="submitLog()" id="submitLogBtn">Registrar sesión</button>
-        <button class="btn ghost" id="cancelEditBtn" style="display:none; margin-top:14px;" onclick="cancelLogEdit()">Cancelar edición</button>
-      </div>
+      <button class="primary" onclick="createProject()">Crear proyecto</button>
     </div>
-    <div id="logList"></div>
-  </section>
 
-  <!-- CAJA DE HERRAMIENTAS -->
-  <section class="panel" id="panel-caja">
-    <h2 class="panel-title">Caja de Herramientas y Manual de Facilitación</h2>
-    <p class="panel-desc">Repositorio de guías y dinámicas entregadas al GAJ. Los avisos de fecha desaparecen automáticamente al subir el material.</p>
-    <div class="tool-grid" id="toolGrid"></div>
-  </section>
-
-  <!-- PLANEACION -->
-  <section class="panel" id="panel-planeacion">
-    <h2 class="panel-title">Panel de Planeación Estratégica 2026–2029</h2>
-    <p class="panel-desc">Objetivos y metas SMART trabajados por el GAJ en el taller de co-creación, visibles para todo el equipo GOYN.</p>
-    <table class="smart">
-      <thead><tr><th style="width:22%">Prioridad de incidencia</th><th style="width:38%">Meta SMART</th><th style="width:18%">Responsable</th><th style="width:22%">Horizonte</th></tr></thead>
-      <tbody id="smartBody"></tbody>
+    <div class="proj-toolbar">
+      <h3 style="margin:0; font-size:15px;">Proyectos existentes</h3>
+      <button class="btn ghost" onclick="loadProjectsList()">Actualizar lista</button>
+    </div>
+    <table class="proj-table">
+      <thead><tr><th>Proyecto</th><th>Liga</th><th>Código</th><th>Coordinador</th><th>Vigencia</th><th>Estatus</th><th></th></tr></thead>
+      <tbody id="projectsTableBody"></tbody>
     </table>
-    <p class="smart-note">Este cuadro es una base que se puede trabajar y adaptar a las necesidades detectadas en las sesiones de trabajo.</p>
+  </div>
 
-    <h2 class="panel-title">Cronograma general (Gantt automatizado)</h2>
-    <p class="panel-desc">Se actualiza solo con el estatus que el administrador asigna a cada entregable y actividad en la pestaña Entregables. Da clic en el nombre de un entregable para ver sus actividades sobre la línea de tiempo.</p>
-
-    <div class="gantt-top">
-      <div class="progress-card">
-        <div class="progress-head"><span>Avance general del proyecto</span><span id="progressPct">0%</span></div>
-        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      </div>
-      <div class="semaforo-card">
-        <div class="light" id="semaforoLight"></div>
-        <div class="semaforo-text"><b id="semaforoTitle">Calculando…</b><span id="semaforoDesc"></span></div>
-      </div>
-    </div>
-
-    <div class="gantt">
-      <div class="gantt-months" id="ganttMonths"></div>
-      <div id="ganttRows"></div>
-      <div class="legend" style="margin-top:6px;">
-        <span><i class="dot" style="background:var(--pending)"></i> Pendiente</span>
-        <span><i class="dot" style="background:var(--orange)"></i> En revisión</span>
-        <span><i class="dot" style="background:var(--ok)"></i> Entregado</span>
-        <span><i style="display:inline-block; width:2px; height:10px; background:var(--ink); opacity:.5;"></i> Hoy</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- EVALUACION -->
-  <section class="panel" id="panel-evaluacion">
-    <h2 class="panel-title">Evaluación de competencias de facilitación</h2>
-    <p class="panel-desc">Comparativo pre / post taller, exigido para el Informe Final de la Consultoría.</p>
-    <div id="compList"></div>
-    <div class="legend">
-      <span><i class="dot" style="background:var(--pending)"></i> Antes del taller</span>
-      <span><i class="dot" style="background:linear-gradient(90deg,var(--purple),var(--orange))"></i> Después del taller</span>
-    </div>
-    <div class="tip-box" id="evalTip" style="display:none;">
-      <b>Sugerencia técnica (visible solo para administrador):</b> hoy estos valores se editan a mano como demostración. La ruta recomendada para producción es un Google Form pre/post que el GAJ responde directamente, con las respuestas cayendo en una Google Sheet; un script de Apps Script calcula los promedios y los expone como JSON para que esta gráfica se actualice sola, sin subir Excel manualmente — el mismo patrón que ya usas en SintropíaDash y JobMatch Pro.
-    </div>
-  </section>
-
-  <footer class="foot">
-    <span>Sintropía Social — Plataforma de seguimiento</span>
-    <span id="syncFooter">Desplegable en GitHub Pages con respaldo en Google Sheets / Apps Script</span>
-  </footer>
 </div>
 </div>
 
-<a id="waBtn" href="https://wa.me/525563414907?text=Hola%20David%2C%20tengo%20una%20duda%20sobre%20la%20consultor%C3%ADa%20YouthBuild%20M%C3%A9xico%20%7C%20GOYN%20CDMX." target="_blank" rel="noopener">
+<a id="waBtn" class="hidden" href="https://wa.me/525563414907?text=Hola%20David%2C%20tengo%20una%20duda%20sobre%20un%20proyecto%20en%20Sintrop%C3%ADa%20Track." target="_blank" rel="noopener">
   <svg viewBox="0 0 32 32" fill="currentColor"><path d="M16.001 3C9.373 3 4 8.373 4 15c0 2.386.702 4.607 1.912 6.47L4 29l7.72-1.876A11.94 11.94 0 0 0 16.001 27C22.628 27 28 21.627 28 15S22.628 3 16.001 3zm0 21.75a9.71 9.71 0 0 1-4.95-1.354l-.355-.21-4.583 1.113 1.144-4.463-.232-.366A9.72 9.72 0 0 1 5.75 15c0-5.66 4.59-10.25 10.251-10.25S26.25 9.34 26.25 15 21.662 24.75 16.001 24.75zm5.633-7.646c-.309-.155-1.828-.902-2.111-1.005-.283-.103-.489-.155-.695.155-.206.31-.798 1.005-.978 1.211-.18.206-.36.232-.669.077-.309-.155-1.305-.481-2.486-1.534-.919-.82-1.539-1.833-1.72-2.143-.18-.31-.019-.477.136-.631.14-.14.309-.361.463-.542.155-.18.206-.31.309-.516.103-.206.052-.387-.026-.542-.077-.155-.695-1.675-.953-2.293-.251-.601-.506-.52-.695-.53-.18-.008-.386-.01-.592-.01a1.14 1.14 0 0 0-.824.386c-.283.31-1.08 1.056-1.08 2.576s1.106 2.988 1.26 3.194c.155.206 2.176 3.322 5.27 4.658.736.318 1.31.508 1.758.65.738.235 1.41.202 1.941.123.592-.089 1.828-.747 2.086-1.469.258-.722.258-1.34.18-1.469-.077-.129-.283-.206-.592-.361z"/></svg>
   Escríbeme por WhatsApp
 </a>
@@ -423,116 +496,85 @@
 /* =========================================================
    CONFIG
 ========================================================= */
-const SITE_CODE = "tijro6-gistyd-Tivrem";
 const ADMIN_EMAIL = "dsalgado@sintropiasocial.com";
 const ADMIN_PASS = "poccaf-qopmyb-6xeJzu";
-const TODAY = new Date(); // fecha real del navegador
-
-/* Pega aquí la URL de tu Web App de Apps Script (ver GOYN_Track_backend.gs).
-   Mientras esté vacía, la plataforma funciona solo en memoria: los cambios
-   se ven durante la sesión pero no se guardan al cerrar la pestaña. */
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTpKk8Apjp13v8ZKZikc80FbgmIyOwli_P83QYon1I5Y8yEnRERHXeFyrDJ9tvH1hRiw/exec";
+const TODAY = new Date();
+const TODAY_ISO = TODAY.toISOString().slice(0,10);
 
-let isAdmin = false;
+let role = 'none'; // 'none' | 'admin' | 'coordinador'
+let currentSlug = null;
+let project = null; // full record from backend
+let adminView = 'dashboard'; // 'dashboard' | 'projects'
 let editModeOn = false;
 let attendeesDraft = [];
 let editingLogId = null;
 let openObs = {};
 let openGanttSub = {};
-let dynListOpen = false;
 
 /* =========================================================
-   DEFAULT STATE
+   HELPERS
 ========================================================= */
-function defaultState(){
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function slugify(str){
+  return (str||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'proyecto';
+}
+function genCode(){
+  const chars='abcdefghjkmnpqrstuvwxyz23456789';
+  function grp(){ let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)]; return s; }
+  return grp()+'-'+grp()+'-'+grp();
+}
+function formatDate(iso){
+  if(!iso) return '';
+  const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const d = new Date(iso+"T00:00:00");
+  if(isNaN(d)) return iso;
+  return d.getDate()+" "+meses[d.getMonth()];
+}
+function dayOffset(dateStr, baseStr){ return (new Date(dateStr+"T00:00:00") - new Date(baseStr+"T00:00:00")) / 86400000; }
+function statusLabel(s){ return s==='entregado' ? 'Entregado' : (s==='revision' ? 'En revisión' : 'Pendiente'); }
+function isAdmin(){ return role === 'admin'; }
+function canView(){ return role === 'admin' || role === 'coordinador'; }
+
+/* =========================================================
+   DEFAULT PROJECT DATA (generic template)
+========================================================= */
+function defaultProjectData(){
   return {
+    client: "",
     reportFinal: { link:"", status:"pendiente" },
     deliverables: [
-      {
-        name:"1. Plan de Trabajo y Diseño Metodológico",
-        dates:"Entrega 24 ago · Revisión 28 ago · Pago 4 sep (30%)",
-        start:"2026-08-01", end:"2026-08-24",
-        status:"entregado",
-        activities:[
-          {name:"1.1 Diagnóstico rápido con el GAJ", desc:"Grupo focal y entrevistas breves con integrantes del GAJ y equipo técnico para identificar tensiones de liderazgo y lenguaje propio del colectivo.", date:"2026-08-06", status:"entregado", link:""},
-          {name:"1.2 Guiones de sesión", desc:"Guiones detallados del Taller de Facilitación, Forma a Formadores y Planeación Estratégica, listos para revisión de GOYN.", date:"2026-08-11", status:"entregado", link:""},
-          {name:"1.3 Cronograma validado", desc:"Calendario operativo con fechas de entrega, revisión y pago alineado a esta convocatoria.", date:"2026-08-14", status:"entregado", link:""},
-          {name:"1.4 Validación del enfoque de planeación con GOYN", desc:"Sesión breve para acordar con la Dirección de GOYN CDMX el alcance de la planeación estratégica que se co-creará con el GAJ.", date:"2026-08-18", status:"entregado", link:""},
-          {name:"1.5 Definición de indicadores de seguimiento", desc:"Batería inicial de indicadores para dar trazabilidad a la hoja de ruta 2026–2029 desde el arranque del proyecto.", date:"2026-08-21", status:"revision", link:""},
-        ]
-      },
-      {
-        name:"2. Caja de Herramientas y Manual de Facilitación",
-        dates:"Entrega 14 sep · Revisión 18 sep · Pago 25 sep (30%)",
-        start:"2026-08-25", end:"2026-09-14",
-        status:"revision",
-        activities:[
-          {name:"2.1 Taller de Facilitación (3 sesiones)", desc:"Metodologías participativas y manejo de grupos juveniles, con co-creación.", date:"2026-08-28", status:"entregado", link:""},
-          {name:"2.2 Ciclo de práctica supervisada (Forma a Formadores)", desc:"Cada integrante del GAJ facilita una dinámica ante el grupo con retroalimentación estructurada.", date:"2026-09-02", status:"revision", link:""},
-          {name:"2.3 Manual de Facilitación y Caja de Herramientas", desc:"Guía práctica en lenguaje accesible con dinámicas de grupo, gestión de plenarias y repositorio descargable.", date:"2026-09-08", status:"pendiente", link:""},
-          {name:"2.4 Mapeo de capacidades instaladas en el GAJ", desc:"Registro de qué integrantes quedan habilitados para replicar cada tipo de dinámica.", date:"2026-09-10", status:"pendiente", link:""},
-          {name:"2.5 Diseño del mecanismo de acompañamiento post-taller", desc:"Define cómo el GAJ podrá resolver dudas de facilitación una vez cerrada la consultoría.", date:"2026-09-12", status:"pendiente", link:""},
-        ]
-      },
-      {
-        name:"3. Guía metodológica de Planeación Estratégica",
-        dates:"Entrega 5 oct · Revisión 9 oct · Pago 16 oct (30%)",
-        start:"2026-09-15", end:"2026-10-05",
-        status:"pendiente",
-        activities:[
-          {name:"3.1 Taller de Planeación Estratégica participativa", desc:"El GAJ, ya formado como facilitador, conduce las sesiones de planeación con el equipo GOYN.", date:"2026-09-18", status:"pendiente", link:""},
-          {name:"3.2 Sistematización de objetivos y metas SMART", desc:"Vaciado y depuración de los acuerdos del taller en el panel de Planeación Estratégica.", date:"2026-09-23", status:"pendiente", link:""},
-          {name:"3.3 Redacción de la Guía Metodológica", desc:"Documento con instrumentos que garantizan que el GAJ pueda replicar el proceso de planeación.", date:"2026-09-28", status:"pendiente", link:""},
-          {name:"3.4 Validación de metas SMART con GOYN CDMX", desc:"Sesión de cierre donde la Dirección revisa y avala la hoja de ruta 2026–2029.", date:"2026-10-01", status:"pendiente", link:""},
-          {name:"3.5 Diseño del mecanismo de monitoreo trimestral", desc:"Formato y calendario para que GOYN dé seguimiento a las metas SMART.", date:"2026-10-03", status:"pendiente", link:""},
-        ]
-      },
-      {
-        name:"4. Informe Final de la Consultoría",
-        dates:"Entrega 12 oct · Revisión 16 oct · Pago 23 oct (10%)",
-        start:"2026-10-06", end:"2026-10-12",
-        status:"pendiente",
-        activities:[
-          {name:"4.1 Evaluación de competencias (pre/post)", desc:"Aplicación y análisis del instrumento de competencias de facilitación transferidas al GAJ.", date:"2026-10-06", status:"pendiente", link:""},
-          {name:"4.2 Memoria de sesiones", desc:"Sistematización narrativa y fotográfica de todas las sesiones impartidas.", date:"2026-10-08", status:"pendiente", link:""},
-          {name:"4.3 Recomendaciones de sostenibilidad", desc:"Cierre del informe con recomendaciones para dar continuidad al proceso.", date:"2026-10-09", status:"pendiente", link:""},
-          {name:"4.4 Presentación de la hoja de ruta ante el equipo GOYN", desc:"Sesión final de socialización de la planeación estratégica 2026–2029.", date:"2026-10-10", status:"pendiente", link:""},
-          {name:"4.5 Plan de transferencia y cierre de acompañamiento", desc:"Formaliza qué queda en manos del GAJ y qué requeriría una siguiente fase.", date:"2026-10-12", status:"pendiente", link:""},
-        ]
-      },
+      { id: uid(), name:"Entregable 1", start:"", end:"", status:"pendiente",
+        activities:[ { id: uid(), name:"Actividad 1", desc:"", date:"", status:"pendiente", link:"" } ] }
     ],
-    tools: {
-      educacionPopular:{tag:"Educación Popular", name:"Guía de apertura y cierre de plenarias", note:"Formato imprimible, lenguaje accesible.", due:"14 de septiembre de 2026", status:"pendiente", link:""},
-      facilitacion:{tag:"Facilitación", name:"Repertorio de dinámicas para grupos juveniles", note:"12 dinámicas clasificadas por objetivo.", due:"14 de septiembre de 2026",
-        dinamicas: Array.from({length:12}, (_,i)=>({name:"Dinámica "+(i+1), status:"pendiente", link:""}))
-      },
-      formaFormadores:{tag:"Forma a Formadores", name:"Rúbrica de retroalimentación entre pares", note:"Usada en la práctica supervisada del GAJ.", due:"14 de septiembre de 2026", status:"pendiente", link:""},
-      planeacionTpl:{tag:"Planeación Estratégica", name:"Plantilla de metas SMART", note:"Vinculada al panel de Planeación Estratégica.", due:"5 de octubre de 2026", status:"pendiente", link:""},
-    },
-    logs: [
-      {id:1, date:"2026-08-24", mode:"simple", attendCount:14, attendees:[], dyn:"Diagnóstico rápido — grupo focal inicial", notes:"Se identifican tres tensiones internas de liderazgo; el GAJ nombra la falta de espacios propios de decisión como reto principal."}
+    tools: [
+      { id: uid(), tag:"General", name:"Herramienta 1", note:"", due:"", status:"pendiente", link:"", subitems:[] }
     ],
+    logs: [],
     goals: [
-      {area:"Inclusión socioproductiva juvenil", meta:"Aumentar en 20% la vinculación laboral formal de jóvenes atendidos por el GAJ en 12 meses.", resp:"GAJ + equipo GOYN", horizonte:"2026–2027"},
-      {area:"Fortalecimiento del GAJ", meta:"Formar a 8 integrantes del GAJ como facilitadores certificados internamente.", resp:"GAJ", horizonte:"2026 (Fase 2)"},
-      {area:"Sostenibilidad de la Red", meta:"Institucionalizar 2 alianzas territoriales nuevas para la Red GOYN CDMX.", resp:"Dirección GOYN CDMX", horizonte:"2027–2029"},
-      {area:"Incidencia territorial", meta:"Posicionar al GAJ como interlocutor reconocido ante 3 actores clave del ecosistema de empleabilidad juvenil en CDMX.", resp:"GAJ + Dirección GOYN CDMX", horizonte:"2026–2028"},
-      {area:"Gestión del conocimiento", meta:"Documentar y publicar 1 sistematización anual de aprendizajes del GAJ para replicabilidad en otras ciudades GOYN.", resp:"Equipo técnico GOYN", horizonte:"2027–2029"},
+      { id: uid(), area:"", meta:"", resp:"", horizonte:"" }
     ],
-    ganttObs: {0:{text:"", required:false}, 1:{text:"", required:false}, 2:{text:"", required:false}, 3:{text:"", required:false}},
+    ganttObs: {},
     comps: [
-      {name:"Manejo de plenarias", pre:35, post:80},
-      {name:"Diseño de dinámicas participativas", pre:40, post:85},
-      {name:"Gestión de conflictos en el grupo", pre:30, post:70},
-      {name:"Facilitación de planeación estratégica", pre:20, post:75},
+      { id: uid(), name:"Competencia 1", pre:0, post:0 }
     ],
   };
 }
-
-let state = defaultState();
+function defaultProjectRecord(name, client){
+  const slug = slugify(name) + '-' + Math.random().toString(36).slice(2,6);
+  return {
+    slug, name, client: client||'',
+    accessCode: genCode(),
+    coordinatorEmail: "", coordinatorPass: "",
+    expiresAt: "", archived: false,
+    createdAt: new Date().toISOString(), updatedAt: "",
+    data: defaultProjectData(),
+  };
+}
 
 /* =========================================================
-   STORAGE
+   BACKEND
 ========================================================= */
 function setSyncStatus(kind){
   const el = document.getElementById('syncStatus');
@@ -542,61 +584,171 @@ function setSyncStatus(kind){
   else if(kind==='err'){ el.textContent = 'No se pudo conectar con el backend — los cambios solo viven en esta sesión'; el.classList.add('err'); }
   else if(kind==='loading'){ el.textContent = 'Cargando información…'; }
   else if(kind==='saving'){ el.textContent = 'Guardando…'; }
-  else if(kind==='unconfigured'){ el.textContent = 'Backend no configurado — los cambios solo viven en esta sesión'; el.classList.add('err'); }
 }
-async function loadState(){
-  if(!APPS_SCRIPT_URL){ setSyncStatus('unconfigured'); return; }
-  setSyncStatus('loading');
-  try{
-    const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now());
-    const text = await res.text();
-    const parsed = JSON.parse(text);
-    if(parsed && Object.keys(parsed).length){
-      state = Object.assign(defaultState(), parsed);
-    }
-    setSyncStatus('ok');
-  }catch(e){
-    console.log("No se pudo leer el backend de Apps Script.", e);
-    setSyncStatus('err');
-  }
+async function fetchProject(slug){
+  const res = await fetch(APPS_SCRIPT_URL + '?slug=' + encodeURIComponent(slug) + '&t=' + Date.now());
+  const text = await res.text();
+  return JSON.parse(text);
 }
-async function saveState(){
-  if(!APPS_SCRIPT_URL){ setSyncStatus('unconfigured'); return; }
+async function fetchProjectsList(){
+  const res = await fetch(APPS_SCRIPT_URL + '?action=list&t=' + Date.now());
+  const text = await res.text();
+  return JSON.parse(text);
+}
+async function saveProject(){
+  if(!project) return;
   setSyncStatus('saving');
   try{
+    project.data.client = project.client || project.data.client;
     await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS con Apps Script
-      body: JSON.stringify(state),
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(project),
     });
     setSyncStatus('ok');
   }catch(e){
-    console.log("No se pudo guardar en el backend de Apps Script.", e);
+    console.log('No se pudo guardar el proyecto.', e);
     setSyncStatus('err');
   }
 }
+async function deleteProjectRemote(slug){
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'delete', slug }),
+    });
+  }catch(e){ console.log('No se pudo eliminar el proyecto.', e); }
+}
 
 /* =========================================================
-   SITE GATE
+   BOOT / ROUTING
 ========================================================= */
-function checkGateCode(){
-  const val = document.getElementById('gateInput').value.trim();
-  if(val === SITE_CODE){
-    document.getElementById('gate').style.display='none';
-    document.getElementById('app').style.display='block';
-    boot();
-  } else {
-    document.getElementById('gateError').textContent = 'Código incorrecto. Verifica mayúsculas y guiones.';
+function getSlugFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('p');
+}
+function navigateToProject(slug){
+  const url = new URL(window.location.href);
+  url.searchParams.set('p', slug);
+  window.location.href = url.toString();
+}
+function isExpired(rec){
+  if(!rec.expiresAt) return false;
+  return rec.expiresAt < TODAY_ISO;
+}
+
+async function boot(){
+  currentSlug = getSlugFromUrl();
+  if(!currentSlug){
+    renderNoProjectScreen();
+    return;
+  }
+  setSyncStatus('loading');
+  try{
+    const rec = await fetchProject(currentSlug);
+    if(!rec || !rec.slug){
+      renderNotFoundScreen();
+      return;
+    }
+    project = rec;
+    project.data = Object.assign(defaultProjectData(), rec.data || {});
+    setSyncStatus('ok');
+    if((project.archived || isExpired(project))){
+      renderArchivedGate();
+    } else {
+      renderProjectGate();
+    }
+  }catch(e){
+    console.log('Error al cargar el proyecto.', e);
+    setSyncStatus('err');
+    renderNotFoundScreen(true);
   }
 }
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('gateInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkGateCode(); });
-});
+
+function showCenterScreen(html){
+  document.getElementById('app').style.display='none';
+  document.getElementById('centerScreens').style.display='flex';
+  document.getElementById('centerCard').innerHTML = html;
+  document.getElementById('waBtn').classList.add('hidden');
+}
+function hideCenterScreen(){
+  document.getElementById('centerScreens').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+function renderNoProjectScreen(){
+  showCenterScreen(`
+    <div class="center-eyebrow">Sintropía Social</div>
+    <div class="center-title">Sintropía Track</div>
+    <div class="center-sub">Esta liga no corresponde a ningún proyecto específico. Si eres del equipo consultor, inicia sesión para administrar tus proyectos.</div>
+    <button class="gate-btn" onclick="openLogin()">Iniciar sesión como administrador</button>
+  `);
+}
+function renderNotFoundScreen(errorMode){
+  showCenterScreen(`
+    <div class="center-eyebrow">Sintropía Social</div>
+    <div class="center-title">Proyecto no encontrado</div>
+    <div class="center-sub">${errorMode ? 'No se pudo conectar con el backend en este momento.' : 'La liga que abriste no corresponde a ningún proyecto activo. Verifica la dirección o contacta a Sintropía Social.'}</div>
+    <button class="gate-btn" onclick="openLogin()">Iniciar sesión como administrador</button>
+  `);
+}
+function renderArchivedGate(){
+  showCenterScreen(`
+    <div class="center-eyebrow">Sintropía Social</div>
+    <div class="center-title">${project.name}</div>
+    <div class="center-sub">${project.archived ? 'Este proyecto ha sido archivado.' : 'La vigencia de esta liga terminó.'} Los datos no se han eliminado. Si eres del equipo consultor, inicia sesión para revisarlo o reactivarlo.</div>
+    <button class="gate-btn" onclick="openLogin()">Iniciar sesión como administrador</button>
+  `);
+}
+
+function renderProjectGate(gateTab){
+  gateTab = gateTab || 'code';
+  showCenterScreen(`
+    <div class="center-eyebrow">Sintropía Social</div>
+    <div class="center-title">${project.name}</div>
+    <div class="center-sub">Plataforma de seguimiento del proyecto${project.client? ' — '+project.client:''}.</div>
+    <div class="gate-tabs">
+      <button class="gate-tab ${gateTab==='code'?'active':''}" onclick="renderProjectGate('code')">Tengo un código</button>
+      <button class="gate-tab ${gateTab==='coord'?'active':''}" onclick="renderProjectGate('coord')">Soy coordinador</button>
+    </div>
+    ${gateTab==='code' ? `
+      <input type="text" class="gate-field" id="gateCodeInput" placeholder="Código de acceso" autocomplete="off">
+      <button class="gate-btn" onclick="submitCodeGate()">Entrar</button>
+    ` : `
+      <input type="email" class="gate-field" id="gateCoordEmail" placeholder="Correo" autocomplete="off">
+      <input type="password" class="gate-field" id="gateCoordPass" placeholder="Contraseña" autocomplete="off">
+      <button class="gate-btn" onclick="submitCoordGate()">Entrar</button>
+    `}
+    <div class="gate-error" id="gateError"></div>
+    <button class="gate-admin-link" onclick="openLogin()">¿Eres del equipo consultor? Iniciar sesión como administrador</button>
+  `);
+  const codeField = document.getElementById('gateCodeInput');
+  if(codeField) codeField.addEventListener('keydown', e=>{ if(e.key==='Enter') submitCodeGate(); });
+}
+function submitCodeGate(){
+  const val = document.getElementById('gateCodeInput').value.trim();
+  if(val && val === project.accessCode){
+    role = 'coordinador';
+    enterDashboard();
+  } else {
+    document.getElementById('gateError').textContent = 'Código incorrecto.';
+  }
+}
+function submitCoordGate(){
+  const email = document.getElementById('gateCoordEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('gateCoordPass').value.trim();
+  if(project.coordinatorEmail && email===project.coordinatorEmail.toLowerCase() && pass===project.coordinatorPass){
+    role = 'coordinador';
+    enterDashboard();
+  } else {
+    document.getElementById('gateError').textContent = 'Correo o contraseña incorrectos.';
+  }
+}
 
 /* =========================================================
-   ADMIN LOGIN
+   ADMIN LOGIN (global, superadmin)
 ========================================================= */
-function onSessionPillClick(){ if(isAdmin){ logout(); } else { openLogin(); } }
 function openLogin(){ document.getElementById('loginModal').classList.add('show'); }
 function closeLogin(){ document.getElementById('loginModal').classList.remove('show'); document.getElementById('loginError').textContent=''; }
 function togglePassVisibility(){
@@ -609,20 +761,85 @@ function doLogin(){
   const email = document.getElementById('adminEmail').value.trim().toLowerCase();
   const pass = document.getElementById('adminPass').value.trim();
   if(email === ADMIN_EMAIL.toLowerCase() && pass === ADMIN_PASS){
-    isAdmin = true; closeLogin(); renderAll();
+    role = 'admin';
+    closeLogin();
+    if(project){ enterDashboard(); }
+    else { adminView='projects'; enterProjectsAdmin(); }
   } else {
     document.getElementById('loginError').textContent = 'Correo o contraseña incorrectos.';
   }
 }
-function logout(){ isAdmin = false; editModeOn = false; renderAll(); }
-function updateSessionUI(){
+function logout(){
+  role = 'none'; editModeOn = false;
+  if(!project){ renderNoProjectScreen(); return; }
+  if(project.archived || isExpired(project)){ renderArchivedGate(); }
+  else { renderProjectGate(); }
+}
+function onSessionPillClick(){ if(role!=='none'){ logout(); } else { openLogin(); } }
+
+/* =========================================================
+   ENTER DASHBOARD / VIEW SWITCH
+========================================================= */
+function enterDashboard(){
+  hideCenterScreen();
+  adminView = 'dashboard';
+  document.getElementById('dashboardView').classList.remove('hidden');
+  document.getElementById('projectsView').classList.add('hidden');
+  document.getElementById('waBtn').classList.remove('hidden');
+  updateHeaderUI();
+  renderAll();
+}
+async function enterProjectsAdmin(){
+  hideCenterScreen();
+  document.getElementById('dashboardView').classList.add('hidden');
+  document.getElementById('projectsView').classList.remove('hidden');
+  document.getElementById('waBtn').classList.add('hidden');
+  updateHeaderUI();
+  await loadProjectsList();
+}
+function toggleAdminView(){
+  if(adminView==='dashboard'){ adminView='projects'; enterProjectsAdmin(); }
+  else { adminView='dashboard'; if(project){ enterDashboard(); } else { renderNoProjectScreen(); } }
+}
+
+function updateHeaderUI(){
   const pill = document.getElementById('sessionPill');
-  if(isAdmin){ pill.textContent = 'Administrador · Cerrar sesión'; pill.classList.add('admin'); }
-  else { pill.textContent = 'Modo visitante · Iniciar sesión'; pill.classList.remove('admin'); }
-  document.getElementById('editModeBtn').style.display = isAdmin ? 'inline-block' : 'none';
-  document.getElementById('evalTip').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('reportAdminControls').style.display = isAdmin ? 'flex' : 'none';
-  if(!isAdmin){ document.getElementById('logForm').style.display='none'; editModeOn=false; }
+  if(role==='admin'){ pill.textContent = 'Administrador · Cerrar sesión'; pill.className='session-pill admin'; }
+  else if(role==='coordinador'){ pill.textContent = 'Coordinador · Cerrar sesión'; pill.className='session-pill coord'; }
+  else { pill.textContent = 'Modo visitante · Iniciar sesión'; pill.className='session-pill'; }
+
+  const toggleBtn = document.getElementById('viewToggleBtn');
+  if(role==='admin'){
+    toggleBtn.classList.remove('hidden');
+    toggleBtn.textContent = adminView==='dashboard' ? 'Gestionar proyectos' : 'Ver panel del proyecto';
+  } else {
+    toggleBtn.classList.add('hidden');
+  }
+
+  if(project){
+    document.getElementById('projectSubtitle').textContent = project.name + (project.client? ' — '+project.client : '');
+    document.getElementById('projectMeta').innerHTML = `<div><b>Proyecto:</b> ${project.name}</div>${project.client?`<div><b>Cliente:</b> ${project.client}</div>`:''}`;
+    const banner = document.getElementById('archivedBanner');
+    if(project.archived || isExpired(project)){
+      banner.classList.remove('hidden');
+      banner.textContent = (project.archived ? 'Este proyecto está archivado.' : 'La vigencia de esta liga terminó.') + ' Solo tú, como administrador, puedes verlo en este momento.';
+    } else {
+      banner.classList.add('hidden');
+    }
+  } else {
+    document.getElementById('projectSubtitle').textContent = 'Plataforma de seguimiento de proyectos';
+    document.getElementById('projectMeta').innerHTML = '';
+    document.getElementById('archivedBanner').classList.add('hidden');
+  }
+
+  document.getElementById('editModeBtn').classList.toggle('hidden', !isAdmin());
+  document.getElementById('evalTip').classList.toggle('hidden', !isAdmin());
+  document.getElementById('reportAdminControls').classList.toggle('hidden', !isAdmin());
+  document.getElementById('addDelivBtn').classList.toggle('hidden', !isAdmin());
+  document.getElementById('addToolBtn').classList.toggle('hidden', !isAdmin());
+  document.getElementById('addGoalBtn').classList.toggle('hidden', !isAdmin());
+  document.getElementById('addCompBtn').classList.toggle('hidden', !isAdmin());
+  if(!isAdmin()){ document.getElementById('logForm').classList.add('hidden'); editModeOn=false; }
 }
 
 /* =========================================================
@@ -637,17 +854,92 @@ document.addEventListener('DOMContentLoaded', ()=>{
       document.getElementById('panel-'+t.dataset.tab).classList.add('active');
     });
   });
+  boot();
 });
+
+/* =========================================================
+   PROJECTS ADMIN PAGE
+========================================================= */
+async function loadProjectsList(){
+  const body = document.getElementById('projectsTableBody');
+  body.innerHTML = '<tr><td colspan="7" class="empty">Cargando…</td></tr>';
+  try{
+    const list = await fetchProjectsList();
+    if(!list.length){ body.innerHTML = '<tr><td colspan="7" class="empty">Aún no hay proyectos creados.</td></tr>'; return; }
+    body.innerHTML = '';
+    list.forEach(p=>{
+      const link = window.location.origin + window.location.pathname + '?p=' + p.slug;
+      const expired = p.expiresAt && p.expiresAt < TODAY_ISO;
+      const statusChip = p.archived
+        ? '<span class="status-chip archived">Archivado</span>'
+        : (expired ? '<span class="status-chip expired">Vigencia vencida</span>' : '<span class="status-chip active">Activo</span>');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>${p.name}</b></td>
+        <td><button class="proj-link-copy" onclick="copyProjectLink('${p.slug}')">Copiar liga</button></td>
+        <td>${p.accessCode}</td>
+        <td>${p.coordinatorEmail || '<span class="empty">Sin asignar</span>'}</td>
+        <td>${p.expiresAt || '<span class="empty">Sin vigencia</span>'}</td>
+        <td>${statusChip}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn small ghost" onclick="openProjectFromAdmin('${p.slug}')">Abrir</button>
+          <button class="btn small ghost" onclick="toggleArchive('${p.slug}', ${!p.archived})">${p.archived?'Reactivar':'Archivar'}</button>
+          <button class="btn small danger" onclick="deleteProjectUI('${p.slug}','${p.name.replace(/'/g,"\\'")}')">Eliminar</button>
+        </td>`;
+      body.appendChild(tr);
+    });
+  }catch(e){
+    body.innerHTML = '<tr><td colspan="7" class="empty">No se pudo cargar la lista de proyectos.</td></tr>';
+  }
+}
+function copyProjectLink(slug){
+  const link = window.location.origin + window.location.pathname + '?p=' + slug;
+  navigator.clipboard.writeText(link).then(()=> alert('Liga copiada:\n'+link)).catch(()=> prompt('Copia la liga:', link));
+}
+function openProjectFromAdmin(slug){ navigateToProject(slug); }
+async function toggleArchive(slug, newArchivedValue){
+  const rec = await fetchProject(slug);
+  if(!rec || !rec.slug) return;
+  rec.archived = newArchivedValue;
+  await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(rec) });
+  loadProjectsList();
+}
+function deleteProjectUI(slug, name){
+  if(!confirm('¿Eliminar el proyecto "'+name+'" de forma permanente? Esta acción no se puede deshacer.')) return;
+  deleteProjectRemote(slug).then(()=> loadProjectsList());
+}
+async function createProject(){
+  const name = document.getElementById('npName').value.trim();
+  if(!name){ alert('Escribe el nombre del proyecto.'); return; }
+  const client = document.getElementById('npClient').value.trim();
+  const codeInput = document.getElementById('npCode').value.trim();
+  const expires = document.getElementById('npExpires').value;
+  const coordEmail = document.getElementById('npCoordEmail').value.trim();
+  const coordPass = document.getElementById('npCoordPass').value.trim();
+
+  const rec = defaultProjectRecord(name, client);
+  if(codeInput) rec.accessCode = codeInput;
+  if(expires) rec.expiresAt = expires;
+  if(coordEmail) rec.coordinatorEmail = coordEmail;
+  if(coordPass) rec.coordinatorPass = coordPass;
+
+  try{
+    await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(rec) });
+    document.getElementById('npName').value=''; document.getElementById('npClient').value='';
+    document.getElementById('npCode').value=''; document.getElementById('npExpires').value='';
+    document.getElementById('npCoordEmail').value=''; document.getElementById('npCoordPass').value='';
+    alert('Proyecto creado. Su liga es:\n'+window.location.origin + window.location.pathname + '?p=' + rec.slug+'\n\nCódigo de acceso: '+rec.accessCode);
+    loadProjectsList();
+  }catch(e){ alert('No se pudo crear el proyecto. Verifica la conexión con el backend.'); }
+}
 
 /* =========================================================
    INFORME FINAL
 ========================================================= */
 function renderReport(){
-  const r = state.reportFinal;
+  const r = project.data.reportFinal;
   const has = r.link && r.link.trim().length>0;
-  document.getElementById('reportNote').textContent = has
-    ? 'Informe final disponible para descarga.'
-    : 'El administrador podrá adjuntar aquí la liga del informe final.';
+  document.getElementById('reportNote').textContent = has ? 'Informe disponible para descarga.' : 'El administrador podrá adjuntar aquí la liga del informe final.';
   const btn = document.getElementById('reportDlBtn');
   btn.href = has ? r.link : '#';
   btn.classList.toggle('disabled', !has);
@@ -655,21 +947,19 @@ function renderReport(){
 }
 function setReportLink(){
   const val = document.getElementById('reportLinkInput').value.trim();
-  state.reportFinal.link = val;
-  state.reportFinal.status = val ? 'entregado' : 'pendiente';
-  saveState(); renderReport();
+  project.data.reportFinal.link = val;
+  project.data.reportFinal.status = val ? 'entregado' : 'pendiente';
+  saveProject(); renderReport();
 }
 
 /* =========================================================
    ENTREGABLES
 ========================================================= */
-function statusLabel(s){ return s==='entregado' ? 'Entregado' : (s==='revision' ? 'En revisión' : 'Pendiente'); }
-
 function renderDeliverables(){
   const wrap = document.getElementById('deliverables');
   wrap.innerHTML = '';
   let totalAct = 0, doneAct = 0;
-  state.deliverables.forEach((d,i)=>{
+  project.data.deliverables.forEach((d,i)=>{
     d.activities.forEach(a=>{ totalAct++; if(a.status==='entregado') doneAct++; });
 
     const block = document.createElement('div');
@@ -678,61 +968,99 @@ function renderDeliverables(){
 
     const head = document.createElement('div');
     head.className = 'deliv-head';
-    const statusHtml = isAdmin
-      ? `<select class="status-edit" onclick="event.stopPropagation()" onchange="setDelivStatus(${i}, this.value)">
+    const nameHtml = isAdmin()
+      ? `<input type="text" class="deliv-name-input" value="${(d.name||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation()" onchange="setDelivField(${i},'name',this.value)">`
+      : `<div class="deliv-name">${d.name}</div>`;
+    const datesHtml = isAdmin()
+      ? `<input type="date" class="mini-date" value="${d.start||''}" onclick="event.stopPropagation()" onchange="setDelivField(${i},'start',this.value)">
+         <span>–</span>
+         <input type="date" class="mini-date" value="${d.end||''}" onclick="event.stopPropagation()" onchange="setDelivField(${i},'end',this.value)">`
+      : `<span>${d.start? formatDate(d.start):''}${d.start&&d.end?' – ':''}${d.end? formatDate(d.end):''}</span>`;
+    const statusHtml = isAdmin()
+      ? `<select class="status-edit" onclick="event.stopPropagation()" onchange="setDelivField(${i},'status',this.value)">
            <option value="pendiente" ${d.status==='pendiente'?'selected':''}>Pendiente</option>
            <option value="revision" ${d.status==='revision'?'selected':''}>En revisión</option>
            <option value="entregado" ${d.status==='entregado'?'selected':''}>Entregado</option>
          </select>`
       : `<span class="badge ${d.status}">${statusLabel(d.status)}</span>`;
+    const removeBtn = isAdmin() ? `<button class="remove-x" onclick="event.stopPropagation(); removeDeliverable(${i})" title="Eliminar entregable">✕</button>` : '';
+
     head.innerHTML = `
       <div class="deliv-index">${i+1}</div>
-      <div><div class="deliv-name">${d.name}</div><div class="deliv-dates">${d.dates}</div></div>
+      <div>${nameHtml}<div class="deliv-dates">${datesHtml}</div></div>
       ${statusHtml}
+      ${removeBtn}
       <span class="chevron">▾</span>
     `;
-    head.addEventListener('click', (e)=>{ if(e.target.tagName!=='SELECT') block.classList.toggle('open'); });
+    head.addEventListener('click', (e)=>{
+      if(['SELECT','INPUT','BUTTON'].includes(e.target.tagName)) return;
+      block.classList.toggle('open');
+    });
 
     const acts = document.createElement('div');
     acts.className = 'activities';
     d.activities.forEach((a,j)=>{
       const row = document.createElement('div');
       row.className = 'activity';
-      const linkHtml = isAdmin
-        ? `<input type="text" class="act-edit-link" placeholder="Pegar liga de evidencia" value="${a.link ? a.link.replace(/"/g,'&quot;') : ''}" onchange="setActLink(${i},${j}, this.value)">`
+      const nameHtmlA = isAdmin()
+        ? `<input type="text" class="act-name-input" value="${(a.name||'').replace(/"/g,'&quot;')}" onchange="setActField(${i},${j},'name',this.value)">`
+        : `<div class="act-name">${a.name}</div>`;
+      const dateHtmlA = isAdmin()
+        ? `<input type="date" class="mini-date" value="${a.date||''}" onchange="setActField(${i},${j},'date',this.value)">`
+        : `<div class="act-date">${formatDate(a.date)}</div>`;
+      const linkHtml = isAdmin()
+        ? `<input type="text" class="act-edit-link" placeholder="Liga de evidencia" value="${a.link ? a.link.replace(/"/g,'&quot;') : ''}" onchange="setActField(${i},${j},'link',this.value)">`
         : (a.link ? `<a class="act-link" href="${a.link}" target="_blank" rel="noopener">Ver evidencia ↗</a>` : `<span class="act-link disabled">Sin evidencia</span>`);
-      const statusHtmlAct = isAdmin
-        ? `<select class="status-edit" onchange="setActStatus(${i},${j}, this.value)">
+      const statusHtmlAct = isAdmin()
+        ? `<select class="status-edit" onchange="setActField(${i},${j},'status',this.value)">
              <option value="pendiente" ${a.status==='pendiente'?'selected':''}>Pendiente</option>
              <option value="revision" ${a.status==='revision'?'selected':''}>En revisión</option>
              <option value="entregado" ${a.status==='entregado'?'selected':''}>Entregado</option>
            </select>`
         : `<span class="badge ${a.status}">${statusLabel(a.status)}</span>`;
+      const removeActBtn = isAdmin() ? `<button class="remove-x" onclick="removeActivity(${i},${j})" title="Eliminar actividad">✕</button>` : '';
       row.innerHTML = `
-        <div><div class="act-name">${a.name}</div><div class="act-desc">${a.desc}</div><div class="act-date">${formatDate(a.date)}</div></div>
+        <div>${nameHtmlA}<div class="act-desc">${a.desc||''}</div>${dateHtmlA}</div>
         ${statusHtmlAct}
         ${linkHtml}
+        ${removeActBtn}
       `;
       acts.appendChild(row);
     });
+    if(isAdmin()){
+      const addActRow = document.createElement('div');
+      addActRow.style.padding = '10px 18px 14px 68px';
+      addActRow.innerHTML = `<button class="add-row-btn" onclick="addActivity(${i})">+ Agregar actividad</button>`;
+      acts.appendChild(addActRow);
+    }
 
     block.appendChild(head);
     block.appendChild(acts);
     wrap.appendChild(block);
   });
+  document.getElementById('statTotal').textContent = project.data.deliverables.length;
   document.getElementById('statActivities').textContent = totalAct;
   document.getElementById('statDoneAct').textContent = doneAct;
-  document.getElementById('statSessions').textContent = state.logs.length;
+  document.getElementById('statSessions').textContent = project.data.logs.length;
 }
-function setDelivStatus(i,val){ state.deliverables[i].status = val; saveState(); renderAll(); }
-function setActStatus(i,j,val){ state.deliverables[i].activities[j].status = val; saveState(); renderAll(); }
-function setActLink(i,j,val){ state.deliverables[i].activities[j].link = val; saveState(); renderDeliverables(); }
-
-let firstDelivRender = true;
-function formatDate(iso){
-  const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-  const d = new Date(iso+"T00:00:00");
-  return d.getDate()+" "+meses[d.getMonth()];
+function setDelivField(i,field,val){ project.data.deliverables[i][field] = val; saveProject(); renderAll(); }
+function setActField(i,j,field,val){ project.data.deliverables[i].activities[j][field] = val; saveProject(); renderAll(); }
+function addDeliverable(){
+  project.data.deliverables.push({ id:uid(), name:"Nuevo entregable", start:"", end:"", status:"pendiente", activities:[] });
+  saveProject(); renderAll();
+}
+function removeDeliverable(i){
+  if(!confirm('¿Eliminar este entregable y todas sus actividades?')) return;
+  project.data.deliverables.splice(i,1); saveProject(); renderAll();
+}
+function addActivity(i){
+  project.data.deliverables[i].activities.push({ id:uid(), name:"Nueva actividad", desc:"", date:"", status:"pendiente", link:"" });
+  saveProject(); renderAll();
+  const b = document.getElementById('block-'+i); if(b) b.classList.add('open');
+}
+function removeActivity(i,j){
+  if(!confirm('¿Eliminar esta actividad?')) return;
+  project.data.deliverables[i].activities.splice(j,1); saveProject(); renderAll();
 }
 
 /* =========================================================
@@ -740,48 +1068,42 @@ function formatDate(iso){
 ========================================================= */
 function toggleEditMode(){
   editModeOn = !editModeOn;
-  document.getElementById('logForm').style.display = editModeOn ? 'block' : 'none';
+  document.getElementById('logForm').classList.toggle('hidden', !editModeOn);
   document.getElementById('editModeBtn').textContent = editModeOn ? 'Ocultar edición' : 'Habilitar edición';
   if(!editModeOn) cancelLogEdit();
 }
 function onAttendeeToggle(){
   const on = document.getElementById('attendeeToggle').checked;
-  document.getElementById('simpleAttendWrap').style.display = on ? 'none' : 'block';
-  document.getElementById('detailedAttendWrap').style.display = on ? 'block' : 'none';
+  document.getElementById('simpleAttendWrap').classList.toggle('hidden', on);
+  document.getElementById('detailedAttendWrap').classList.toggle('hidden', !on);
 }
 function addAttendee(){
   const name = document.getElementById('attName').value.trim();
   const inst = document.getElementById('attInst').value.trim();
-  if(!name){ return; }
+  if(!name) return;
   attendeesDraft.push({name, inst});
   document.getElementById('attName').value=''; document.getElementById('attInst').value='';
   renderAttendeeChips();
 }
 function renderAttendeeChips(){
-  const wrap = document.getElementById('attendeeChips');
-  wrap.innerHTML = attendeesDraft.map((a,idx)=>
+  document.getElementById('attendeeChips').innerHTML = attendeesDraft.map((a,idx)=>
     `<span class="attendee-chip">${a.name}${a.inst? ' · '+a.inst:''} <span style="cursor:pointer" onclick="removeAttendee(${idx})">✕</span></span>`
   ).join('');
 }
 function removeAttendee(idx){ attendeesDraft.splice(idx,1); renderAttendeeChips(); }
-
 function resetLogForm(){
-  document.getElementById('logDate').value='';
-  document.getElementById('logDyn').value='';
-  document.getElementById('logNotes').value='';
-  document.getElementById('logAttend').value='';
-  attendeesDraft = [];
-  renderAttendeeChips();
-  document.getElementById('attendeeToggle').checked=false;
-  onAttendeeToggle();
+  document.getElementById('logDate').value=''; document.getElementById('logDyn').value='';
+  document.getElementById('logNotes').value=''; document.getElementById('logAttend').value='';
+  attendeesDraft = []; renderAttendeeChips();
+  document.getElementById('attendeeToggle').checked=false; onAttendeeToggle();
 }
 function submitLog(){
-  if(!isAdmin) return;
+  if(!isAdmin()) return;
   const date = document.getElementById('logDate').value;
   const dyn = document.getElementById('logDyn').value.trim();
   const notes = document.getElementById('logNotes').value.trim();
   const detailed = document.getElementById('attendeeToggle').checked;
-  if(!date || !dyn){ alert('Indica al menos la fecha y la dinámica aplicada.'); return; }
+  if(!date || !dyn){ alert('Indica al menos la fecha y la actividad aplicada.'); return; }
   let payload;
   if(detailed){
     if(attendeesDraft.length===0){ alert('Agrega al menos una persona asistente.'); return; }
@@ -791,24 +1113,22 @@ function submitLog(){
     payload = { date, mode:"simple", attendCount: attend?parseInt(attend):0, attendees:[], dyn, notes };
   }
   if(editingLogId !== null){
-    const idx = state.logs.findIndex(l=>l.id===editingLogId);
-    if(idx>-1){ state.logs[idx] = Object.assign({id:editingLogId}, payload); }
+    const idx = project.data.logs.findIndex(l=>l.id===editingLogId);
+    if(idx>-1){ project.data.logs[idx] = Object.assign({id:editingLogId}, payload); }
     editingLogId = null;
     document.getElementById('submitLogBtn').textContent = 'Registrar sesión';
-    document.getElementById('cancelEditBtn').style.display = 'none';
+    document.getElementById('cancelEditBtn').classList.add('hidden');
   } else {
-    payload.id = Date.now();
-    state.logs.push(payload);
+    payload.id = uid();
+    project.data.logs.push(payload);
   }
-  resetLogForm();
-  saveState();
-  renderAll();
+  resetLogForm(); saveProject(); renderAll();
 }
 function editLog(id){
-  const l = state.logs.find(x=>x.id===id);
+  const l = project.data.logs.find(x=>x.id===id);
   if(!l) return;
   editModeOn = true;
-  document.getElementById('logForm').style.display='block';
+  document.getElementById('logForm').classList.remove('hidden');
   document.getElementById('editModeBtn').textContent='Ocultar edición';
   editingLogId = id;
   document.getElementById('logDate').value = l.date;
@@ -816,35 +1136,32 @@ function editLog(id){
   document.getElementById('logNotes').value = l.notes || '';
   if(l.mode==='detailed'){
     document.getElementById('attendeeToggle').checked = true;
-    attendeesDraft = [...l.attendees];
-    renderAttendeeChips();
+    attendeesDraft = [...l.attendees]; renderAttendeeChips();
   } else {
     document.getElementById('attendeeToggle').checked = false;
     document.getElementById('logAttend').value = l.attendCount || '';
   }
   onAttendeeToggle();
   document.getElementById('submitLogBtn').textContent = 'Guardar cambios';
-  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
   window.scrollTo({top: document.getElementById('logForm').offsetTop - 90, behavior:'smooth'});
 }
 function cancelLogEdit(){
-  editingLogId = null;
-  resetLogForm();
+  editingLogId = null; resetLogForm();
   document.getElementById('submitLogBtn').textContent = 'Registrar sesión';
-  document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 function deleteLog(id){
-  if(!isAdmin) return;
+  if(!isAdmin()) return;
   if(!confirm('¿Eliminar esta bitácora de forma permanente?')) return;
-  state.logs = state.logs.filter(l=>l.id!==id);
-  saveState();
-  renderAll();
+  project.data.logs = project.data.logs.filter(l=>l.id!==id);
+  saveProject(); renderAll();
 }
 function renderLogs(){
   const wrap = document.getElementById('logList');
   wrap.innerHTML='';
-  if(state.logs.length===0){ wrap.innerHTML = '<p class="empty">Aún no hay sesiones registradas.</p>'; return; }
-  [...state.logs].reverse().forEach(l=>{
+  if(project.data.logs.length===0){ wrap.innerHTML = '<p class="empty">Aún no hay sesiones registradas.</p>'; return; }
+  [...project.data.logs].reverse().forEach(l=>{
     const el = document.createElement('div');
     el.className='log-entry';
     let attendHtml;
@@ -853,65 +1170,61 @@ function renderLogs(){
     } else {
       attendHtml = 'Asistencia: ' + (l.attendCount || 0) + ' personas';
     }
-    const adminBtns = isAdmin ? `<div class="log-actions">
-        <button class="btn small ghost" onclick="editLog(${l.id})">Editar</button>
-        <button class="btn small danger" onclick="deleteLog(${l.id})">Eliminar</button>
+    const adminBtns = isAdmin() ? `<div class="log-actions">
+        <button class="btn small ghost" onclick="editLog('${l.id}')">Editar</button>
+        <button class="btn small danger" onclick="deleteLog('${l.id}')">Eliminar</button>
       </div>` : '';
     el.innerHTML = `<div style="flex:1;"><div class="log-date">${l.date}</div><div class="log-title">${l.dyn}</div><div class="log-detail">${attendHtml}<br>${l.notes||''}</div></div>${adminBtns}`;
     wrap.appendChild(el);
   });
 }
-
-/* ---- exports ---- */
 function exportPDF(){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     let y = 16;
-    doc.setFontSize(14); doc.text("Bitácora de sesiones — GOYN Track", 14, y); y+=8;
-    doc.setFontSize(9); doc.text("Sintropía Social · Consultoría YouthBuild México | GOYN CDMX", 14, y); y+=10;
+    doc.setFontSize(14); doc.text("Bitácora de sesiones — "+(project?project.name:''), 14, y); y+=8;
+    doc.setFontSize(9); doc.text("Sintropía Social", 14, y); y+=10;
     doc.setFontSize(10);
-    state.logs.forEach(l=>{
+    project.data.logs.forEach(l=>{
       if(y > 270){ doc.addPage(); y = 16; }
       const attend = l.mode==='detailed' ? (l.attendCount+' asistentes con nombre e institución') : (l.attendCount+' asistentes');
       const lines = doc.splitTextToSize(`${l.date} — ${l.dyn}\n${attend}\n${l.notes||''}`, 180);
       doc.text(lines, 14, y);
       y += lines.length*5 + 4;
     });
-    doc.save('bitacora_goyn_track.pdf');
+    doc.save('bitacora.pdf');
   }catch(e){ alert('No se pudo generar el PDF en este navegador.'); }
 }
 function exportWord(){
   try{
-    let rows = state.logs.map(l=>{
+    let rows = project.data.logs.map(l=>{
       const attend = l.mode==='detailed' ? (l.attendCount+' asistentes: '+l.attendees.map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join(', ')) : (l.attendCount+' asistentes');
       return `<tr><td>${l.date}</td><td>${l.dyn}</td><td>${attend}</td><td>${l.notes||''}</td></tr>`;
     }).join('');
     const html = `<html><head><meta charset="utf-8"></head><body>
-      <h2>Bitácora de sesiones — GOYN Track</h2>
-      <p>Sintropía Social · Consultoría YouthBuild México | GOYN CDMX</p>
+      <h2>Bitácora de sesiones — ${project.name}</h2>
+      <p>Sintropía Social</p>
       <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;">
-        <tr><th>Fecha</th><th>Dinámica</th><th>Asistencia</th><th>Notas</th></tr>
+        <tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Notas</th></tr>
         ${rows}
       </table></body></html>`;
     const blob = new Blob(['\ufeff', html], {type:'application/msword'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='bitacora_goyn_track.doc'; document.body.appendChild(a); a.click(); a.remove();
+    const a = document.createElement('a'); a.href=url; a.download='bitacora.doc'; document.body.appendChild(a); a.click(); a.remove();
   }catch(e){ alert('No se pudo generar el documento Word.'); }
 }
 function exportExcel(){
   try{
-    const rows = state.logs.map(l=>({
-      Fecha: l.date,
-      Dinamica: l.dyn,
-      Asistencia: l.attendCount,
+    const rows = project.data.logs.map(l=>({
+      Fecha: l.date, Actividad: l.dyn, Asistencia: l.attendCount,
       Detalle_asistentes: l.mode==='detailed' ? l.attendees.map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join('; ') : '',
       Notas: l.notes||''
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
-    XLSX.writeFile(wb, "bitacora_goyn_track.xlsx");
+    XLSX.writeFile(wb, "bitacora.xlsx");
   }catch(e){ alert('No se pudo generar el archivo Excel.'); }
 }
 
@@ -919,80 +1232,100 @@ function exportExcel(){
    CAJA DE HERRAMIENTAS
 ========================================================= */
 function toolNoticeHtml(due, status){
-  if(status==='disponible' || status==='entregado') return '';
-  return `<div class="tool-notice">Disponible a partir del ${due}.</div>`;
+  if(status==='disponible' || status==='entregado' || !due) return '';
+  return `<div class="tool-notice">Disponible a partir del ${formatDate(due)}.</div>`;
 }
 function renderTools(){
   const wrap = document.getElementById('toolGrid');
   wrap.innerHTML='';
-  const t = state.tools;
-
-  ['educacionPopular','formaFormadores','planeacionTpl'].forEach(key=>{
-    const item = t[key];
+  project.data.tools.forEach((item,ti)=>{
     const delivered = item.status === 'disponible' || item.status === 'entregado';
     const card = document.createElement('div');
     card.className = 'tool-card';
-    const adminCtrls = isAdmin ? `
+    const removeBtn = isAdmin() ? `<button class="tool-card-remove" onclick="removeTool(${ti})">✕ eliminar</button>` : '';
+    const tagHtml = isAdmin() ? `<input type="text" class="tool-tag-input" value="${(item.tag||'').replace(/"/g,'&quot;')}" onchange="setToolField(${ti},'tag',this.value)">` : `<div class="tool-tag-input" style="border:none;">${item.tag}</div>`;
+    const nameHtml = isAdmin() ? `<input type="text" class="tool-name-input" value="${(item.name||'').replace(/"/g,'&quot;')}" onchange="setToolField(${ti},'name',this.value)">` : `<div class="tool-name-input" style="border:none;">${item.name}</div>`;
+    const adminCtrls = isAdmin() ? `
       <div class="tool-actions">
-        <input type="text" placeholder="Liga de descarga" value="${item.link ? item.link.replace(/"/g,'&quot;') : ''}" style="max-width:220px;" onchange="setToolLink('${key}', this.value)">
-        <select class="status-edit" onchange="setToolStatus('${key}', this.value)">
+        <input type="text" placeholder="Liga de descarga" value="${item.link ? item.link.replace(/"/g,'&quot;') : ''}" style="max-width:220px;" onchange="setToolField(${ti},'link',this.value)">
+        <input type="date" class="mini-date" value="${item.due||''}" onchange="setToolField(${ti},'due',this.value)" title="Fecha estimada de entrega">
+        <select class="status-edit" onchange="setToolField(${ti},'status',this.value)">
           <option value="pendiente" ${item.status==='pendiente'?'selected':''}>Pendiente</option>
           <option value="disponible" ${item.status==='disponible'?'selected':''}>Disponible</option>
         </select>
       </div>` : '';
     card.innerHTML = `
-      <div class="tool-tag">${item.tag}</div>
-      <div class="tool-name">${item.name}</div>
-      <div class="tool-note">${item.note}</div>
+      ${removeBtn}
+      ${tagHtml}
+      ${nameHtml}
+      <div class="tool-note">${item.note||''}</div>
       ${toolNoticeHtml(item.due, item.status)}
       <div class="tool-actions">
         <a class="dl-btn ${delivered && item.link ? '' : 'disabled'}" href="${item.link||'#'}" target="_blank" rel="noopener">Descargar</a>
         <a class="dl-btn outline ${delivered && item.link ? '' : 'disabled'}" href="${item.link||'#'}" target="_blank" rel="noopener">Vista previa</a>
       </div>
       ${adminCtrls}
+      ${renderSubitemsHtml(item, ti)}
     `;
     wrap.appendChild(card);
   });
-
-  const fac = t.facilitacion;
-  const uploaded = fac.dinamicas.filter(d=>d.status==='disponible').length;
-  let facMsg;
-  if(uploaded===0){ facMsg = `Aún no hay dinámicas disponibles. Estarán disponibles a partir del ${fac.due}.`; }
-  else if(uploaded < 12){ facMsg = `Ya ${uploaded===1?'está disponible 1':'están disponibles '+uploaded} de las 12, las próximas a la brevedad estarán.`; }
-  else { facMsg = `Las 12 dinámicas ya están disponibles.`; }
-
-  const facCard = document.createElement('div');
-  facCard.className = 'tool-card';
-  facCard.style.gridColumn = '1 / -1';
-  let dynListHtml = fac.dinamicas.map((d,idx)=>{
-    const delivered = d.status==='disponible';
-    const adminRow = isAdmin ? `
-      <div class="dyn-admin-controls">
-        <input type="text" placeholder="Liga" style="width:130px; font-size:11.5px; padding:5px 7px;" value="${d.link? d.link.replace(/"/g,'&quot;'):''}" onchange="setDinamicaLink(${idx}, this.value)">
-        <select class="status-edit" onchange="setDinamicaStatus(${idx}, this.value)">
-          <option value="pendiente" ${d.status==='pendiente'?'selected':''}>Pendiente</option>
-          <option value="disponible" ${d.status==='disponible'?'selected':''}>Disponible</option>
-        </select>
-      </div>` : `<span class="badge ${delivered?'entregado':'pendiente'}">${delivered?'Disponible':'Pendiente'}</span>`;
-    const dlLink = delivered && d.link ? `<a class="dl-btn" style="padding:4px 10px; font-size:11px;" href="${d.link}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline" style="padding:4px 10px; font-size:11px;" href="${d.link}" target="_blank" rel="noopener">Preview</a>` : '';
-    return `<div class="dyn-item"><span class="dyn-item-name">${d.name}</span><span style="display:flex; gap:8px; align-items:center;">${dlLink}${adminRow}</span></div>`;
-  }).join('');
-
-  facCard.innerHTML = `
-    <div class="tool-tag">${fac.tag}</div>
-    <div class="tool-name">${fac.name}</div>
-    <div class="tool-note">${fac.note}</div>
-    <div class="tool-notice" style="background:${uploaded>0?'var(--purple-light)':'var(--orange-light)'}; color:${uploaded>0?'var(--purple)':'var(--orange-dark)'};">${facMsg}</div>
-    <button class="dyn-toggle" onclick="toggleDynList()">${dynListOpen? 'Ocultar las 12 dinámicas ▲' : 'Ver las 12 dinámicas ▼'}</button>
-    <div class="dyn-list ${dynListOpen?'open':''}" id="dynListBox">${dynListHtml}</div>
-  `;
-  wrap.appendChild(facCard);
 }
-function toggleDynList(){ dynListOpen = !dynListOpen; renderTools(); }
-function setToolStatus(key,val){ state.tools[key].status = val; saveState(); renderTools(); }
-function setToolLink(key,val){ state.tools[key].link = val; saveState(); renderTools(); }
-function setDinamicaStatus(idx,val){ state.tools.facilitacion.dinamicas[idx].status = val; saveState(); renderTools(); }
-function setDinamicaLink(idx,val){ state.tools.facilitacion.dinamicas[idx].link = val; saveState(); renderTools(); }
+function renderSubitemsHtml(item, ti){
+  const uploaded = item.subitems.filter(s=>s.status==='disponible').length;
+  const total = item.subitems.length;
+  let msg = '';
+  if(total>0){
+    if(uploaded===0) msg = `Aún no hay materiales disponibles de esta lista.`;
+    else if(uploaded<total) msg = `Ya ${uploaded===1?'está disponible 1':'están disponibles '+uploaded} de ${total}, los próximos a la brevedad estarán.`;
+    else msg = `Los ${total} materiales ya están disponibles.`;
+  }
+  const items = item.subitems.map((s,si)=>{
+    const delivered = s.status==='disponible';
+    const adminRow = isAdmin() ? `
+      <div class="sub-admin-controls">
+        <input type="text" class="mini-text" placeholder="Nombre" style="width:110px;" value="${(s.name||'').replace(/"/g,'&quot;')}" onchange="setSubField(${ti},${si},'name',this.value)">
+        <input type="text" class="mini-text" placeholder="Liga" style="width:100px;" value="${s.link? s.link.replace(/"/g,'&quot;'):''}" onchange="setSubField(${ti},${si},'link',this.value)">
+        <select class="status-edit" onchange="setSubField(${ti},${si},'status',this.value)">
+          <option value="pendiente" ${s.status==='pendiente'?'selected':''}>Pendiente</option>
+          <option value="disponible" ${s.status==='disponible'?'selected':''}>Disponible</option>
+        </select>
+        <button class="remove-x" onclick="removeSubitem(${ti},${si})">✕</button>
+      </div>` : `<span class="badge ${delivered?'entregado':'pendiente'}">${delivered?'Disponible':'Pendiente'}</span>`;
+    const dl = delivered && s.link ? `<a class="dl-btn" style="padding:4px 10px; font-size:11px;" href="${s.link}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline" style="padding:4px 10px; font-size:11px;" href="${s.link}" target="_blank" rel="noopener">Preview</a>` : '';
+    return `<div class="sub-item"><span>${s.name}</span><span style="display:flex; gap:8px; align-items:center;">${dl}${adminRow}</span></div>`;
+  }).join('');
+  const toggleId = 'subtoggle-'+ti;
+  const addBtn = isAdmin() ? `<button class="add-row-btn" style="margin-top:8px;" onclick="addSubitem(${ti})">+ Agregar material a esta lista</button>` : '';
+  if(total===0 && !isAdmin()) return '';
+  return `
+    ${total>0 ? `<div class="tool-notice" style="background:${uploaded>0?'var(--purple-light)':'var(--orange-light)'}; color:${uploaded>0?'var(--purple)':'var(--orange-dark)'};">${msg}</div>` : ''}
+    ${total>0 ? `<button class="sub-toggle" onclick="toggleSubList(${ti})">Ver lista de materiales (${total}) ▾</button>` : ''}
+    <div class="sub-list" id="${toggleId}">${items}</div>
+    ${addBtn}
+  `;
+}
+let subListOpen = {};
+function toggleSubList(ti){
+  const el = document.getElementById('subtoggle-'+ti);
+  el.classList.toggle('open');
+}
+function setToolField(ti,field,val){ project.data.tools[ti][field]=val; saveProject(); renderTools(); }
+function addTool(){
+  project.data.tools.push({ id:uid(), tag:"General", name:"Nueva herramienta", note:"", due:"", status:"pendiente", link:"", subitems:[] });
+  saveProject(); renderTools();
+}
+function removeTool(ti){
+  if(!confirm('¿Eliminar esta herramienta?')) return;
+  project.data.tools.splice(ti,1); saveProject(); renderTools();
+}
+function setSubField(ti,si,field,val){ project.data.tools[ti].subitems[si][field]=val; saveProject(); renderTools(); }
+function addSubitem(ti){
+  project.data.tools[ti].subitems.push({ id:uid(), name:"Material "+(project.data.tools[ti].subitems.length+1), status:"pendiente", link:"" });
+  saveProject(); renderTools();
+}
+function removeSubitem(ti,si){
+  project.data.tools[ti].subitems.splice(si,1); saveProject(); renderTools();
+}
 
 /* =========================================================
    PLANEACIÓN ESTRATÉGICA + GANTT
@@ -1000,30 +1333,47 @@ function setDinamicaLink(idx,val){ state.tools.facilitacion.dinamicas[idx].link 
 function renderGoals(){
   const body = document.getElementById('smartBody');
   body.innerHTML='';
-  state.goals.forEach(g=>{
+  project.data.goals.forEach((g,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${g.area}</td><td>${g.meta}</td><td>${g.resp}</td><td>${g.horizonte}</td>`;
+    if(isAdmin()){
+      tr.innerHTML = `
+        <td><input type="text" value="${(g.area||'').replace(/"/g,'&quot;')}" onchange="setGoalField(${i},'area',this.value)"></td>
+        <td><textarea onchange="setGoalField(${i},'meta',this.value)">${g.meta||''}</textarea></td>
+        <td><input type="text" value="${(g.resp||'').replace(/"/g,'&quot;')}" onchange="setGoalField(${i},'resp',this.value)"></td>
+        <td><input type="text" value="${(g.horizonte||'').replace(/"/g,'&quot;')}" onchange="setGoalField(${i},'horizonte',this.value)"></td>
+        <td><button class="remove-x" onclick="removeGoal(${i})">✕</button></td>`;
+    } else {
+      tr.innerHTML = `<td>${g.area}</td><td>${g.meta}</td><td>${g.resp}</td><td>${g.horizonte}</td><td></td>`;
+    }
     body.appendChild(tr);
   });
 }
-function dayOffset(dateStr, baseStr){ return (new Date(dateStr+"T00:00:00") - new Date(baseStr+"T00:00:00")) / 86400000; }
+function setGoalField(i,field,val){ project.data.goals[i][field]=val; saveProject(); renderGoals(); }
+function addGoal(){ project.data.goals.push({id:uid(), area:"", meta:"", resp:"", horizonte:""}); saveProject(); renderGoals(); }
+function removeGoal(i){ project.data.goals.splice(i,1); saveProject(); renderGoals(); }
 
 function renderProgressAndSemaforo(){
   let totalAct=0, doneAct=0;
-  state.deliverables.forEach(d=> d.activities.forEach(a=>{ totalAct++; if(a.status==='entregado') doneAct++; }));
+  project.data.deliverables.forEach(d=> d.activities.forEach(a=>{ totalAct++; if(a.status==='entregado') doneAct++; }));
   const pct = totalAct ? Math.round((doneAct/totalAct)*100) : 0;
   document.getElementById('progressPct').textContent = pct+'%';
   document.getElementById('progressFill').style.width = pct+'%';
 
-  const base = "2026-08-01", end = "2026-10-23";
-  const totalDays = dayOffset(end, base);
-  const elapsed = Math.min(totalDays, Math.max(0, dayOffset(TODAY.toISOString().slice(0,10), base)));
-  const expectedPct = totalDays>0 ? (elapsed/totalDays)*100 : 0;
-
+  const range = getGanttRange();
   const light = document.getElementById('semaforoLight');
   const title = document.getElementById('semaforoTitle');
   const desc = document.getElementById('semaforoDesc');
   light.className = 'light';
+
+  if(!range){
+    light.classList.add('yellow'); title.textContent='Sin fechas suficientes';
+    desc.textContent = 'Agrega fechas de inicio y fin a tus entregables para calcular el semáforo.';
+    return;
+  }
+  const totalDays = dayOffset(range.end, range.base);
+  const elapsed = Math.min(totalDays, Math.max(0, dayOffset(TODAY_ISO, range.base)));
+  const expectedPct = totalDays>0 ? (elapsed/totalDays)*100 : 0;
+
   if(pct >= expectedPct - 5){
     light.classList.add('green'); title.textContent = 'En tiempo';
     desc.textContent = 'El avance real va igual o mejor que lo esperado para la fecha de hoy.';
@@ -1035,32 +1385,63 @@ function renderProgressAndSemaforo(){
     desc.textContent = 'El avance real está notablemente por debajo de lo esperado para la fecha de hoy.';
   }
 }
-
+function getGanttRange(){
+  const starts = project.data.deliverables.map(d=>d.start).filter(Boolean);
+  const ends = project.data.deliverables.map(d=>d.end).filter(Boolean);
+  if(!starts.length || !ends.length) return null;
+  const base = starts.sort()[0];
+  const end = ends.sort().slice(-1)[0];
+  if(base >= end) return null;
+  return { base, end };
+}
 function renderGantt(){
-  const base = "2026-08-01";
-  const totalDays = dayOffset("2026-10-23", base);
-
-  const months = [["Agosto","2026-08-01"],["Septiembre","2026-09-01"],["Octubre","2026-10-01"]];
+  const range = getGanttRange();
+  const rowsWrap = document.getElementById('ganttRows');
   const monthsWrap = document.getElementById('ganttMonths');
-  monthsWrap.innerHTML = months.map(m=>{
-    const pct = (dayOffset(m[1], base)/totalDays)*100;
+  rowsWrap.innerHTML=''; monthsWrap.innerHTML='';
+
+  if(!range){
+    rowsWrap.innerHTML = '<p class="empty">Agrega fechas de inicio y fin a tus entregables (pestaña Entregables) para ver el cronograma.</p>';
+    renderProgressAndSemaforo();
+    return;
+  }
+  const base = range.base, endDate = range.end;
+  const totalDays = dayOffset(endDate, base);
+
+  let cursor = new Date(base+"T00:00:00");
+  const endD = new Date(endDate+"T00:00:00");
+  const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const monthMarks = [];
+  cursor.setDate(1);
+  while(cursor <= endD){
+    const iso = cursor.toISOString().slice(0,10);
+    monthMarks.push([monthNames[cursor.getMonth()], iso]);
+    cursor.setMonth(cursor.getMonth()+1);
+  }
+  monthsWrap.innerHTML = monthMarks.map(m=>{
+    const pct = Math.max(0,(dayOffset(m[1], base)/totalDays)*100);
     return `<span class="gantt-month-label" style="left:${pct}%">${m[0]}</span>`;
   }).join('');
 
-  const rowsWrap = document.getElementById('ganttRows');
-  rowsWrap.innerHTML = '';
-  const todayPct = Math.min(100, Math.max(0, (dayOffset(TODAY.toISOString().slice(0,10), base)/totalDays)*100));
+  const todayPct = Math.min(100, Math.max(0, (dayOffset(TODAY_ISO, base)/totalDays)*100));
 
-  state.deliverables.forEach((d,i)=>{
+  project.data.deliverables.forEach((d,i)=>{
+    if(!d.start || !d.end){
+      const row = document.createElement('div');
+      row.className = 'gantt-row';
+      row.innerHTML = `<div class="gantt-label">${d.name}</div><div class="gantt-track" style="display:flex; align-items:center; padding:0 10px; font-size:11px; color:var(--pending);">Sin fechas asignadas</div>`;
+      rowsWrap.appendChild(row);
+      return;
+    }
     const startPct = Math.max(0,(dayOffset(d.start, base)/totalDays)*100);
     const endPct = Math.min(100,(dayOffset(d.end, base)/totalDays)*100);
     const widthPct = Math.max(2, endPct - startPct);
 
+    const isOpenSub = !!openGanttSub[i];
     const row = document.createElement('div');
     row.className = 'gantt-row';
-    const isOpenSub = !!openGanttSub[i];
     row.innerHTML = `
-      <div class="gantt-label ${isOpenSub?'open':''}" onclick="toggleGanttSub(${i})"><span class="mini-chevron">▶</span> ${d.name.replace(/^\d\.\s*/,'')}</div>
+      <div class="gantt-label ${isOpenSub?'open':''}" onclick="toggleGanttSub(${i})"><span class="mini-chevron">▶</span> ${d.name}</div>
       <div class="gantt-track">
         <div class="gantt-bar ${d.status}" style="left:${startPct}%; width:${widthPct}%;">${statusLabel(d.status)}</div>
         <div class="gantt-today" style="left:${todayPct}%;"></div>
@@ -1068,19 +1449,29 @@ function renderGantt(){
     `;
     rowsWrap.appendChild(row);
 
+    if(isAdmin()){
+      const datesRow = document.createElement('div');
+      datesRow.className = 'gantt-dates-row';
+      datesRow.innerHTML = `Fechas:
+        <input type="date" class="mini-date" value="${d.start}" onchange="setDelivField(${i},'start',this.value)">
+        –
+        <input type="date" class="mini-date" value="${d.end}" onchange="setDelivField(${i},'end',this.value)">`;
+      rowsWrap.appendChild(datesRow);
+    }
+
     const sub = document.createElement('div');
     sub.className = 'sub-timeline' + (isOpenSub ? ' show' : '');
-    sub.innerHTML = d.activities.map(a=>{
+    sub.innerHTML = d.activities.filter(a=>a.date).map(a=>{
       const pct = Math.min(100, Math.max(0,(dayOffset(a.date, base)/totalDays)*100));
       return `<div class="sub-dot ${a.status}" style="left:${pct}%;" title="${a.name} — ${formatDate(a.date)} — ${statusLabel(a.status)}"></div>`;
     }).join('');
     rowsWrap.appendChild(sub);
 
-    const obs = state.ganttObs[i] || {text:"", required:false};
+    const obs = project.data.ganttObs[i] || {text:"", required:false};
     const obsRow = document.createElement('div');
     obsRow.className = 'gantt-obs-row';
-    const isOpen = !!openObs[i];
-    if(isAdmin && isOpen){
+    const isOpenObs = !!openObs[i];
+    if(isAdmin() && isOpenObs){
       obsRow.innerHTML = `
         <div style="flex:1;">
           <textarea id="obsInput${i}" placeholder="Escribe una observación para este entregable...">${obs.text||''}</textarea>
@@ -1094,7 +1485,7 @@ function renderGantt(){
         </div>`;
     } else {
       obsRow.innerHTML = `
-        ${isAdmin ? `<button class="obs-btn" onclick="openObsBox(${i})">${obs.text? 'Editar observación':'Agregar observación'}</button>` : ''}
+        ${isAdmin() ? `<button class="obs-btn" onclick="openObsBox(${i})">${obs.text? 'Editar observación':'Agregar observación'}</button>` : ''}
         ${obs.text ? `<div class="obs-box">${obs.required?'<span class="obs-required">Requiere atención</span>':''}${obs.text}</div>` : ''}
       `;
     }
@@ -1109,10 +1500,9 @@ function closeObs(i){ openObs[i]=false; renderGantt(); }
 function saveObs(i){
   const text = document.getElementById('obsInput'+i).value.trim();
   const required = document.getElementById('obsReq'+i).checked;
-  state.ganttObs[i] = {text, required};
+  project.data.ganttObs[i] = {text, required};
   openObs[i] = false;
-  saveState();
-  renderGantt();
+  saveProject(); renderGantt();
 }
 
 /* =========================================================
@@ -1121,16 +1511,18 @@ function saveObs(i){
 function renderComps(){
   const wrap = document.getElementById('compList');
   wrap.innerHTML='';
-  state.comps.forEach((c,idx)=>{
+  project.data.comps.forEach((c,idx)=>{
     const el = document.createElement('div');
     el.className='comp';
-    const adminInputs = isAdmin ? `
+    const nameHtml = isAdmin() ? `<input type="text" class="comp-name-input" value="${(c.name||'').replace(/"/g,'&quot;')}" onchange="setCompField(${idx},'name',this.value)">` : `<span>${c.name}</span>`;
+    const adminInputs = isAdmin() ? `
       <div class="comp-admin-inputs">
         <input type="number" min="0" max="100" value="${c.pre}" onchange="setCompVal(${idx},'pre',this.value)"> pre
         <input type="number" min="0" max="100" value="${c.post}" onchange="setCompVal(${idx},'post',this.value)"> post
+        <button class="remove-x" onclick="removeComp(${idx})">✕</button>
       </div>` : '';
     el.innerHTML = `
-      <div class="comp-label"><span>${c.name}</span><b>${c.pre}% → ${c.post}%</b></div>
+      <div class="comp-label">${nameHtml}<b>${c.pre}% → ${c.post}%</b></div>
       <div class="bar-track" style="margin-bottom:5px;"><div class="bar-fill" style="width:${c.pre}%"></div></div>
       <div class="bar-track"><div class="bar-fill post" style="width:${c.post}%"></div></div>
       ${adminInputs}
@@ -1138,43 +1530,26 @@ function renderComps(){
     wrap.appendChild(el);
   });
 }
+function setCompField(idx,field,val){ project.data.comps[idx][field]=val; saveProject(); renderComps(); }
 function setCompVal(idx, field, val){
   let n = parseInt(val); if(isNaN(n)) n=0; if(n<0)n=0; if(n>100)n=100;
-  state.comps[idx][field] = n;
-  saveState();
-  renderComps();
+  project.data.comps[idx][field] = n; saveProject(); renderComps();
 }
+function addComp(){ project.data.comps.push({id:uid(), name:"Nueva competencia", pre:0, post:0}); saveProject(); renderComps(); }
+function removeComp(idx){ project.data.comps.splice(idx,1); saveProject(); renderComps(); }
 
 /* =========================================================
-   BOOT / RENDER ALL
+   RENDER ALL
 ========================================================= */
 function renderAll(){
-  updateSessionUI();
+  updateHeaderUI();
   renderReport();
   renderDeliverables();
-  if(firstDelivRender){ const b0=document.getElementById('block-0'); if(b0) b0.classList.add('open'); firstDelivRender=false; }
   renderLogs();
   renderTools();
   renderGoals();
   renderGantt();
   renderComps();
-}
-
-async function boot(){
-  await loadState();
-  renderAll();
-  if(!APPS_SCRIPT_URL) return; // sin backend configurado, no hay nada que sondear
-  setInterval(async ()=>{
-    try{
-      const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now());
-      const text = await res.text();
-      const parsed = JSON.parse(text);
-      if(parsed && Object.keys(parsed).length && JSON.stringify(parsed) !== JSON.stringify(state)){
-        state = Object.assign(defaultState(), parsed);
-        renderAll();
-      }
-    }catch(e){ /* backend no disponible temporalmente; se omite este sondeo */ }
-  }, 20000);
 }
 </script>
 </body>
