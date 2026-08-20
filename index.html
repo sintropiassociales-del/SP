@@ -809,7 +809,7 @@ function updateHeaderUI(){
   else { pill.textContent = 'Modo visitante · Iniciar sesión'; pill.className='session-pill'; }
 
   const toggleBtn = document.getElementById('viewToggleBtn');
-  if(role==='admin'){
+  if(role==='admin' && project){
     toggleBtn.classList.remove('hidden');
     toggleBtn.textContent = adminView==='dashboard' ? 'Gestionar proyectos' : 'Ver panel del proyecto';
   } else {
@@ -865,6 +865,10 @@ async function loadProjectsList(){
   body.innerHTML = '<tr><td colspan="7" class="empty">Cargando…</td></tr>';
   try{
     const list = await fetchProjectsList();
+    if(!Array.isArray(list)){
+      body.innerHTML = '<tr><td colspan="7" class="empty">El backend de Apps Script todavía tiene el código anterior (de un solo proyecto). Pega Sintropia_Track_backend.gs completo en Code.gs y despliega "Nueva versión" para activar la gestión de varios proyectos.</td></tr>';
+      return;
+    }
     if(!list.length){ body.innerHTML = '<tr><td colspan="7" class="empty">Aún no hay proyectos creados.</td></tr>'; return; }
     body.innerHTML = '';
     list.forEach(p=>{
@@ -924,7 +928,14 @@ async function createProject(){
   if(coordPass) rec.coordinatorPass = coordPass;
 
   try{
-    await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(rec) });
+    const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(rec) });
+    const text = await res.text();
+    let parsed = null;
+    try{ parsed = JSON.parse(text); }catch(err){}
+    if(!parsed || parsed.ok !== true){
+      alert('El backend respondió, pero no de la forma esperada. Es probable que Code.gs todavía tenga el código anterior — pega Sintropia_Track_backend.gs completo y despliega "Nueva versión".');
+      return;
+    }
     document.getElementById('npName').value=''; document.getElementById('npClient').value='';
     document.getElementById('npCode').value=''; document.getElementById('npExpires').value='';
     document.getElementById('npCoordEmail').value=''; document.getElementById('npCoordPass').value='';
