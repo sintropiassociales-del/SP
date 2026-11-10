@@ -8,6 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
@@ -236,6 +239,47 @@
     .gantt-months,.sub-timeline,.gantt-dates-row,.gantt-obs-row{margin-left:0;} .gantt-row{grid-template-columns:1fr;}
     .user-row{grid-template-columns:1fr;}
   }
+
+  /* ---------- Sintro Activities + Indicadores ---------- */
+  .sa-h3{font-size:16px; margin:0; color:var(--purple-dark);}
+  .sa-sub{font-size:12.5px; color:var(--grey); margin:4px 0 14px; line-height:1.55;}
+  #panel-sintro .card p, .sa-doc p{font-size:13.5px; line-height:1.65; margin:0 0 10px;}
+  #panel-sintro .card ul{margin:4px 0 12px 18px; padding:0; font-size:13.5px; line-height:1.6;}
+  #panel-sintro .card li{margin-bottom:4px;}
+  .sa-trans{border-left:4px solid var(--purple);} .sa-trans.sa-gen{border-left-color:var(--orange);}
+  .sa-drop{border:2px dashed #C9B2FA; border-radius:12px; padding:24px 16px; text-align:center; cursor:pointer; background:#FBFAFE;}
+  .sa-drop:hover,.sa-drop.over,.sa-drop:focus-visible{border-color:var(--purple); background:var(--purple-light); outline:none;}
+  .sa-drop b{color:var(--purple-dark); font-size:14px;} .sa-drop span{display:block; font-size:12px; color:var(--grey); margin-top:4px;}
+  .sa-file{font-size:12.5px !important; color:var(--grey); font-weight:600; margin:10px 0 0 !important;} .sa-file.ok{color:var(--ok);}
+  .sa-steps{list-style:none; margin:0 0 14px !important; padding:0;}
+  .sa-steps li{display:flex; gap:12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); color:var(--grey); font-size:13.5px; margin:0 !important;}
+  .sa-steps li:last-child{border-bottom:none;}
+  .sa-steps li span{flex:0 0 76px; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;}
+  .sa-steps li.done{color:var(--ink);} .sa-steps li.done span{color:var(--ok);}
+  .sa-steps li.on{color:var(--ink); font-weight:600;} .sa-steps li.on span{color:var(--orange-dark); animation:saPulse 1.2s ease-in-out infinite;}
+  .sa-steps li.fail span{color:var(--red);}
+  @keyframes saPulse{50%{opacity:.35;}}
+  @media (prefers-reduced-motion:reduce){ .sa-steps li.on span{animation:none;} }
+  .sa-actions{display:flex; gap:16px; justify-content:space-between; align-items:center; flex-wrap:wrap;}
+  .sa-actions > div:first-child{flex:1; min-width:260px; font-size:13.5px;} .sa-actions span{display:block; font-size:12px; color:var(--grey); margin-top:4px; line-height:1.5;}
+  .sa-check{display:flex; align-items:center; gap:7px; margin:0; font-size:12px; color:var(--ink);} .sa-check input{width:auto;}
+  nav.sa-tabs{margin:4px 0 18px;}
+  .sa-ficha{display:grid; grid-template-columns:140px 1fr; gap:6px 16px; font-size:13.5px; margin:12px 0 0;} .sa-ficha dt{font-weight:700; color:var(--grey);} .sa-ficha dd{margin:0; line-height:1.6;}
+  .sa-eje{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin-bottom:8px;} .sa-eje span{font-family:'Montserrat','Open Sans',sans-serif; font-weight:800; font-size:13px; color:var(--orange);}
+  .sa-act{border-top:1px solid var(--line); margin-top:16px; padding-top:16px;} .sa-act h4{font-family:'Montserrat','Open Sans',sans-serif; font-size:14.5px; margin:0;}
+  .sa-meta{display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 8px;}
+  .sa-cap{font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--orange-dark); margin:12px 0 5px;}
+  .sa-two{display:grid; grid-template-columns:1fr 1fr; gap:0 24px;}
+  .sa-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px;} .sa-scroll table.grid td{vertical-align:top; font-size:12.5px; line-height:1.5;}
+  .sa-wide{margin-top:14px;} .sa-wide table{min-width:1250px;}
+  .sa-note{font-size:12px !important; color:var(--grey); margin:10px 0 0 !important;}
+  .sa-mej{border-top:1px solid var(--line); padding:14px 0;} .sa-mej:first-of-type{border-top:none; padding-top:2px;} .sa-mej h4{font-family:'Montserrat','Open Sans',sans-serif; font-size:14.5px; margin:8px 0 6px;} .sa-mej b{color:var(--purple-dark);}
+  .sa-inc li{font-style:italic;}
+  .sa-doc{border:1px solid var(--line); border-radius:10px; padding:24px; margin-top:16px; max-height:620px; overflow:auto;}
+  .sa-doc h1{font-size:22px; color:var(--purple); margin:0;} .sa-doc h2{font-size:17px; color:var(--purple); margin:22px 0 6px;} .sa-doc h3{font-size:15px; margin:16px 0 4px;} .sa-doc h4{font-family:'Montserrat','Open Sans',sans-serif; font-size:13.5px; color:var(--orange-dark); margin:12px 0 4px;}
+  .sa-doc .sa-scroll{margin:6px 0 12px;} .sa-dmeta{font-size:12px !important; color:var(--grey);}
+  table.sa-ind{min-width:1100px; margin:0;} table.sa-ind td{font-size:12.5px;} table.sa-ind textarea{min-height:44px;}
+  @media (max-width:860px){ .sa-two{grid-template-columns:1fr;} .sa-ficha{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -311,6 +355,8 @@
       <button class="tab" data-tab="caja">Caja de herramientas</button>
       <button class="tab" data-tab="planeacion">Planeación estratégica</button>
       <button class="tab" data-tab="evaluacion">Evaluación de competencias</button>
+      <button class="tab" data-tab="indicadores">Indicadores</button>
+      <button class="tab hidden" data-tab="sintro" id="tabSintro">Sintro Activities</button>
     </nav>
 
     <section class="panel active" id="panel-entregables">
@@ -394,6 +440,19 @@
       <div id="compList"></div>
       <button class="add-row-btn hidden" id="addCompBtn" onclick="addComp()">Agregar competencia</button>
       <div class="legend"><span><i class="dot" style="background:var(--pending)"></i> Antes</span><span><i class="dot" style="background:linear-gradient(90deg,var(--purple),var(--orange))"></i> Después</span></div>
+    </section>
+
+    <section class="panel" id="panel-indicadores">
+      <h2 class="panel-title" style="margin-top:0;">Indicadores</h2>
+      <p class="panel-desc" id="indDesc"></p>
+      <div id="indList"></div>
+      <button class="add-row-btn hidden" id="addIndBtn" onclick="addInd()">Agregar indicador</button>
+    </section>
+
+    <section class="panel" id="panel-sintro">
+      <h2 class="panel-title" style="margin-top:0;">Sintro Activities</h2>
+      <p class="panel-desc">Del documento del proyecto a su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Lo que salga de aquí se puede pasar al seguimiento del proyecto.</p>
+      <div id="saBox"></div>
     </section>
 
     <footer class="foot"><span>Sintropía Social — Plataforma de seguimiento</span><span id="footVig"></span></footer>
@@ -724,6 +783,8 @@ function normalizeData(d){
   o.deliverables.forEach(x=>{ x.id=x.id||uid(); x.activities=x.activities||[]; x.activities.forEach(a=>{a.id=a.id||uid();}); });
   o.tools.forEach(x=>{ x.id=x.id||uid(); x.subitems=x.subitems||[]; x.subitems.forEach(s=>{s.id=s.id||uid();}); });
   o.goals.forEach(x=>{x.id=x.id||uid();}); o.comps.forEach(x=>{x.id=x.id||uid();}); o.logs.forEach(x=>{x.id=x.id||uid();});
+  o.indicators=Array.isArray(d.indicators)?d.indicators:[]; o.indicators.forEach(x=>{x.id=x.id||uid();});
+  if(o.sa&&typeof o.sa!=='object') delete o.sa;
   // ganttObs ahora se indexa por id de entregable (antes por posición)
   const obs={}; Object.keys(o.ganttObs||{}).forEach(k=>{ const byId=o.deliverables.find(x=>x.id===k); if(byId) obs[k]=o.ganttObs[k]; else if(/^\d+$/.test(k)&&o.deliverables[+k]) obs[o.deliverables[+k].id]=o.ganttObs[k]; });
   o.ganttObs=obs;
@@ -778,7 +839,7 @@ function renderProject(){
   $('reportAdminControls').style.display=canEdit()?'flex':'none';
   renderAll();
 }
-function renderAll(){ renderReport(); renderDeliverables(); renderLogs(); renderTools(); renderGoals(); renderGantt(); renderComps(); }
+function renderAll(){ renderReport(); renderDeliverables(); renderLogs(); renderTools(); renderGoals(); renderGantt(); renderComps(); renderIndicators(); renderSintro(); }
 
 /* ---- guardado (solo Admin general) ---- */
 let dirty=false, saving=false, saveTimer=null, conflict=false;
@@ -851,7 +912,7 @@ function dateCtl(kind,id,field,val,parentId,mini){
 /* ---- sugerencias (Admin de proyecto) ---- */
 async function openSuggest(){
   openModal(`<div class="modal-title">Sugerir un cambio</div><div class="modal-sub">Tu sugerencia llega como ticket al Admin general de Sintropía Social. Te avisaremos por correo cuando se atienda.</div>
-    <label>Sección</label><select id="sgSection"><option>Entregables</option><option>Bitácora</option><option>Caja de herramientas</option><option>Planeación</option><option>Evaluación</option><option>Otro</option></select>
+    <label>Sección</label><select id="sgSection"><option>Entregables</option><option>Bitácora</option><option>Caja de herramientas</option><option>Planeación</option><option>Evaluación</option><option>Indicadores</option><option>Otro</option></select>
     <label style="margin-top:12px;">¿Qué cambio propones?</label><textarea id="sgMsg" rows="4" placeholder="Describe el cambio con el mayor detalle posible"></textarea>
     <div class="modal-actions"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn orange" onclick="sendSuggest()">Enviar sugerencia</button></div>
     <div class="section-sep"><h4>Tus sugerencias en este proyecto</h4><div id="myTickets"><p class="empty">Cargando…</p></div></div>`);
@@ -1125,6 +1186,7 @@ function exportProjectPDF(){
     w.h('Planeación estratégica'); m.d.goals.filter(g=>g.area||g.meta).forEach(g=>w.p('- '+g.area+': '+g.meta+(g.resp?' (Responsable: '+g.resp+')':'')+(g.horizonte?' - '+g.horizonte:''),{size:9.5,after:0.8}));
     const ob=m.d.deliverables.filter(d=>m.d.ganttObs[d.id]&&m.d.ganttObs[d.id].text); if(ob.length){ w.p('Observaciones del cronograma',{bold:true,after:0.5}); ob.forEach(d=>{ const o=m.d.ganttObs[d.id]; w.p('- '+d.name+(o.required?' [Requiere atención]':'')+': '+o.text,{size:9.5,after:0.5}); }); }
     w.h('Evaluación de competencias'); m.d.comps.forEach(c=>w.p('- '+c.name+': '+c.pre+'% antes, '+c.post+'% después',{size:9.5,after:0.5}));
+    if(m.d.indicators.length){ w.h('Indicadores'); m.d.indicators.forEach(x=>w.p('- '+x.nombre+' | Línea base: '+(x.linea_base||'-')+' | Meta: '+(x.meta||'-')+' | Valor actual: '+(x.valor||'-')+(x.obs?' | '+x.obs:''),{size:9.5,after:0.8})); }
     w.save(fileBase()+'_proyecto.pdf'); }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
 }
 function wordDoc(title,body){ return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1F1B2E} h1{color:#6B21F5;font-size:20pt;margin-bottom:2pt} h2{color:#1F1B2E;font-size:14pt;border-bottom:1px solid #E7E2F3;padding-bottom:2pt;margin-top:18pt} th{background:#6B21F5;color:#fff;text-align:left} td,th{padding:4pt 6pt;border:1px solid #D8D2EA;vertical-align:top} table{border-collapse:collapse;width:100%} .m{color:#6B6878;font-size:10pt}</style></head><body>${body}</body></html>`; }
@@ -1139,6 +1201,7 @@ function exportProjectWord(){
     b+='<h2>Caja de herramientas</h2><table><tr><th>Herramienta</th><th>Categoría</th><th>Estatus</th><th>Fecha estimada</th><th>Nota</th></tr>'+d.tools.map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.tag)}</td><td>${t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'}</td><td>${esc(fmt(t.due,true))}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>';
     b+='<h2>Planeación estratégica</h2><table><tr><th>Prioridad</th><th>Meta SMART</th><th>Responsable</th><th>Horizonte</th></tr>'+d.goals.map(g=>`<tr><td>${esc(g.area)}</td><td>${esc(g.meta)}</td><td>${esc(g.resp)}</td><td>${esc(g.horizonte)}</td></tr>`).join('')+'</table>';
     b+='<h2>Evaluación de competencias</h2><table><tr><th>Competencia</th><th>Antes</th><th>Después</th></tr>'+d.comps.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.pre}%</td><td>${c.post}%</td></tr>`).join('')+'</table>';
+    if(d.indicators.length) b+='<h2>Indicadores</h2><table><tr><th>Actividad</th><th>Indicador</th><th>Línea base</th><th>Meta</th><th>Valor actual</th><th>Observación</th></tr>'+d.indicators.map(x=>`<tr><td>${esc(x.actividad)}</td><td>${esc(x.nombre)}</td><td>${esc(x.linea_base)}</td><td>${esc(x.meta)}</td><td>${esc(x.valor)}</td><td>${esc(x.obs)}</td></tr>`).join('')+'</table>';
     download(new Blob(['﻿',wordDoc(m.name,b)],{type:'application/msword'}),fileBase()+'_proyecto.doc'); }catch(e){ console.error(e); toast('No se pudo generar el documento Word.',true); }
 }
 function exportLogExcel(){
@@ -1155,7 +1218,363 @@ function exportProjectExcel(){
     add(tools,'Herramientas',{});
     add(d.goals.map(g=>({Prioridad:g.area,'Meta SMART':g.meta,Responsable:g.resp,Horizonte:g.horizonte})),'Planeacion',{});
     add(d.comps.map(c=>({Competencia:c.name,'Antes (%)':c.pre,'Después (%)':c.post})),'Competencias',{});
+    if(d.indicators.length) add(d.indicators.map(x=>({Actividad:x.actividad,Indicador:x.nombre,Tipo:x.tipo,'Línea base':x.linea_base,Meta:x.meta,Frecuencia:x.frecuencia,'Medio de verificación':x.medio,'Valor actual':x.valor,Observación:x.obs})),'Indicadores',{});
     XLSX.writeFile(wb,fileBase()+'_proyecto.xlsx'); }catch(e){ console.error(e); toast('No se pudo generar el archivo Excel.',true); }
+}
+
+/* =========================================================
+   INDICADORES (seguimiento)
+   Nacen de Sintro Activities al "pasar a seguimiento" o se agregan a mano.
+========================================================= */
+const IND_COLS=[['actividad','Actividad'],['nombre','Indicador'],['tipo','Tipo'],['linea_base','Línea base'],['meta','Meta'],['frecuencia','Frecuencia'],['medio','Medio de verificación'],['valor','Valor actual'],['obs','Observación']];
+function renderIndicators(){
+  const w=$('indList'); if(!w) return; const E=canEdit(), list=project.data.indicators;
+  $('addIndBtn').classList.toggle('hidden',!E);
+  $('indDesc').textContent=E?'Registra el valor actual de cada indicador conforme se mide. Línea base y meta se ajustan cuando se levante la línea base.':'Avance de los indicadores del proyecto.';
+  if(!list.length){ w.innerHTML=`<p class="empty">Aún no hay indicadores.${E?' Se crean al pasar a seguimiento un análisis de Sintro Activities, o puedes agregarlos a mano.':''}</p>`; return; }
+  const cell=(x,k)=>{
+    if(!E) return esc(x[k]||'');
+    if(k==='actividad'||k==='nombre'||k==='medio'||k==='obs') return `<textarea onchange="setInd('${x.id}','${k}',this.value)">${esc(x[k]||'')}</textarea>`;
+    return `<input type="text" value="${esc(x[k]||'')}" onchange="setInd('${x.id}','${k}',this.value)">`;
+  };
+  w.innerHTML=`<div class="sa-scroll"><table class="smart sa-ind"><thead><tr>${IND_COLS.map(c=>`<th>${c[1]}</th>`).join('')}${E?'<th></th>':''}</tr></thead><tbody>${list.map(x=>`<tr>${IND_COLS.map(c=>`<td>${cell(x,c[0])}</td>`).join('')}${E?`<td><button class="remove-x" onclick="removeInd('${x.id}')">Quitar</button></td>`:''}</tr>`).join('')}</tbody></table></div>`;
+}
+function setInd(id,f,v){ const x=project.data.indicators.find(i=>i.id===id); if(!x) return; x[f]=v; persist(); }
+function addInd(){ project.data.indicators.push({id:uid(),actividad:'',nombre:'Nuevo indicador',tipo:'',linea_base:'',meta:'',frecuencia:'',medio:'',valor:'',obs:''}); persist(); renderIndicators(); }
+async function removeInd(id){ if(!(await askConfirm('Quitar indicador','Se eliminará este indicador y su avance.','Quitar',true))) return; project.data.indicators=project.data.indicators.filter(i=>i.id!==id); persist(); renderIndicators(); }
+
+/* =========================================================
+   SINTRO ACTIVITIES
+   Lee el documento del proyecto (Gemini, del lado del servidor: acción
+   saAnalyze) y entrega ejes, actividades, subactividades, indicadores,
+   entregables, productos y recomendaciones. El análisis se guarda en
+   project.data.sa y puede pasarse al seguimiento del proyecto.
+========================================================= */
+const SA_MAX_DOC=90000;
+const SA_URL_LB='https://sintropiassociales-del.github.io/panel/diagnostico.html';
+const SA_TABS=[['lectura','Lectura'],['ejes','Ejes y actividades'],['matriz','Matriz de indicadores'],['mejoras','Mejoras y recomendaciones'],['documento','Documento'],['critica','Lectura crítica']];
+let saUI={proj:null,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null};
+const saL=x=>Array.isArray(x)?x.filter(v=>v!=null&&String(v).trim()!==''):(x?[x]:[]);
+const saData=()=>project.data.sa&&saL(project.data.sa.ejes).length?project.data.sa:null;
+
+function saNewDraft(){ const c=(project.data.sa&&project.data.sa.ctx)||{}; return {proyecto:c.proyecto||project.name||'',organizacion:c.organizacion||project.client||'',participantes:c.participantes||'',lugar:c.lugar||'',etapa:c.etapa||'',circunstancia:c.circunstancia||'',tieneLineaBase:c.tieneLineaBase||'',lineaBase:c.lineaBase||'',inicio:c.inicio||'',fin:c.fin||'',duracion:c.duracion||'',notas:c.notas||'',texto:''}; }
+
+function renderSintro(){
+  const box=$('saBox'); if(!box) return;
+  if(saUI.proj!==project){ saUI={proj:project,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null}; box.innerHTML=''; }
+  const sa=saData(), visible=canEdit()||(sa&&sa.visible);
+  const tab=$('tabSintro'); tab.classList.toggle('hidden',!visible);
+  if(!visible){ box.innerHTML=''; if(tab.classList.contains('active')) document.querySelector('#projTabs .tab[data-tab="entregables"]').click(); return; }
+  if(!saUI.mode) saUI.mode=sa?'results':'form';
+  if(!canEdit()) saUI.mode='results';
+  if(saUI.mode==='run'){ if(!$('saProgress')) saDrawRun(); return; }
+  if(saUI.mode==='form'){ if(!$('saForm')) saDrawForm(); return; }
+  saDrawResults();
+}
+
+/* ---- formulario: contexto, temporalidad y documento ---- */
+function saDrawForm(){
+  if(!saUI.draft) saUI.draft=saNewDraft();
+  const d=saUI.draft, f=(k,ph)=>`value="${esc(d[k])}" oninput="saUI.draft.${k}=this.value"${ph?` placeholder="${esc(ph)}"`:''}`;
+  const sel=(k,opts)=>`<select onchange="saUI.draft.${k}=this.value; saLbToggle()"><option value="">Selecciona…</option>${opts.map(o=>{const v=Array.isArray(o)?o[0]:o,t=Array.isArray(o)?o[1]:o; return `<option value="${esc(v)}" ${d[k]===v?'selected':''}>${esc(t)}</option>`;}).join('')}</select>`;
+  $('saBox').innerHTML=`<div id="saForm">
+    ${saData()?`<div class="banner info" style="margin:0 0 16px;">Este proyecto ya tiene un análisis. Si corres uno nuevo, lo reemplaza cuando termine. <button class="btn small" onclick="saUI.mode='results'; renderSintro()">Volver al análisis</button></div>`:''}
+    <div class="card"><h3 class="sa-h3">El proyecto</h3>
+      <div class="form-grid">
+        <div><label>Nombre del proyecto</label><input type="text" ${f('proyecto')}></div>
+        <div><label>Organización que acompaña</label><input type="text" ${f('organizacion')}></div>
+        <div class="full"><label>¿Quiénes participan?</label><input type="text" ${f('participantes','Ej: mujeres y hombres jóvenes de 15 a 24 años de tres localidades; comités comunitarios de agua')}></div>
+      </div></div>
+    <div class="card sa-trans"><h3 class="sa-h3">Contexto</h3><p class="sa-sub">Lugar, momento y circunstancia en que está el proyecto. En programas sociales esto decide si una actividad es posible o no.</p>
+      <div class="form-grid">
+        <div><label>Lugar *</label><input type="text" ${f('lugar','Municipio, región, tipo de territorio')}></div>
+        <div><label>Etapa en que está el proyecto *</label>${sel('etapa',['Idea o diseño','Buscando financiamiento','Por arrancar','En implementación','En cierre','En evaluación'])}</div>
+        <div class="full"><label>Momento y circunstancia *</label><textarea oninput="saUI.draft.circunstancia=this.value" placeholder="¿Qué está pasando en el territorio y en la organización en este momento? Cambios de gobierno, sequía, migración, violencia, un financiamiento que termina, un equipo nuevo…">${esc(d.circunstancia)}</textarea></div>
+        <div><label>¿El proyecto cuenta con línea base? *</label>${sel('tieneLineaBase',[['Sí','Sí, la tengo'],['Parcial','Parcial: hay algunos datos'],['No','No']])}</div>
+        <div class="full hidden" id="saLbBox"><label>Pega aquí la línea base o los datos de partida</label><textarea oninput="saUI.draft.lineaBase=this.value" placeholder="Cifras, hallazgos del diagnóstico, fecha en que se levantó…">${esc(d.lineaBase)}</textarea></div>
+      </div>
+      <div class="banner warn hidden" id="saLbWarn">Sin línea base no hay contra qué medir el cambio: los indicadores saldrán con línea base y metas «por definir». Puedes levantar un punto de partida con el <a href="${SA_URL_LB}" target="_blank" rel="noopener">Diagnóstico Social Rápido</a> y volver con ese resultado, o seguir y definirla después.</div></div>
+    <div class="card sa-trans"><h3 class="sa-h3">Temporalidad</h3><p class="sa-sub">Con la fecha de inicio, las actividades llegan al cronograma con fechas reales al pasarlas a seguimiento.</p>
+      <div class="form-grid">
+        <div><label>Fecha de inicio</label><input type="date" ${f('inicio')}></div>
+        <div><label>Fecha de cierre</label><input type="date" ${f('fin')}></div>
+        <div class="full"><label>O la duración, si aún no hay fechas</label><input type="text" ${f('duracion','Ej: 18 meses a partir de que se apruebe el financiamiento')}></div>
+      </div></div>
+    <div class="card sa-trans sa-gen"><h3 class="sa-h3">Enfoque de género</h3><p class="sa-sub">No se captura: se aplica. Las observaciones, el análisis y los indicadores se escriben con enfoque de género, y se señala dónde el documento reproduce sesgos.</p>
+      <label>¿Algo que deba saberse sobre quién decide, quién cuida y quién queda fuera? (opcional)</label><textarea oninput="saUI.draft.notas=this.value" placeholder="También sirve para cualquier otra nota que el documento no diga.">${esc(d.notas)}</textarea></div>
+    <div class="card"><h3 class="sa-h3">El documento</h3><p class="sa-sub">Propuesta técnica, marco lógico, términos de referencia, plan de trabajo o nota conceptual.</p>
+      <div class="sa-drop" id="saDrop" tabindex="0" role="button"><b>Arrastra el documento aquí o haz clic para elegirlo</b><span>PDF, Word (.docx) o texto (.txt, .md). El archivo se lee en tu navegador; solo el texto se envía a analizar.</span></div>
+      <input type="file" id="saFile" accept=".pdf,.docx,.txt,.md" class="hidden">
+      <div id="saFileMsg">${saUI.docMsg}</div>
+      <label style="margin-top:14px;">O pega el texto del documento</label><textarea style="min-height:110px;" oninput="saUI.draft.texto=this.value">${esc(d.texto)}</textarea>
+      <div id="saFormMsg"></div>
+      <button class="btn orange primary-action" onclick="saStart()">Analizar documento</button></div>
+  </div>`;
+  const drop=$('saDrop'), inp=$('saFile');
+  drop.onclick=()=>inp.click();
+  drop.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inp.click(); } };
+  drop.ondragover=e=>{ e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave=()=>drop.classList.remove('over');
+  drop.ondrop=e=>{ e.preventDefault(); drop.classList.remove('over'); if(e.dataTransfer.files[0]) saReadFile(e.dataTransfer.files[0]); };
+  inp.onchange=()=>{ if(inp.files[0]) saReadFile(inp.files[0]); };
+  saLbToggle();
+}
+function saLbToggle(){ const v=saUI.draft.tieneLineaBase; if($('saLbBox')){ $('saLbBox').classList.toggle('hidden',!(v==='Sí'||v==='Parcial')); $('saLbWarn').classList.toggle('hidden',!(v==='No'||v==='Parcial')); } }
+function saFileMsg(html){ saUI.docMsg=html; if($('saFileMsg')) $('saFileMsg').innerHTML=html; }
+async function saReadFile(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  saFileMsg(`<p class="sa-file">Leyendo ${esc(file.name)}…</p>`);
+  try{
+    let t;
+    if(ext==='pdf'){
+      if(!window.pdfjsLib) throw new Error('No cargó el lector de PDF. Recarga la página.');
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise; const pages=[];
+      for(let i=1;i<=pdf.numPages;i++){ const tc=await (await pdf.getPage(i)).getTextContent(); pages.push(tc.items.map(it=>it.str+(it.hasEOL?'\n':' ')).join('')); }
+      t=pages.join('\n\n');
+    } else if(ext==='docx'){
+      if(!window.mammoth) throw new Error('No cargó el lector de Word. Recarga la página.');
+      t=(await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;
+    } else if(ext==='txt'||ext==='md'){ t=await file.text(); }
+    else throw new Error('Formato no admitido. Usa PDF, .docx o .txt (un .doc antiguo hay que guardarlo como .docx).');
+    t=String(t||'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    if(t.length<200) throw new Error('No pude extraer texto de este archivo (¿es un PDF escaneado?). Pega el texto en el recuadro de abajo.');
+    saUI.docFile=t; saUI.docName=file.name;
+    saFileMsg(`<p class="sa-file ok">${esc(file.name)} — ${t.length.toLocaleString('es-MX')} caracteres leídos.${t.length>SA_MAX_DOC?' El documento es largo: se analizan los primeros '+SA_MAX_DOC.toLocaleString('es-MX')+' caracteres.':''}</p>`);
+  }catch(e){ saUI.docFile=''; saUI.docName=''; saFileMsg(`<div class="banner bad" style="margin-top:10px;">${esc(e.message||'No se pudo leer el archivo.')}</div>`); }
+}
+
+/* ---- análisis por etapas (se puede reanudar) ---- */
+function saMonths(a,b){ if(!a||!b) return ''; const m=Math.round(dayOffset(b,a)/30.44); return m>0?m+' meses':''; }
+function saStart(){
+  const d=saUI.draft, msg=t=>{ $('saFormMsg').innerHTML=t?`<div class="banner bad" style="margin-top:12px;">${esc(t)}</div>`:''; };
+  const texto=(d.texto||'').trim(), doc=saUI.docFile&&texto?saUI.docFile+'\n\n'+texto:(saUI.docFile||texto);
+  if(!d.lugar.trim()||!d.circunstancia.trim()||!d.etapa||!d.tieneLineaBase) return msg('Completa el contexto: lugar, etapa, momento y circunstancia, y si hay línea base. Sin eso el análisis queda en el aire.');
+  if(d.inicio&&d.fin&&d.fin<d.inicio) return msg('La fecha de cierre es anterior a la de inicio.');
+  if(doc.length<200) return msg('Sube el documento o pega su texto (al menos unos párrafos).');
+  const ctx=Object.assign({},d); delete ctx.texto; if(!ctx.duracion) ctx.duracion=saMonths(d.inicio,d.fin);
+  saUI.run={slug:project.slug,ctx,doc:doc.slice(0,SA_MAX_DOC),docName:saUI.docName,ficha:null,ejes:null,analisis:null,done:{},active:'',err:''};
+  saUI.mode='run'; saDrawRun(); saExec();
+  window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
+}
+function saDrawRun(){
+  const r=saUI.run; const steps=[['lectura','Lectura del documento, transversalidades y división en ejes']];
+  if(r.ejes) r.ejes.forEach((e,i)=>steps.push(['eje'+i,'Eje '+(i+1)+': '+e.nombre+' — subactividades, indicadores, entregables y productos']));
+  else steps.push(['ejes','Desarrollo de cada eje: subactividades, indicadores, entregables y productos']);
+  steps.push(['analisis','Justificación, propuesta, mejoras y recomendaciones']);
+  $('saBox').innerHTML=`<div class="card" id="saProgress" aria-live="polite"><h3 class="sa-h3">Leyendo el documento</h3><p class="sa-sub">Toma entre uno y cuatro minutos según el tamaño. Puedes revisar otras pestañas del proyecto mientras tanto, pero no cierres ni salgas de este proyecto.</p>
+    <ul class="sa-steps">${steps.map(s=>{ const st=r.done[s[0]]?'done':(s[0]===r.active?(r.err?'fail':'on'):''); return `<li class="${st}"><span>${st==='done'?'Listo':(st==='on'?'En curso':(st==='fail'?'Falló':'Pendiente'))}</span>${esc(s[1])}</li>`; }).join('')}</ul>
+    ${r.err?`<div class="banner bad">${esc(r.err)}</div><div class="toolbar-row"><button class="btn primary" onclick="saExec()">Reintentar desde aquí</button><button class="btn" onclick="saUI.mode='form'; renderSintro()">Volver al formulario</button></div>`:''}</div>`;
+}
+async function saExec(){
+  const r=saUI.run; if(!r) return; r.err='';
+  const alive=()=>project&&project.slug===r.slug&&saUI.run===r;
+  const paint=k=>{ r.active=k; if(alive()&&saUI.mode==='run') saDrawRun(); };
+  const call=(etapa,extra)=>api('saAnalyze',Object.assign({slug:r.slug,etapa,contexto:r.ctx,documento:r.doc},extra||{}));
+  try{
+    if(!r.done.lectura){
+      paint('lectura'); const a=await call('lectura'); if(!alive()) return;
+      if(!a.data||!saL(a.data.ejes).length) throw {message:'No pude identificar ejes de trabajo en el documento. Revisa que el texto sea el del proyecto.'};
+      r.ficha=a.data; r.ejes=saNormEjes(a.data.ejes); delete r.ficha.ejes; r.done.lectura=true;
+    }
+    for(let i=0;i<r.ejes.length;i++){
+      if(r.done['eje'+i]) continue;
+      paint('eje'+i); const e=r.ejes[i];
+      const b=await call('desarrollo',{ficha:Object.assign({},r.ficha,{ejes:r.ejes.map(x=>({id:x.id,nombre:x.nombre}))}),eje:{id:e.id,nombre:e.nombre,proposito:e.proposito,actividades:e.actividades.map(x=>({id:x.id,nombre:x.nombre,descripcion:x.descripcion,periodo:x.periodo,mes_inicio:x.mes_inicio,mes_fin:x.mes_fin}))}});
+      if(!alive()) return;
+      const dev=saL(b.data&&b.data.actividades);
+      e.actividades.forEach((x,j)=>{ const m=dev.find(v=>v.id===x.id)||dev[j]; if(!m) return; x.subactividades=saL(m.subactividades); x.indicadores=saL(m.indicadores); x.entregables=saL(m.entregables); x.productos_tentativos=saL(m.productos_tentativos); });
+      r.done['eje'+i]=true;
+    }
+    if(!r.done.analisis){
+      paint('analisis'); const c=await call('analisis',{ficha:r.ficha,ejes:r.ejes}); if(!alive()) return;
+      if(!c.data) throw {message:'El análisis llegó vacío.'};
+      r.analisis=c.data; r.done.analisis=true;
+    }
+  }catch(e){ if(!alive()) return; r.err=e.message||'Algo falló en esta etapa.'; if(saUI.mode==='run') saDrawRun(); return; }
+  const prev=project.data.sa||{};
+  project.data.sa={ctx:r.ctx,docName:r.docName,ficha:r.ficha,ejes:r.ejes,analisis:r.analisis,critica:null,visible:!!prev.visible,sentAt:'',generatedAt:new Date().toISOString()};
+  saUI.docKept=r.doc; saUI.run=null; saUI.mode='results'; saUI.tab='lectura'; saUI.draft=null; saUI.docFile=''; saUI.docName=''; saUI.docMsg='';
+  persist(); renderSintro(); toast('Análisis listo y guardado en el proyecto');
+}
+function saNormEjes(ejes){
+  return saL(ejes).map((e,i)=>{ const id=e.id||('E'+(i+1));
+    return {id,nombre:e.nombre||('Eje '+(i+1)),proposito:e.proposito||'',justificacion:e.justificacion||'',
+      actividades:saL(e.actividades).map((a,j)=>({id:a.id||(id+'.A'+(j+1)),nombre:a.nombre||'',descripcion:a.descripcion||'',periodo:a.periodo||'',mes_inicio:a.mes_inicio,mes_fin:a.mes_fin,origen:a.origen||'',subactividades:[],indicadores:[],entregables:[],productos_tentativos:[]}))}; });
+}
+function saEjes(){ return saL(project.data.sa.ejes).map(e=>Object.assign({},e,{actividades:saL(e.actividades).map(a=>Object.assign({},a,{subactividades:saL(a.subactividades),indicadores:saL(a.indicadores),entregables:saL(a.entregables),productos_tentativos:saL(a.productos_tentativos)}))})); }
+
+/* ---- resultados ---- */
+function saSetTab(t){ saUI.tab=t; saDrawResults(); }
+function saName(){ const s=project.data.sa; return (s.ctx&&s.ctx.proyecto)||(s.ficha&&s.ficha.proyecto&&s.ficha.proyecto.nombre)||project.name; }
+function saUl(arr,cls){ arr=saL(arr); return arr.length?`<ul${cls?` class="${cls}"`:''}>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''; }
+function saDrawResults(){
+  const sa=saData(); if(!sa){ $('saBox').innerHTML='<p class="empty">Aún no hay análisis para este proyecto.</p>'; return; }
+  const E=canEdit(); let tabs=SA_TABS; if(!E&&!sa.critica) tabs=tabs.filter(t=>t[0]!=='critica');
+  if(!tabs.some(t=>t[0]===saUI.tab)) saUI.tab='lectura';
+  const bar=E?`<div class="card tint sa-actions">
+      <div><b>${sa.sentAt?'Este análisis ya está en el seguimiento del proyecto.':'Pasa el análisis al seguimiento del proyecto.'}</b><span>Las actividades estratégicas llegan a Entregables y al cronograma con sus subactividades; los indicadores, a la pestaña Indicadores; los productos tentativos, a la Caja de herramientas.</span></div>
+      <div class="toolbar-row" style="margin:0;"><button class="btn primary" onclick="saToTracking()">${sa.sentAt?'Volver a pasar a seguimiento':'Pasar a seguimiento'}</button><button class="btn" onclick="saUI.mode='form'; saUI.draft=null; renderSintro()">Analizar otro documento</button>
+      <label class="sa-check"><input type="checkbox" ${sa.visible?'checked':''} onchange="saSetVisible(this.checked)"> Mostrar este análisis al equipo del proyecto</label></div></div>`:'';
+  const view={lectura:saVLectura,ejes:saVEjes,matriz:saVMatriz,mejoras:saVMejoras,documento:saVDocumento,critica:saVCritica}[saUI.tab]();
+  $('saBox').innerHTML=bar+`<nav class="tabs sa-tabs">${tabs.map(t=>`<button class="tab ${t[0]===saUI.tab?'active':''}" onclick="saSetTab('${t[0]}')">${t[1]}</button>`).join('')}</nav>`+view;
+}
+function saSetVisible(v){ project.data.sa.visible=!!v; persist(); toast(v?'El equipo del proyecto ya puede ver el análisis':'El análisis quedó solo para ti'); }
+
+function saVLectura(){
+  const s=project.data.sa, f=s.ficha||{}, p=f.proyecto||{}, c=f.contexto||{}, g=f.genero||{}, t=f.temporalidad||{}, x=s.ctx||{};
+  const lb=String(c.linea_base||'').toLowerCase();
+  return `<div class="card"><h3 class="sa-h3">${esc(saName())}</h3><dl class="sa-ficha"><dt>Organización</dt><dd>${esc(x.organizacion||p.organizacion||'No se indicó')}</dd><dt>Participan</dt><dd>${esc(x.participantes||p.participantes||'No se indicó')}</dd><dt>Objetivo general</dt><dd>${esc(p.objetivo_general||'El documento no lo enuncia')}</dd><dt>Resumen</dt><dd>${esc(p.resumen||'')}</dd>${s.docName?`<dt>Documento</dt><dd>${esc(s.docName)}</dd>`:''}</dl></div>
+    <div class="card sa-trans"><h3 class="sa-h3">Contexto</h3><p class="sa-sub">${esc([c.lugar||x.lugar,c.momento||x.etapa].filter(Boolean).join(' · '))}</p><p>${esc(c.lectura||'')}</p>${lb.indexOf('presente')===-1?`<div class="banner warn">Línea base ${esc(lb||'ausente')}. Los indicadores marcan su punto de partida como «por definir». Para levantarla puedes usar el <a href="${SA_URL_LB}" target="_blank" rel="noopener">Diagnóstico Social Rápido</a>.</div>`:''}</div>
+    <div class="card sa-trans sa-gen"><h3 class="sa-h3">Enfoque de género</h3><p>${esc(g.lectura||'')}</p>${saL(g.alertas).length?'<div class="sa-cap">Lo que hay que corregir en el documento</div>'+saUl(g.alertas):''}</div>
+    <div class="card sa-trans"><h3 class="sa-h3">Temporalidad</h3><p class="sa-sub">${esc([x.inicio?fmt(x.inicio,true):t.inicio,x.fin?fmt(x.fin,true):t.fin,x.duracion||t.duracion].filter(Boolean).join(' · '))}</p><p>${esc(t.lectura||'')}</p></div>
+    ${saL(f.vacios).length?`<div class="card"><h3 class="sa-h3">Lo que el documento no dice</h3><p class="sa-sub">Información que hace falta para planear o medir.</p>${saUl(f.vacios)}</div>`:''}`;
+}
+function saVEjes(){
+  const org=o=>{ o=String(o||'').toLowerCase(); return o.indexOf('prop')===0?'<span class="chip abierto">Propuesta nueva</span>':(o?'<span class="chip cerrado">Viene del documento</span>':''); };
+  return saEjes().map((e,i)=>`<div class="card"><div class="sa-eje"><span>EJE ${i+1}</span><h3 class="sa-h3">${esc(e.nombre)}</h3></div><p><b>Propósito.</b> ${esc(e.proposito)}</p>${e.justificacion?`<p>${esc(e.justificacion)}</p>`:''}
+    ${e.actividades.map((a,j)=>`<div class="sa-act"><h4>${i+1}.${j+1} ${esc(a.nombre)}</h4><div class="sa-meta">${a.periodo?`<span class="chip activo">${esc(a.periodo)}</span>`:''}${org(a.origen)}</div><p>${esc(a.descripcion)}</p>
+      ${a.subactividades.length?`<div class="sa-cap">Subactividades</div><div class="sa-scroll"><table class="grid"><thead><tr><th>Subactividad</th><th>En qué consiste</th><th>Periodo</th><th>Quién la lleva</th></tr></thead><tbody>${a.subactividades.map(s=>`<tr><td><b>${esc(s.nombre)}</b></td><td>${esc(s.descripcion)}</td><td>${esc(s.periodo)}</td><td>${esc(s.responsable)}</td></tr>`).join('')}</tbody></table></div>`:''}
+      <div class="sa-two"><div><div class="sa-cap">Indicadores</div>${saUl(a.indicadores.map(x=>x.nombre+(x.tipo?' ('+x.tipo+')':'')))}</div><div><div class="sa-cap">Entregables</div>${saUl(a.entregables)}<div class="sa-cap">Productos tentativos</div>${saUl(a.productos_tentativos)}</div></div></div>`).join('')}</div>`).join('');
+}
+const SA_COLS=['Eje','Actividad estratégica','Indicador','Tipo','Fórmula','Línea base','Meta','Frecuencia','Medio de verificación','Desagregación'];
+function saRows(full){ const rows=[]; saEjes().forEach((e,i)=>e.actividades.forEach((a,j)=>a.indicadores.forEach(x=>{ let r=[(i+1)+'. '+e.nombre,(i+1)+'.'+(j+1)+' '+a.nombre,x.nombre||'',x.tipo||'',x.formula||'',x.linea_base||'',x.meta||'',x.frecuencia||'',x.medio_verificacion||'',x.desagregacion||'']; if(full) r=r.concat([x.definicion||'',x.unidad||'',x.supuesto||'',a.periodo||'',a.entregables.join(' · '),a.productos_tentativos.join(' · ')]); rows.push(r); }))); return rows; }
+function saTable(cols,rows){ return `<table class="grid"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; }
+const SA_FMT_NOTE='<p class="sa-note">Los archivos .docx y .xlsx abren directo en Google Docs y Google Sheets. El PDF se genera desde el cuadro de impresión: elige «Guardar como PDF».</p>';
+function saVMatriz(){ const rows=saRows(false); return `<div class="card"><h3 class="sa-h3">Matriz de indicadores</h3><p class="sa-sub">${rows.length} indicadores. La hoja de cálculo trae además definición, unidad, supuestos, entregables y productos.</p><div class="toolbar-row" style="margin:0;"><button class="btn primary" onclick="saDownload('matriz-docx')">Word (.docx)</button><button class="btn primary" onclick="saDownload('matriz-xlsx')">Excel / Sheets (.xlsx)</button><button class="btn" onclick="saDownload('matriz-pdf')">PDF</button></div>${SA_FMT_NOTE}<div class="sa-scroll sa-wide">${saTable(SA_COLS,rows)}</div></div>`; }
+function saMejoras(){ const o={alta:0,media:1,baja:2}, k=m=>{ const v=o[String(m.prioridad).toLowerCase()]; return v==null?3:v; }; return saL(project.data.sa.analisis&&project.data.sa.analisis.mejoras).slice().sort((a,b)=>k(a)-k(b)); }
+function saVMejoras(){ const a=project.data.sa.analisis||{};
+  return `<div class="card"><h3 class="sa-h3">Análisis de mejoras y recomendaciones</h3><p class="sa-sub">Ordenadas por prioridad: lo que más compromete al proyecto va primero.</p>${saMejoras().map(m=>`<div class="sa-mej"><span class="chip ${String(m.prioridad).toLowerCase()==='alta'?'abierto':'activo'}">Prioridad ${esc(m.prioridad||'media')}</span> <span class="chip cerrado">${esc(m.ambito||'diseño')}</span><h4>${esc(m.titulo)}</h4><p><b>Lo que encuentro.</b> ${esc(m.hallazgo)}</p><p><b>Lo que recomiendo.</b> ${esc(m.recomendacion)}</p></div>`).join('')}</div>
+    ${saL(a.incognitas).length?`<div class="card"><h3 class="sa-h3">Incógnitas</h3><p class="sa-sub">Preguntas que quedan abiertas y que hay que llevar a territorio.</p>${saUl(a.incognitas,'sa-inc')}</div>`:''}`; }
+function saVDocumento(){ return `<div class="card"><h3 class="sa-h3">Documento</h3><p class="sa-sub">Justificación, propuesta, productos, matriz y análisis de mejoras y recomendaciones en un solo archivo${project.data.sa.critica?', con la lectura crítica ampliada.':'.'}</p><div class="toolbar-row" style="margin:0;"><button class="btn primary" onclick="saDownload('doc-docx')">Word (.docx)</button><button class="btn" onclick="saDownload('doc-pdf')">PDF</button></div>${SA_FMT_NOTE}<div class="sa-doc">${saBlocksHtml(saDocBlocks())}</div></div>`; }
+function saVCritica(){ const c=project.data.sa.critica;
+  if(!c) return `<div class="card"><h3 class="sa-h3">Lectura crítica ampliada</h3><p class="sa-sub">Solo se genera si la pides.</p><p>Es otra capa: ya no la revisión técnica, sino una lectura de fondo con IA sobre qué idea de las personas y del territorio sostiene el documento, qué relaciones de poder dibuja y qué deja fuera. Al generarla se suma al documento descargable.</p>${saUI.docKept?'':`<div class="banner info" style="margin:0 0 12px;">Para generarla necesito el texto del documento otra vez: el archivo no se guarda en el proyecto. Elígelo aquí. <input type="file" id="saFile2" accept=".pdf,.docx,.txt,.md" style="margin-top:8px;" onchange="saReadFile(this.files[0]).then(()=>{ if(saUI.docFile){ saUI.docKept=saUI.docFile.slice(0,SA_MAX_DOC); saUI.docFile=''; saUI.docName=''; saUI.docMsg=''; saDrawResults(); } })"><div id="saFileMsg"></div></div>`}<div id="saCritMsg"></div><button class="btn orange" id="saCritBtn" ${saUI.docKept?'':'disabled'} onclick="saCritica()">Pedir lectura crítica ampliada</button></div>`;
+  return `<div class="card"><h3 class="sa-h3">${esc(c.titulo||'Lectura crítica ampliada')}</h3><p class="sa-sub">Generada con IA a partir del documento y del análisis. Ya está incluida en el documento descargable.</p>${saL(c.parrafos).map(p=>`<p>${esc(p)}</p>`).join('')}${saL(c.incognitas).length?'<div class="sa-cap">Incógnitas</div>'+saUl(c.incognitas,'sa-inc'):''}</div>`; }
+async function saCritica(){
+  const b=$('saCritBtn'), s=project.data.sa, slug=project.slug; b.disabled=true; b.textContent='Escribiendo la lectura… puede tardar un minuto';
+  try{
+    const r=await api('saAnalyze',{slug,etapa:'critica',contexto:s.ctx,documento:saUI.docKept,ficha:s.ficha,ejes:s.ejes,analisis:s.analisis});
+    if(!project||project.slug!==slug) return;
+    if(!r.data||!saL(r.data.parrafos).length) throw {message:'La lectura llegó vacía. Intenta de nuevo.'};
+    project.data.sa.critica=r.data; persist(); saDrawResults();
+  }catch(e){ if(!project||project.slug!==slug) return; if($('saCritBtn')){ b.disabled=false; b.textContent='Pedir lectura crítica ampliada'; $('saCritMsg').innerHTML=`<div class="banner bad" style="margin:0 0 12px;">${esc(e.message||'No se pudo generar la lectura.')}</div>`; } }
+}
+
+/* ---- pasar a seguimiento: actividades → entregables y cronograma; indicadores; productos → caja ---- */
+function saAddMonths(iso,n){ const d=parseIso(iso); const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())); return isoOf(d); }
+function saSpan(x,def){ let a=parseInt(x.mes_inicio,10), b=parseInt(x.mes_fin,10); if(!(a>0)){ const m=String(x.periodo||'').match(/(\d+)(?:\D+(\d+))?/); if(m){ a=parseInt(m[1],10); b=parseInt(m[2]||m[1],10); } } if(!(a>0)) return def||null; if(!(b>=a)) b=a; return {a,b}; }
+async function saToTracking(){
+  if(!canEdit()) return; const s=project.data.sa, d=project.data, ini=s.ctx&&s.ctx.inicio, fin=s.ctx&&s.ctx.fin;
+  const again=d.deliverables.some(x=>x.sa)||d.indicators.some(x=>x.sa)||d.tools.some(x=>x.sa);
+  if(!(await askConfirm('Pasar a seguimiento', again?'Se reemplazará lo que llegó antes desde Sintro Activities: se pierden sus estatus, ligas, fechas ajustadas y valores de indicadores. Lo que agregaste a mano se conserva.':'Se crearán entregables con sus actividades, indicadores y herramientas a partir del análisis. Lo que ya tiene el proyecto se conserva.'+(ini?'':' Como no hay fecha de inicio, llegarán sin fechas: las pones después en el cronograma.'),'Pasar a seguimiento'))) return;
+  // fuera lo que vino antes de Sintro Activities y los renglones de ejemplo sin tocar
+  d.deliverables.filter(x=>x.sa).forEach(x=>{ delete d.ganttObs[x.id]; });
+  d.deliverables=d.deliverables.filter(x=>!x.sa&&!(x.name==='Entregable 1'&&!x.start&&!x.end&&x.activities.every(a=>a.name==='Actividad 1'&&!a.link&&!a.desc)));
+  d.tools=d.tools.filter(x=>!x.sa&&!(x.name==='Herramienta 1'&&!x.link&&!x.note&&!x.subitems.length));
+  d.indicators=d.indicators.filter(x=>!x.sa);
+  const clamp=v=>fin&&v>fin?fin:v;
+  const range=sp=>ini&&sp?{start:clamp(saAddMonths(ini,sp.a-1)),end:clamp(addDaysIso(saAddMonths(ini,sp.b),-1))}:{start:'',end:''};
+  saEjes().forEach((e,i)=>e.actividades.forEach((a,j)=>{
+    const code=(i+1)+'.'+(j+1), sp=saSpan(a), rg=range(sp);
+    const acts=a.subactividades.map(su=>({id:uid(),name:su.nombre||'Subactividad',desc:[su.descripcion,su.responsable?'Quién la lleva: '+su.responsable+'.':''].filter(Boolean).join(' '),date:range(saSpan(su,sp)).end,status:'pendiente',link:''}))
+      .concat(a.entregables.map(en=>({id:uid(),name:'Entregable: '+en,desc:'Evidencia de la actividad. Pega aquí la liga cuando esté lista.',date:rg.end,status:'pendiente',link:''})));
+    d.deliverables.push({id:uid(),sa:a.id,name:code+' '+a.nombre,start:rg.start,end:rg.end,status:'pendiente',activities:acts});
+    a.indicadores.forEach(x=>d.indicators.push({id:uid(),sa:a.id,actividad:code+' '+a.nombre,nombre:x.nombre||'',tipo:x.tipo||'',linea_base:x.linea_base||'',meta:x.meta||'',frecuencia:x.frecuencia||'',medio:x.medio_verificacion||'',valor:'',obs:''}));
+    a.productos_tentativos.forEach(pr=>d.tools.push({id:uid(),sa:a.id,tag:e.nombre,name:pr,note:'Producto tentativo de la actividad '+code+' '+a.nombre+'.',due:rg.end,status:'pendiente',link:'',subitems:[]}));
+  }));
+  s.sentAt=new Date().toISOString(); persist(); renderAll();
+  toast('Listo: revisa Entregables, Indicadores y Caja de herramientas');
+}
+
+/* ---- contenido de los entregables: un modelo de bloques → vista, Word y PDF ---- */
+function saMatrizBlocks(){ const x=project.data.sa.ctx||{}; return [{t:'h1',x:'Matriz de indicadores'},{t:'meta',x:[saName(),x.lugar,fmt(todayIso(),true)].filter(Boolean).join(' · ')},{t:'tabla',cols:SA_COLS,filas:saRows(false)},{t:'p',x:'Las líneas base y metas marcadas «por definir» o «tentativa» se ajustan al levantar la línea base del proyecto.'}]; }
+function saDocBlocks(){
+  const s=project.data.sa, f=s.ficha||{}, a=s.analisis||{}, c=f.contexto||{}, g=f.genero||{}, t=f.temporalidad||{}, x=s.ctx||{}, ejes=saEjes(), B=[];
+  const ps=arr=>saL(arr).forEach(v=>B.push({t:'p',x:v})), lis=arr=>saL(arr).forEach(v=>B.push({t:'li',x:v}));
+  B.push({t:'h1',x:saName()}); B.push({t:'meta',x:'Arquitectura de trabajo, indicadores y recomendaciones · '+[x.organizacion,x.lugar,fmt(todayIso(),true)].filter(Boolean).join(' · ')});
+  B.push({t:'h2',x:'1. Justificación'}); ps(a.justificacion);
+  B.push({t:'h2',x:'2. Punto de partida'}); B.push({t:'h3',x:'Contexto'}); ps([c.lectura]); B.push({t:'h3',x:'Enfoque de género'}); ps([g.lectura]); lis(g.alertas); B.push({t:'h3',x:'Temporalidad'}); ps([t.lectura]);
+  if(saL(f.vacios).length){ B.push({t:'h3',x:'Lo que el documento no dice'}); lis(f.vacios); }
+  B.push({t:'h2',x:'3. Propuesta'}); ps(a.propuesta);
+  ejes.forEach((e,i)=>{ B.push({t:'h3',x:'Eje '+(i+1)+'. '+e.nombre}); ps(['Propósito. '+e.proposito,e.justificacion]);
+    e.actividades.forEach((ac,j)=>{ B.push({t:'h4',x:(i+1)+'.'+(j+1)+' '+ac.nombre+(ac.periodo?' ('+ac.periodo+')':'')}); ps([ac.descripcion]);
+      if(ac.subactividades.length) B.push({t:'tabla',cols:['Subactividad','En qué consiste','Periodo','Quién la lleva'],filas:ac.subactividades.map(su=>[su.nombre||'',su.descripcion||'',su.periodo||'',su.responsable||''])});
+      if(ac.entregables.length) B.push({t:'p',x:'Entregables: '+ac.entregables.join('; ')+'.'}); }); });
+  B.push({t:'h2',x:'4. Productos tentativos'});
+  const prod=[]; ejes.forEach((e,i)=>e.actividades.forEach(ac=>{ if(ac.productos_tentativos.length) prod.push([(i+1)+'. '+e.nombre,ac.nombre,ac.productos_tentativos.join('; ')]); }));
+  B.push({t:'tabla',cols:['Eje','Actividad estratégica','Productos tentativos'],filas:prod});
+  B.push({t:'h2',x:'5. Matriz de indicadores'}); B.push({t:'tabla',chica:true,cols:['Actividad estratégica','Indicador','Tipo','Línea base','Meta','Frecuencia','Medio de verificación'],filas:saRows(false).map(r=>[r[1],r[2],r[3],r[5],r[6],r[7],r[8]])});
+  B.push({t:'p',x:'La matriz completa, con fórmulas, desagregación y supuestos, se entrega en archivo aparte.'});
+  B.push({t:'h2',x:'6. Análisis de mejoras y recomendaciones'});
+  saMejoras().forEach(m=>{ B.push({t:'h4',x:m.titulo+' — prioridad '+(m.prioridad||'media')+' · '+(m.ambito||'diseño')}); ps(['Lo que encuentro. '+m.hallazgo,'Lo que recomiendo. '+m.recomendacion]); });
+  B.push({t:'h2',x:'7. Incógnitas'}); lis(a.incognitas);
+  if(s.critica){ B.push({t:'h2',x:'8. '+(s.critica.titulo||'Lectura crítica ampliada')}); B.push({t:'meta',x:'Lectura generada con IA a partir del documento y del análisis.'}); ps(s.critica.parrafos); lis(s.critica.incognitas); }
+  return B;
+}
+function saBlocksHtml(B){ let h='', ul=false;
+  B.forEach(b=>{ if(b.t!=='li'&&ul){ h+='</ul>'; ul=false; }
+    if(b.t==='li'){ if(!ul){ h+='<ul>'; ul=true; } h+='<li>'+esc(b.x)+'</li>'; }
+    else if(b.t==='tabla') h+=`<div class="sa-scroll${b.chica?' chica':''}">${saTable(b.cols,b.filas)}</div>`;
+    else if(b.t==='meta') h+=`<p class="sa-dmeta">${esc(b.x)}</p>`;
+    else if(b.t==='h1') h+=`<h1>${esc(b.x)}</h1><div class="accent-rule"><i></i><i></i><i></i></div>`;
+    else h+=`<${b.t}>${esc(b.x)}</${b.t}>`; });
+  return h+(ul?'</ul>':''); }
+
+/* ---- descargas de Sintro Activities ---- */
+function saDownload(k){
+  try{ const base=slugify(saName()).slice(0,50);
+    if(k==='matriz-xlsx') return saXlsx(base);
+    if(k==='matriz-docx') return saDocx(saMatrizBlocks(),true,'matriz-indicadores-'+base+'.docx');
+    if(k==='matriz-pdf') return saPdf(saMatrizBlocks(),true,'Matriz de indicadores — '+saName());
+    if(k==='doc-docx') return saDocx(saDocBlocks(),false,'sintro-activities-'+base+'.docx');
+    if(k==='doc-pdf') return saPdf(saDocBlocks(),false,saName()+' — Sintro Activities');
+  }catch(e){ console.error(e); toast(e.message||'No se pudo generar el archivo.',true); }
+}
+function saXlsx(base){
+  const wb=XLSX.utils.book_new(); const sheet=(name,cols,rows,w)=>{ const ws=XLSX.utils.aoa_to_sheet([cols].concat(rows)); ws['!cols']=w.map(n=>({wch:n})); XLSX.utils.book_append_sheet(wb,ws,name); };
+  sheet('Matriz de indicadores',SA_COLS.concat(['Definición','Unidad','Supuesto','Periodo de la actividad','Entregables','Productos tentativos']),saRows(true),[26,34,38,12,40,22,26,16,34,26,40,14,34,18,40,40]);
+  const act=[]; saEjes().forEach((e,i)=>e.actividades.forEach((a,j)=>{ const p=[(i+1)+'. '+e.nombre,(i+1)+'.'+(j+1)+' '+a.nombre,a.periodo]; if(!a.subactividades.length) act.push(p.concat(['','','',''])); a.subactividades.forEach(su=>act.push(p.concat([su.nombre||'',su.descripcion||'',su.periodo||'',su.responsable||'']))); }));
+  sheet('Actividades',['Eje','Actividad estratégica','Periodo','Subactividad','En qué consiste','Periodo de la subactividad','Quién la lleva'],act,[26,36,16,34,50,20,26]);
+  sheet('Mejoras',['Prioridad','Ámbito','Título','Hallazgo','Recomendación'],saMejoras().map(m=>[m.prioridad||'',m.ambito||'',m.titulo||'',m.hallazgo||'',m.recomendacion||'']),[12,22,36,60,60]);
+  XLSX.writeFile(wb,'matriz-indicadores-'+base+'.xlsx');
+}
+// Word con la tipografía del manual: Montserrat en títulos, Open Sans en texto.
+function saDocx(B,landscape,name){
+  const D=window.docx; if(!D) throw new Error('No cargó el generador de Word. Recarga la página.');
+  const MOR='6B21F5', NAR='B84A0C', INK='1F1B2E', W=landscape?13680:9360;
+  const run=(x,o)=>{ o=o||{}; return new D.TextRun({text:String(x==null?'':x),font:o.font||'Open Sans',size:o.size||21,bold:!!o.bold,color:o.color||INK}); };
+  const kids=[];
+  B.forEach(b=>{
+    if(b.t==='h1'){ kids.push(new D.Paragraph({spacing:{after:60},children:[run('Sintropía ',{font:'Montserrat',bold:true,size:20,color:MOR}),run('Social',{font:'Montserrat',bold:true,size:20,color:'FF6B1A'}),run('  ·  Sintro Activities',{size:18,color:'6B6878'})]}));
+      kids.push(new D.Paragraph({spacing:{before:200,after:80},border:{bottom:{style:D.BorderStyle.SINGLE,size:12,color:'FF6B1A',space:6}},children:[run(b.x,{font:'Montserrat',bold:true,size:40,color:MOR})]})); }
+    else if(b.t==='h2') kids.push(new D.Paragraph({heading:D.HeadingLevel.HEADING_1,spacing:{before:360,after:120},keepNext:true,children:[run(b.x,{font:'Montserrat',bold:true,size:28,color:MOR})]}));
+    else if(b.t==='h3') kids.push(new D.Paragraph({heading:D.HeadingLevel.HEADING_2,spacing:{before:260,after:80},keepNext:true,children:[run(b.x,{font:'Montserrat',bold:true,size:24})]}));
+    else if(b.t==='h4') kids.push(new D.Paragraph({heading:D.HeadingLevel.HEADING_3,spacing:{before:200,after:60},keepNext:true,children:[run(b.x,{font:'Montserrat',bold:true,size:21,color:NAR})]}));
+    else if(b.t==='meta') kids.push(new D.Paragraph({spacing:{after:200},children:[run(b.x,{size:18,color:'6B6878'})]}));
+    else if(b.t==='li') kids.push(new D.Paragraph({bullet:{level:0},spacing:{after:60},children:[run(b.x)]}));
+    else if(b.t==='p') kids.push(new D.Paragraph({spacing:{after:140,line:300},children:[run(b.x)]}));
+    else if(b.t==='tabla'&&b.filas.length){
+      const n=b.cols.length, w=Math.floor(W/n), sz=(landscape||b.chica||n>4)?15:18, mg={top:60,bottom:60,left:80,right:80};
+      const cell=(x,h)=>new D.TableCell({width:{size:w,type:D.WidthType.DXA},margins:mg,shading:h?{type:D.ShadingType.CLEAR,color:'auto',fill:MOR}:undefined,children:[new D.Paragraph({children:[run(x,{size:sz,bold:h,color:h?'FFFFFF':INK})]})]});
+      const bd={style:D.BorderStyle.SINGLE,size:4,color:'D8D2EA'};
+      kids.push(new D.Table({width:{size:W,type:D.WidthType.DXA},columnWidths:b.cols.map(()=>w),borders:{top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd},
+        rows:[new D.TableRow({tableHeader:true,children:b.cols.map(c=>cell(c,true))})].concat(b.filas.map(f=>new D.TableRow({cantSplit:true,children:f.map(c=>cell(c,false))})))}));
+      kids.push(new D.Paragraph({spacing:{after:120},children:[]}));
+    }
+  });
+  const doc=new D.Document({creator:'Sintropía Social',title:saName(),styles:{default:{document:{run:{font:'Open Sans',size:21}}}},
+    sections:[{properties:{page:{size:{width:12240,height:15840,orientation:landscape?D.PageOrientation.LANDSCAPE:D.PageOrientation.PORTRAIT},margin:{top:1440,bottom:1440,left:1440,right:1440}}},
+      footers:{default:new D.Footer({children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[run('Sintropía Social · Sintropía Track · ',{size:16,color:'6B6878'}),new D.TextRun({children:[D.PageNumber.CURRENT],font:'Open Sans',size:16,color:'6B6878'})]})]})},children:kids}]});
+  return D.Packer.toBlob(doc).then(b=>download(b,name));
+}
+// PDF: vista de impresión con la tipografía del manual; el navegador lo guarda como PDF.
+function saPrintHtml(B,landscape,title){
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${esc(title)}</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:letter ${landscape?'landscape':'portrait'};margin:2cm;}*{box-sizing:border-box;}body{font-family:"Open Sans",Arial,sans-serif;color:#1F1B2E;font-size:10.5pt;line-height:1.55;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}h1,h2,h3,h4{font-family:"Montserrat","Open Sans",sans-serif;line-height:1.25;break-after:avoid;}.marca{font-family:"Montserrat",sans-serif;font-weight:800;font-size:11pt;color:#6B21F5;margin-bottom:14pt;}.marca span{color:#FF6B1A;}.marca small{font-family:"Open Sans",sans-serif;font-weight:400;color:#6B6878;font-size:8.5pt;}h1{font-size:21pt;color:#6B21F5;margin:0;}h2{font-size:14pt;color:#6B21F5;margin:20pt 0 6pt;}h3{font-size:12pt;margin:14pt 0 4pt;}h4{font-size:10.5pt;color:#B84A0C;margin:11pt 0 3pt;}p{margin:0 0 7pt;}.sa-dmeta{color:#6B6878;font-size:9pt;}ul{margin:2pt 0 8pt 16pt;padding:0;}li{margin-bottom:3pt;}.accent-rule{display:flex;gap:5px;align-items:center;margin:8pt 0 10pt;}.accent-rule i{display:block;height:4px;border-radius:3px;background:#6B21F5;}.accent-rule i:nth-child(1){width:30px;}.accent-rule i:nth-child(2){width:6px;background:#FF6B1A;}.accent-rule i:nth-child(3){width:14px;}table{border-collapse:collapse;width:100%;font-size:${landscape?'7.5pt':'8.5pt'};margin:4pt 0 10pt;}.chica table{font-size:7.5pt;}th{background:#6B21F5;color:#fff;text-align:left;padding:4pt 5pt;font-weight:700;}td{padding:4pt 5pt;border:0.5pt solid #D8D2EA;vertical-align:top;}tr{break-inside:avoid;}thead{display:table-header-group;}</style></head><body><div class="marca">Sintropía <span>Social</span> <small>· Sintro Activities</small></div>${saBlocksHtml(B)}</body></html>`;
+}
+function saPdf(B,landscape,title){
+  const w=window.open('','_blank'); if(!w) throw new Error('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para esta página.');
+  w.document.open(); w.document.write(saPrintHtml(B,landscape,title)); w.document.close();
+  (w.document.fonts&&w.document.fonts.ready?w.document.fonts.ready:Promise.resolve()).then(()=>setTimeout(()=>{ w.focus(); w.print(); },350));
 }
 
 /* =========================================================
