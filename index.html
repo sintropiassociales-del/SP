@@ -290,6 +290,18 @@
   .login-sep{font-size:11.5px; color:var(--grey); border-top:1px solid var(--line); margin-top:22px; padding-top:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
   .sa-sum{background:var(--ok-light); border-color:var(--ok-light);} .sa-sum li{display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; list-style:none; padding:6px 0; border-bottom:1px solid rgba(31,157,107,.18); margin:0 !important;} .sa-sum ul{margin:8px 0 10px !important;}
   .sa-quota{font-size:12.5px; color:var(--grey); margin:10px 0 0 !important;}
+  .sa-switch{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px;}
+  .sa-switch button{font-family:'Montserrat','Open Sans',sans-serif; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:22px; border:1px solid var(--line); background:var(--white); color:var(--grey); cursor:pointer;}
+  .sa-switch button.on{background:var(--purple); border-color:var(--purple); color:var(--white);}
+  .dx-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  .dx-card{text-align:left; border:1.5px solid #D9C8FB; border-radius:12px; background:var(--white); padding:16px 18px; cursor:pointer; font-family:'Open Sans',sans-serif;}
+  .dx-card:hover,.dx-card:focus-visible{border-color:var(--purple); outline:none;} .dx-card.on{border-color:var(--purple); background:var(--purple-light);}
+  .dx-card b{display:block; font-family:'Montserrat','Open Sans',sans-serif; font-size:14.5px; color:var(--ink);} .dx-card span{font-size:12.5px; color:var(--grey); line-height:1.45;}
+  .dx-q{margin-top:16px;} .dx-q label{font-size:13.5px; color:var(--ink); margin-bottom:3px;} .dx-q small{display:block; font-size:12px; color:var(--grey); margin-bottom:6px;}
+  .dx-item{display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--line); padding:12px 0;} .dx-item:first-of-type{border-top:none;}
+  .dx-item b{font-size:14px;} .dx-item small{display:block; color:var(--grey); font-size:12px;}
+  .dx-bar{display:grid; gap:10px;} .dx-bar .toolbar-row{margin:0;} .dx-bar .lbl{font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--orange-dark); min-width:118px;}
+  @media (max-width:860px){ .dx-grid{grid-template-columns:1fr;} }
   @media (max-width:860px){ .sa-two{grid-template-columns:1fr;} .sa-ficha{grid-template-columns:1fr;} .user-row.v3{grid-template-columns:1fr;} }
 </style>
 </head>
@@ -457,6 +469,7 @@
     <section class="panel" id="panel-sintro">
       <h2 class="panel-title" style="margin-top:0;">Sintro Activities</h2>
       <p class="panel-desc" id="saPanelDesc"></p>
+      <div id="saArea"></div>
       <div id="saBox"></div>
     </section>
 
@@ -761,7 +774,7 @@ let mg=null;
 async function manageProject(slug){
   try{
     const r=await api('getProject',{slug});
-    mg={slug, project:r.project, sa:r.sa||{limit:3,used:0}, creds:[], users:r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''}))};
+    mg={slug, project:r.project, sa:r.sa||{limit:3,used:0,dxLimit:10,dxUsed:0}, creds:[], users:r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''}))};
     renderManage();
   }catch(e){ toast(e.message||'No se pudo abrir el proyecto.',true); }
 }
@@ -776,8 +789,8 @@ function renderManage(){
       <div style="margin-top:10px;"><button class="btn small primary" onclick="saveMgMeta()">Guardar datos</button></div></div>
     <div class="section-sep"><h4>Herramientas de la liga</h4>
       <div class="modal-sub" style="margin-bottom:10px;">Qué ve quien entra a este proyecto: la herramienta completa o solo una. En Sintro Activities, el Admin de proyecto puede analizar documentos hasta el tope que definas; tus propios análisis no cuentan.</div>
-      <div class="form-grid"><div><label>Herramientas</label>${modSelect('mgModules',p.modules||'both')}</div><div><label>Análisis permitidos al equipo (usados: ${mg.sa.used})</label><input type="number" id="mgSaLimit" min="0" max="100" value="${mg.sa.limit}"></div></div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn small primary" onclick="saveMgTools(false)">Guardar herramientas</button><button class="btn small" onclick="saveMgTools(true)">Reiniciar contador de análisis</button></div></div>
+      <div class="form-grid"><div><label>Herramientas</label>${modSelect('mgModules',p.modules||'both')}</div><div><label>Análisis de documento permitidos al equipo (usados: ${mg.sa.used})</label><input type="number" id="mgSaLimit" min="0" max="100" value="${mg.sa.limit}"></div><div><label>Diagnósticos permitidos al equipo (usados: ${mg.sa.dxUsed||0})</label><input type="number" id="mgDxLimit" min="0" max="200" value="${mg.sa.dxLimit==null?10:mg.sa.dxLimit}"></div></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn small primary" onclick="saveMgTools(false)">Guardar herramientas</button><button class="btn small" onclick="saveMgTools(true)">Reiniciar contadores</button></div></div>
     <div class="section-sep"><h4>Vigencia</h4>
       <div class="modal-sub" style="margin-bottom:10px;">Solo tú puedes ampliarla o cerrar el proyecto. Al vencer o cerrar, Admin de proyecto y Coordinación pierden el acceso; tú sigues viendo todo.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><input type="date" id="mgExp" value="${esc(p.expiresAt)}" style="width:170px;"><button class="btn small primary" onclick="saveMgExp()">Guardar vigencia</button><button class="btn small" onclick="extendMg(30)">Ampliar 30 días</button><button class="btn small" onclick="extendMg(90)">Ampliar 90 días</button></div>
@@ -816,8 +829,8 @@ async function saveMgUsers(){
   if(r){ mg.users=r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''})); mg.creds=sent; renderManage(); }
 }
 async function saveMgTools(reset){
-  if(reset && !(await askConfirm('Reiniciar contador','El equipo del proyecto vuelve a tener disponibles todos sus análisis de Sintro Activities.','Reiniciar'))){ renderManage(); return; }
-  const body=reset?{saReset:true}:{modules:$('mgModules').value,saLimit:parseInt($('mgSaLimit').value,10)};
+  if(reset && !(await askConfirm('Reiniciar contadores','El equipo del proyecto vuelve a tener disponibles todos sus análisis de documento y sus diagnósticos.','Reiniciar'))){ renderManage(); return; }
+  const body=reset?{saReset:true}:{modules:$('mgModules').value,saLimit:parseInt($('mgSaLimit').value,10),dxLimit:parseInt($('mgDxLimit').value,10)};
   const r=await mgCall('updateMeta',body,reset?'Contador reiniciado':'Herramientas guardadas');
   if(r){ mg.project=r.project; if(r.sa) mg.sa=r.sa; if(project&&project.slug===mg.slug){ project.modules=r.project.modules; if(r.sa) project.saQuota=r.sa; renderProject(); } }
   renderManage();
@@ -883,6 +896,7 @@ function normalizeData(d){
   o.goals.forEach(x=>{x.id=x.id||uid();}); o.comps.forEach(x=>{x.id=x.id||uid();}); o.logs.forEach(x=>{x.id=x.id||uid();});
   o.indicators=Array.isArray(d.indicators)?d.indicators:[]; o.indicators.forEach(x=>{x.id=x.id||uid();});
   if(o.sa&&typeof o.sa!=='object') delete o.sa;
+  o.dx=Array.isArray(d.dx)?d.dx.filter(x=>x&&x.id):[];
   // ganttObs ahora se indexa por id de entregable (antes por posición)
   const obs={}; Object.keys(o.ganttObs||{}).forEach(k=>{ const byId=o.deliverables.find(x=>x.id===k); if(byId) obs[k]=o.ganttObs[k]; else if(/^\d+$/.test(k)&&o.deliverables[+k]) obs[o.deliverables[+k].id]=o.ganttObs[k]; });
   o.ganttObs=obs;
@@ -898,7 +912,7 @@ async function openProject(slug){
   $('homeView').classList.add('hidden');
   try{
     const r=await api('getProject',{slug});
-    project=r.project; role=r.role; project.data=normalizeData(project.data); project.modules=project.modules||'both'; project.saQuota=r.sa||{limit:0,used:0};
+    project=r.project; role=r.role; project.data=normalizeData(project.data); project.modules=project.modules||'both'; project.saQuota=r.sa||{limit:0,used:0,dxLimit:0,dxUsed:0};
   }catch(e){
     history.replaceState(null,'',location.pathname);
     $('projectView').classList.add('hidden'); $('homeView').classList.remove('hidden'); $('homeBtn').classList.add('hidden');
@@ -946,7 +960,7 @@ const TAB_DEFS=[['sintro','Sintro Activities'],['entregables','Entregables'],['b
 const hasTrack=()=>project.modules!=='activities';
 const hasSA=()=>project.modules!=='track';
 const canSA=()=>(role==='super'||role==='admin')&&hasSA();
-function tabVisible(k){ if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)); return hasTrack(); }
+function tabVisible(k){ if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
 function renderTabs(){
   const nav=$('projTabs'), vis=TAB_DEFS.filter(t=>tabVisible(t[0]));
   const act=nav.querySelector('.tab.active'); let cur=act?act.dataset.tab:'';
@@ -1373,20 +1387,23 @@ let saUI={proj:null,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMs
 function saLeft(){ if(role==='super') return null; const q=project.saQuota||{limit:0,used:0}; return Math.max(0,q.limit-q.used); }
 // Guarda el análisis en el proyecto (acción saSave: Admin general y Admin de proyecto).
 async function saPersist(){ const slug=project.slug; if(canEdit()) await flushNow(); const r=await api('saSave',{slug,sa:project.data.sa}); if(project&&project.slug===slug){ project.rev=r.rev; project.updatedAt=r.updatedAt; setSync('ok'); } }
-// Liga al Diagnóstico Social Rápido con los datos de la persona ya cargados (sin formulario de registro).
-function saDiagUrl(){ const u=session.user||{}; const o=(saUI.draft&&saUI.draft.organizacion)||project.client||''; const j=JSON.stringify({n:u.name||'',o:o,c:u.email||'',p:project.name}); return SA_URL_LB+'#cliente='+btoa(unescape(encodeURIComponent(j))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-function saDiagLink(){ return `<a href="${SA_URL_LB}" target="_blank" rel="noopener" onclick="this.href=saDiagUrl()">Diagnóstico Social Rápido</a>`; }
 const saL=x=>Array.isArray(x)?x.filter(v=>v!=null&&String(v).trim()!==''):(x?[x]:[]);
 const saData=()=>project.data.sa&&saL(project.data.sa.ejes).length?project.data.sa:null;
 
-function saNewDraft(){ const c=(project.data.sa&&project.data.sa.ctx)||{}; return {proyecto:c.proyecto||project.name||'',organizacion:c.organizacion||project.client||'',participantes:c.participantes||'',lugar:c.lugar||'',etapa:c.etapa||'',circunstancia:c.circunstancia||'',tieneLineaBase:c.tieneLineaBase||'',lineaBase:c.lineaBase||'',inicio:c.inicio||'',fin:c.fin||'',duracion:c.duracion||'',notas:c.notas||'',texto:''}; }
+function saSetArea(a){ saUI.area=a; dxUI.typing=false; if(a==='dx') dxUI.view=null; $('saBox').innerHTML=''; renderSintro(); }
+// Si el proyecto ya tiene una Línea base hecha con las herramientas de diagnóstico, se carga sola en el formulario.
+function saLineaBaseDx(){ const it=project.data.dx.filter(x=>x.herr==='linea').slice(-1)[0]; if(!it) return ''; const ts=it.secciones.filter(s=>s.tabla&&s.tabla.filas.length), t=ts.find(s=>/l[ií]nea base|variable|indicador/i.test(s.titulo||''))||ts[0]; return [it.resumen].concat(t?t.tabla.filas.map(f=>'- '+f.filter(Boolean).join(' | ')):[]).filter(Boolean).join('\n').slice(0,2800); }
+function saNewDraft(){ const c0=(project.data.sa&&project.data.sa.ctx)||{}, lb=saLineaBaseDx(); const c=(!c0.lineaBase&&lb)?Object.assign({},c0,{lineaBase:lb,tieneLineaBase:c0.tieneLineaBase==='Sí'?'Sí':'Parcial'}):c0; return {proyecto:c.proyecto||project.name||'',organizacion:c.organizacion||project.client||'',participantes:c.participantes||'',lugar:c.lugar||'',etapa:c.etapa||'',circunstancia:c.circunstancia||'',tieneLineaBase:c.tieneLineaBase||'',lineaBase:c.lineaBase||'',inicio:c.inicio||'',fin:c.fin||'',duracion:c.duracion||'',notas:c.notas||'',texto:''}; }
 
 function renderSintro(){
   const box=$('saBox'); if(!box) return;
-  if(saUI.proj!==project){ saUI={proj:project,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null}; box.innerHTML=''; }
+  if(saUI.proj!==project){ saUI={proj:project,area:'plan',mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null,summary:null}; dxUI=dxNew(); box.innerHTML=''; }
   const sa=saData();
   $('saPanelDesc').textContent=hasTrack()?'Empieza aquí. Sube el documento del proyecto y obtén el panorama general y su secuencia: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Con un botón, todo se reparte en las pestañas que siguen.':'Sube el documento del proyecto y obtén su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo.';
-  if(!tabVisible('sintro')){ box.innerHTML=''; return; }
+  if(!tabVisible('sintro')){ box.innerHTML=''; $('saArea').innerHTML=''; return; }
+  const planOk=canSA()||!!(sa&&sa.visible); if(!planOk) saUI.area='dx';
+  $('saArea').innerHTML=(planOk&&(canSA()||project.data.dx.length))?`<div class="sa-switch"><button class="${saUI.area==='plan'?'on':''}" onclick="saSetArea('plan')">Del documento al plan</button><button class="${saUI.area==='dx'?'on':''}" onclick="saSetArea('dx')">Herramientas de diagnóstico${project.data.dx.length?' ('+project.data.dx.length+')':''}</button></div>`:'';
+  if(saUI.area==='dx'){ if(!$('dxRoot')||!dxUI.typing) dxRender(); return; }
   if(!saUI.mode) saUI.mode=sa?'results':'form';
   if(!canSA()) saUI.mode='results';
   if(saUI.mode==='run'){ if(!$('saProgress')) saDrawRun(); return; }
@@ -1415,7 +1432,7 @@ function saDrawForm(){
         <div><label>¿El proyecto cuenta con línea base? *</label>${sel('tieneLineaBase',[['Sí','Sí, la tengo'],['Parcial','Parcial: hay algunos datos'],['No','No']])}</div>
         <div class="full hidden" id="saLbBox"><label>Pega aquí la línea base o los datos de partida</label><textarea oninput="saUI.draft.lineaBase=this.value" placeholder="Cifras, hallazgos del diagnóstico, fecha en que se levantó…">${esc(d.lineaBase)}</textarea></div>
       </div>
-      <div class="banner warn hidden" id="saLbWarn">Sin línea base no hay contra qué medir el cambio: los indicadores saldrán con línea base y metas «por definir». Puedes levantar un punto de partida con el ${saDiagLink()} y volver con ese resultado, o seguir y definirla después. Tus datos ya van cargados en esa liga: no hay formulario de registro, solo respondes las preguntas y el resultado llega a ${esc((session.user||{}).email||'tu correo')}.</div></div>
+      <div class="banner warn hidden" id="saLbWarn">Sin línea base no hay contra qué medir el cambio: los indicadores saldrán con línea base y metas «por definir». Puedes construirla aquí mismo con la herramienta <button class="btn small" onclick="dxOpen('linea')">Línea base</button> y volver: lo que agregues al proyecto se carga solo en este formulario. O sigue y defínela después.</div></div>
     <div class="card sa-trans"><h3 class="sa-h3">Temporalidad</h3><p class="sa-sub">Con la fecha de inicio, las actividades llegan al cronograma con fechas reales al pasarlas a seguimiento.</p>
       <div class="form-grid">
         <div><label>Fecha de inicio</label><input type="date" ${f('inicio')}></div>
@@ -1535,7 +1552,7 @@ function saEjes(){ return saL(project.data.sa.ejes).map(e=>Object.assign({},e,{a
 
 /* ---- resultados ---- */
 function saSetTab(t){ saUI.tab=t; saDrawResults(); }
-function saName(){ const s=project.data.sa; return (s.ctx&&s.ctx.proyecto)||(s.ficha&&s.ficha.proyecto&&s.ficha.proyecto.nombre)||project.name; }
+function saName(){ const s=project.data.sa||{}; return (s.ctx&&s.ctx.proyecto)||(s.ficha&&s.ficha.proyecto&&s.ficha.proyecto.nombre)||project.name; }
 function saUl(arr,cls){ arr=saL(arr); return arr.length?`<ul${cls?` class="${cls}"`:''}>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''; }
 function saDrawResults(){
   const sa=saData(); if(!sa){ $('saBox').innerHTML='<p class="empty">Aún no hay análisis para este proyecto.</p>'; return; }
@@ -1563,7 +1580,7 @@ function saVLectura(){
   const s=project.data.sa, f=s.ficha||{}, p=f.proyecto||{}, c=f.contexto||{}, g=f.genero||{}, t=f.temporalidad||{}, x=s.ctx||{};
   const lb=String(c.linea_base||'').toLowerCase();
   return `<div class="card"><h3 class="sa-h3">${esc(saName())}</h3><dl class="sa-ficha"><dt>Organización</dt><dd>${esc(x.organizacion||p.organizacion||'No se indicó')}</dd><dt>Participan</dt><dd>${esc(x.participantes||p.participantes||'No se indicó')}</dd><dt>Objetivo general</dt><dd>${esc(p.objetivo_general||'El documento no lo enuncia')}</dd><dt>Resumen</dt><dd>${esc(p.resumen||'')}</dd>${s.docName?`<dt>Documento</dt><dd>${esc(s.docName)}</dd>`:''}</dl></div>
-    <div class="card sa-trans"><h3 class="sa-h3">Contexto</h3><p class="sa-sub">${esc([c.lugar||x.lugar,c.momento||x.etapa].filter(Boolean).join(' · '))}</p><p>${esc(c.lectura||'')}</p>${lb.indexOf('presente')===-1?`<div class="banner warn">Línea base ${esc(lb||'ausente')}. Los indicadores marcan su punto de partida como «por definir». Para levantarla puedes usar el ${saDiagLink()}${canSA()?', con tus datos ya cargados':''}.</div>`:''}</div>
+    <div class="card sa-trans"><h3 class="sa-h3">Contexto</h3><p class="sa-sub">${esc([c.lugar||x.lugar,c.momento||x.etapa].filter(Boolean).join(' · '))}</p><p>${esc(c.lectura||'')}</p>${lb.indexOf('presente')===-1?`<div class="banner warn">Línea base ${esc(lb||'ausente')}. Los indicadores marcan su punto de partida como «por definir». ${canSA()?' Puedes diseñarla con la herramienta <a href="#" onclick="dxOpen(\'linea\'); return false;">Línea base</a>.':''}</div>`:''}</div>
     <div class="card sa-trans sa-gen"><h3 class="sa-h3">Enfoque de género</h3><p>${esc(g.lectura||'')}</p>${saL(g.alertas).length?'<div class="sa-cap">Lo que hay que corregir en el documento</div>'+saUl(g.alertas):''}</div>
     <div class="card sa-trans"><h3 class="sa-h3">Temporalidad</h3><p class="sa-sub">${esc([x.inicio?fmt(x.inicio,true):t.inicio,x.fin?fmt(x.fin,true):t.fin,x.duracion||t.duracion].filter(Boolean).join(' · '))}</p><p>${esc(t.lectura||'')}</p></div>
     ${saL(f.vacios).length?`<div class="card"><h3 class="sa-h3">Lo que el documento no dice</h3><p class="sa-sub">Información que hace falta para planear o medir.</p>${saUl(f.vacios)}</div>`:''}`;
@@ -1723,7 +1740,7 @@ function saDocx(B,landscape,name){
   const doc=new D.Document({creator:'Sintropía Social',title:saName(),styles:{default:{document:{run:{font:'Open Sans',size:21}}}},
     sections:[{properties:{page:{size:{width:12240,height:15840,orientation:landscape?D.PageOrientation.LANDSCAPE:D.PageOrientation.PORTRAIT},margin:{top:1440,bottom:1440,left:1440,right:1440}}},
       footers:{default:new D.Footer({children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[run('Sintropía Social · Sintropía Track · ',{size:16,color:'6B6878'}),new D.TextRun({children:[D.PageNumber.CURRENT],font:'Open Sans',size:16,color:'6B6878'})]})]})},children:kids}]});
-  return D.Packer.toBlob(doc).then(b=>download(b,name));
+  return D.Packer.toBlob(doc).then(b=>name?download(b,name):b);   // sin nombre devuelve el archivo (para Google Drive)
 }
 // PDF: vista de impresión con la tipografía del manual; el navegador lo guarda como PDF.
 function saPrintHtml(B,landscape,title){
@@ -1733,6 +1750,189 @@ function saPdf(B,landscape,title){
   const w=window.open('','_blank'); if(!w) throw new Error('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para esta página.');
   w.document.open(); w.document.write(saPrintHtml(B,landscape,title)); w.document.close();
   (w.document.fonts&&w.document.fonts.ready?w.document.fonts.ready:Promise.resolve()).then(()=>setTimeout(()=>{ w.focus(); w.print(); },350));
+}
+
+/* =========================================================
+   HERRAMIENTAS DE DIAGNÓSTICO (dentro de Sintro Activities)
+   Sin registro y sin elegir área: se elige la herramienta, se responden
+   las preguntas y la IA devuelve el resultado (acción dxAnalyze). Con
+   "Agregar al proyecto" se guarda en project.data.dx.
+========================================================= */
+const DX_HERR=[['arbol','Árbol de problemas','Causas raíz, problema central y efectos'],['marco','Marco lógico','Fin, propósito, componentes y actividades'],['linea','Línea base','Estado inicial y punto de referencia'],['smart','Metodología SMART','Objetivos específicos y medibles'],['talleres','Desarrollo de talleres','Diseño pedagógico y estructura formativa'],['propuesta','Propuesta de intervención','Plan comunitario contextualizado'],['teoria','Teoría de cambio','Ruta de cambio, supuestos y devolución a tu planteamiento']];
+const DX_FASES=['Diagnóstico: aún no se interviene','Diseño: hay diagnóstico, falta el plan','Implementación: ya se está interviniendo','Evaluación: se quiere medir lo logrado'];
+const DX_Q_BASE=[
+  ['Con quiénes y dónde trabaja el proyecto','¿Con quiénes trabaja el proyecto y dónde?','Quiénes participan, cuántas personas, en qué territorio.'],
+  ['Problemática central','¿Cuál es la problemática central que se quiere abordar?',''],
+  ['Cómo se manifiesta y a quiénes afecta más','¿Cómo se manifiesta y a quiénes afecta más?','¿Afecta distinto a mujeres y hombres, a jóvenes y personas mayores? ¿Desde cuándo?'],
+  ['Momento del proyecto','¿En qué momento está el proyecto?','fase'],
+  ['Actores clave, aliados y resistencias','¿Qué actores clave existen?','Liderazgos, organizaciones, instituciones; quién apoya y quién podría resistirse.'],
+  ['Qué se espera que cambie','¿Qué se espera que cambie concretamente?','']
+];
+const DX_Q_EXTRA={
+  arbol:[['Causas que el equipo identifica','¿Qué causas creen que están detrás del problema?','Las que ven de cerca y las de fondo.']],
+  marco:[['Componentes o actividades ya pensados','¿Qué componentes o actividades ya tienen pensados?','']],
+  linea:[['Datos que existen hoy y de cuándo son','¿Qué datos existen hoy y de cuándo son?','Cifras, registros, diagnósticos previos. Si no hay, dilo.']],
+  smart:[['Qué quieren lograr y en cuánto tiempo','¿Qué quieren lograr y en cuánto tiempo?','']],
+  talleres:[['A quién va dirigido, cuántas sesiones y de qué duración','¿A quién va dirigido el taller, cuántas sesiones y de qué duración?','']],
+  propuesta:[['Recursos, equipo y tiempo disponibles','¿Con qué recursos, equipo y tiempo cuentan?','']],
+  teoria:[['Cómo creen que ocurrirá el cambio','¿Cómo creen que ocurrirá el cambio?','¿Por qué lo que hacen llevaría a lo que buscan? Cuéntalo paso a paso.'],['Qué tendría que ser cierto para que funcione','¿Qué tendría que ser cierto para que funcione?','Lo que se está dando por hecho: sobre las personas, las instituciones, el contexto.']]
+};
+function dxNew(){ return {herr:'',resp:{},doc:'',docName:'',docMsg:'',busy:false,err:'',view:null,typing:false}; }
+let dxUI=dxNew();
+const dxName=h=>(DX_HERR.find(x=>x[0]===h)||['','Diagnóstico'])[1];
+function dxLeft(){ if(role==='super') return null; const q=project.saQuota||{}; return Math.max(0,(q.dxLimit||0)-(q.dxUsed||0)); }
+function dxOpen(h){ saUI.area='dx'; dxUI.view=null; dxUI.typing=false; dxPick(h,true); gotoTab('sintro'); }
+function dxPick(h,keep){
+  if(dxUI.herr!==h){ dxUI.herr=h; dxUI.err=''; }
+  if(!keep||!Object.keys(dxUI.resp).length){ const c=(project.data.sa&&project.data.sa.ctx)||{}; const k=DX_Q_BASE[0][0]; if(!dxUI.resp[k]) dxUI.resp[k]=[c.participantes,c.lugar].filter(Boolean).join(' · '); }
+  dxUI.typing=false; $('saBox').innerHTML=''; renderSintro();
+}
+function dxRender(){
+  const box=$('saBox'), E=canSA(), list=project.data.dx;
+  if(dxUI.view){ box.innerHTML=`<div id="dxRoot">${dxViewHtml()}</div>`; return; }
+  let h='<div id="dxRoot">';
+  if(E){
+    const left=dxLeft();
+    h+=`<div class="card"><h3 class="sa-h3">Elige la herramienta</h3><p class="sa-sub">Respondes unas preguntas, la IA arma el resultado y decides si lo agregas al proyecto.${left===null?'':' Diagnósticos disponibles para este proyecto: '+left+' de '+project.saQuota.dxLimit+'.'}</p>
+      <div class="dx-grid">${DX_HERR.map(x=>`<button class="dx-card ${dxUI.herr===x[0]?'on':''}" onclick="dxPick('${x[0]}')"><b>${x[1]}</b><span>${x[2]}</span></button>`).join('')}</div></div>`;
+    if(dxUI.herr){
+      const qs=DX_Q_BASE.concat(DX_Q_EXTRA[dxUI.herr]||[]);
+      h+=`<div class="card" id="dxForm"><h3 class="sa-h3">${esc(dxName(dxUI.herr))}</h3><p class="sa-sub">Responde lo que sepas; lo que falte se señalará como vacío, no se inventa.</p>
+        ${qs.map((q,i)=>`<div class="dx-q"><label>${i+1}. ${esc(q[1])}</label>${q[2]==='fase'
+          ?`<select onchange="dxUI.resp[DX_Q_BASE[3][0]]=this.value"><option value="">Selecciona…</option>${DX_FASES.map(f=>`<option ${dxUI.resp[q[0]]===f?'selected':''}>${esc(f)}</option>`).join('')}</select>`
+          :`${q[2]?`<small>${esc(q[2])}</small>`:''}<textarea data-k="${esc(q[0])}" oninput="dxUI.typing=true; dxUI.resp[this.dataset.k]=this.value">${esc(dxUI.resp[q[0]]||'')}</textarea>`}</div>`).join('')}
+        <div class="dx-q"><label>${dxUI.herr==='teoria'?'¿Ya tienes una teoría de cambio o un documento del proyecto? Súbelo: la devolución se hace sobre él (opcional)':'Documento de apoyo (opcional)'}</label><small>PDF, Word (.docx) o texto. Se lee en tu navegador; solo se envía el texto.</small><input type="file" accept=".pdf,.docx,.txt,.md" onchange="dxFile(this.files[0])"><div id="dxFileMsg">${dxUI.docMsg}</div></div>
+        <div id="dxMsg">${dxUI.err?`<div class="banner bad" style="margin-top:12px;">${esc(dxUI.err)}</div>`:''}</div>
+        <button class="btn orange primary-action" id="dxGo" onclick="dxGenerate()" ${dxUI.busy||left===0?'disabled':''}>${dxUI.busy?'Trabajando… puede tardar un minuto':'Generar '+esc(dxName(dxUI.herr)).toLowerCase()}</button>
+        ${left===0?'<p class="sa-quota">Este proyecto ya usó todos sus diagnósticos. Escribe a Sintropía Social si necesitas más.</p>':''}</div>`;
+    }
+  }
+  h+=`<div class="card"><h3 class="sa-h3">Diagnósticos del proyecto</h3><p class="sa-sub">Lo que ya se agregó al proyecto. Cualquier persona con acceso puede consultarlo y descargarlo.</p>${list.length?list.slice().reverse().map(it=>`<div class="dx-item"><div><b>${esc(it.titulo)}</b><small>${esc(it.herramienta||dxName(it.herr))} · ${esc(fmt(String(it.createdAt||'').slice(0,10),true))}</small></div><div class="toolbar-row" style="margin:0;"><button class="btn small primary" onclick="dxShow('${esc(it.id)}')">Abrir</button>${E?`<button class="btn small danger" onclick="dxRemove('${esc(it.id)}')">Quitar</button>`:''}</div></div>`).join(''):'<p class="empty">Aún no hay diagnósticos agregados.</p>'}</div></div>`;
+  box.innerHTML=h;
+}
+async function dxFile(file){
+  if(!file) return; const say=t=>{ dxUI.docMsg=t; if($('dxFileMsg')) $('dxFileMsg').innerHTML=t; };
+  const keepSa={f:saUI.docFile,n:saUI.docName,m:saUI.docMsg};
+  await saReadFile(file);                       // misma lectura de PDF/Word que el análisis de documento
+  if(saUI.docFile){ dxUI.doc=saUI.docFile.slice(0,60000); dxUI.docName=saUI.docName; say(`<p class="sa-file ok">${esc(file.name)} — ${saUI.docFile.length.toLocaleString('es-MX')} caracteres leídos.</p>`); }
+  else { dxUI.doc=''; dxUI.docName=''; say(saUI.docMsg); }
+  saUI.docFile=keepSa.f; saUI.docName=keepSa.n; saUI.docMsg=keepSa.m;
+}
+async function dxGenerate(){
+  const resp={}; Object.keys(dxUI.resp).forEach(k=>{ const v=String(dxUI.resp[k]||'').trim(); if(v) resp[k]=v; });
+  const largo=Object.values(resp).join('').length+dxUI.doc.length;
+  if(largo<80){ dxUI.err='Responde al menos la problemática y un par de preguntas más, o sube un documento.'; dxUI.typing=false; dxRender(); return; }
+  const slug=project.slug, herr=dxUI.herr, sa=project.data.sa;
+  dxUI.busy=true; dxUI.err=''; dxUI.typing=false; dxRender();
+  try{
+    const r=await api('dxAnalyze',{slug,herr,respuestas:resp,documento:dxUI.doc,contexto:(sa&&sa.ctx)||{proyecto:project.name,organizacion:project.client}});
+    if(!project||project.slug!==slug) return;
+    if(r.sa) project.saQuota=r.sa;
+    const it=Object.assign({},r.data,{id:'',herr,herramienta:r.herramienta||dxName(herr),createdAt:new Date().toISOString()});
+    it.titulo=it.titulo||it.herramienta; it.secciones=saL(it.secciones); it.incognitas=saL(it.incognitas); it.metas=saL(it.metas);
+    dxUI.busy=false; dxUI.view={item:it,saved:false};
+  }catch(e){ if(!project||project.slug!==slug) return; if(e.sa) project.saQuota=e.sa; dxUI.busy=false; dxUI.err=e.message||'No se pudo generar el diagnóstico.'; }
+  dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
+}
+function dxShow(id){ const it=project.data.dx.find(x=>x.id===id); if(!it) return; dxUI.view={item:it,saved:true}; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); }
+function dxBack(){ if(dxUI.view&&!dxUI.view.saved&&!confirm('Este diagnóstico no se ha agregado al proyecto. Si sales, se pierde. ¿Salir?')) return; dxUI.view=null; dxRender(); }
+function dxViewHtml(){
+  const v=dxUI.view, it=v.item, E=canSA();
+  return `<div class="toolbar-row" style="margin:0 0 14px;"><button class="btn small" onclick="dxBack()">Volver a las herramientas</button></div>
+    <div class="card tint dx-bar">
+      <div class="toolbar-row"><span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${it.herr==='smart'&&hasTrack()?'<button class="btn small" onclick="gotoTab(\'planeacion\')">Ver metas en Planeación</button>':''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">Aún no está guardado.${it.herr==='smart'&&hasTrack()?' Al agregarlo, las metas llegan a Planeación estratégica.':''}</span>`:'')}</div>
+      <div class="toolbar-row"><span class="lbl">Descargar</span><button class="btn small" onclick="dxDownload('pdf')">PDF</button><button class="btn small" onclick="dxDownload('docx')">Word (.docx)</button><button class="btn small" onclick="dxDownload('xlsx')">Excel (.xlsx)</button></div>
+      <div class="toolbar-row"><span class="lbl">Mi Google Drive</span><button class="btn small" onclick="dxDrive('doc',this)">Crear Google Docs</button><button class="btn small" onclick="dxDrive('sheet',this)">Crear Google Sheets</button><span style="font-size:12px;color:var(--grey);">Se crea en la cuenta de Google que elijas, no en la de Sintropía Social.</span></div>
+      <div id="dxBarMsg"></div>
+    </div>
+    <div class="card"><div class="sa-doc" style="max-height:none;margin-top:0;border:none;padding:0;">${saBlocksHtml(dxBlocks(it))}</div></div>`;
+}
+function dxBlocks(it){
+  const B=[{t:'h1',x:it.titulo},{t:'meta',x:[it.herramienta||dxName(it.herr),project.name,fmt(String(it.createdAt||todayIso()).slice(0,10),true)].filter(Boolean).join(' · ')}];
+  if(it.resumen) B.push({t:'p',x:it.resumen});
+  saL(it.secciones).forEach(s=>{ B.push({t:'h2',x:s.titulo||''}); saL(s.parrafos).forEach(p=>B.push({t:'p',x:p})); saL(s.lista).forEach(l=>B.push({t:'li',x:l}));
+    if(s.tabla&&saL(s.tabla.filas).length) B.push({t:'tabla',chica:saL(s.tabla.columnas).length>4,cols:saL(s.tabla.columnas),filas:s.tabla.filas.map(f=>saL(s.tabla.columnas).map((c,i)=>f[i]==null?'':String(f[i])))}); });
+  if(saL(it.incognitas).length){ B.push({t:'h2',x:'Incógnitas'}); it.incognitas.forEach(q=>B.push({t:'li',x:q})); }
+  return B;
+}
+function dxWorkbook(it){
+  const wb=XLSX.utils.book_new(), rows=[[it.titulo],[it.herramienta||dxName(it.herr)],[project.name],[]]; const used={};
+  if(it.resumen) rows.push(['Resumen'],[it.resumen],[]);
+  const tabs=[];
+  saL(it.secciones).forEach(s=>{ rows.push([s.titulo||'']); saL(s.parrafos).forEach(p=>rows.push([p])); saL(s.lista).forEach(l=>rows.push(['• '+l])); if(s.tabla&&saL(s.tabla.filas).length){ rows.push(['(ver hoja «'+(s.titulo||'Tabla')+'»)']); tabs.push(s); } rows.push([]); });
+  if(saL(it.incognitas).length){ rows.push(['Incógnitas']); it.incognitas.forEach(q=>rows.push(['• '+q])); }
+  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:120}]; XLSX.utils.book_append_sheet(wb,ws,'Diagnóstico');
+  tabs.forEach(s=>{ let n=String(s.titulo||'Tabla').replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,28).trim()||'Tabla'; if(used[n]){ used[n]++; n=n.slice(0,25)+' '+used[n]; } else used[n]=1;
+    const w=XLSX.utils.aoa_to_sheet([s.tabla.columnas].concat(s.tabla.filas)); w['!cols']=s.tabla.columnas.map(()=>({wch:34})); XLSX.utils.book_append_sheet(wb,w,n); });
+  return wb;
+}
+function dxFileBase(it){ return slugify((it.herramienta||dxName(it.herr))+'-'+project.name).slice(0,60); }
+function dxDownload(k){
+  try{ const it=dxUI.view.item, base=dxFileBase(it);
+    if(k==='pdf') return saPdf(dxBlocks(it),false,it.titulo+' — '+project.name);
+    if(k==='docx') return saDocx(dxBlocks(it),false,base+'.docx');
+    if(k==='xlsx') return XLSX.writeFile(dxWorkbook(it),base+'.xlsx');
+  }catch(e){ console.error(e); toast(e.message||'No se pudo generar el archivo.',true); }
+}
+async function dxAdd(){
+  const b=$('dxAddBtn'), slug=project.slug; if(b){ b.disabled=true; b.textContent='Agregando…'; }
+  try{
+    if(canEdit()) await flushNow();
+    const r=await api('dxSave',{slug,item:dxUI.view.item});
+    if(!project||project.slug!==slug) return;
+    project.data=normalizeData(r.project.data); project.rev=r.project.rev; project.updatedAt=r.project.updatedAt; setSync('ok');
+    const it=project.data.dx.find(x=>x.id===r.id); dxUI.view={item:it||dxUI.view.item,saved:true};
+    renderAll(); toast(it&&it.herr==='smart'&&hasTrack()?'Agregado. Las metas ya están en Planeación estratégica':'Diagnóstico agregado al proyecto');
+  }catch(e){ if(!project||project.slug!==slug) return; if(b){ b.disabled=false; b.textContent='Agregar al proyecto'; } toast(e.message||'No se pudo agregar.',true); }
+}
+async function dxRemove(id){
+  const it=project.data.dx.find(x=>x.id===id); if(!it) return;
+  if(!(await askConfirm('Quitar diagnóstico','Se quitará "'+it.titulo+'" del proyecto'+(it.herr==='smart'?', junto con las metas que llevó a Planeación estratégica':'')+'. No se puede deshacer.','Quitar',true))) return;
+  const slug=project.slug;
+  try{ if(canEdit()) await flushNow(); const r=await api('dxDelete',{slug,id}); if(!project||project.slug!==slug) return; project.data=normalizeData(r.project.data); project.rev=r.project.rev; setSync('ok'); renderAll(); toast('Diagnóstico quitado'); }
+  catch(e){ toast(e.message||'No se pudo quitar.',true); }
+}
+async function dxEmail(){
+  const b=$('dxMailBtn'); b.disabled=true; b.textContent='Enviando…';
+  try{ const r=await api('dxEmail',{slug:project.slug,id:dxUI.view.item.id}); toast('Enviado a '+r.to); }catch(e){ toast(e.message||'No se pudo enviar.',true); }
+  if($('dxMailBtn')){ b.disabled=false; b.textContent='Enviarlo a mi correo'; }
+}
+
+/* ---- Google Drive de la persona (no el de Sintropía Social) ----
+   Pide permiso a la cuenta de Google que la persona elija (alcance drive.file:
+   solo los archivos que esta página crea) y sube el archivo convertido a
+   Google Docs o Google Sheets. Nada pasa por el Apps Script. */
+let driveTok=null;
+function driveToken(){
+  return new Promise((res,rej)=>{
+    if(driveTok&&driveTok.exp>Date.now()) return res(driveTok.t);
+    if(!(window.google&&google.accounts&&google.accounts.oauth2)) return rej(new Error('No cargó el acceso a Google. Recarga la página e intenta de nuevo.'));
+    const c=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file',prompt:'select_account',
+      callback:r=>{ if(!r||r.error||!r.access_token) return rej(new Error('No se dio permiso para crear el archivo en Google Drive.')); driveTok={t:r.access_token,exp:Date.now()+((parseInt(r.expires_in,10)||3000)-120)*1000}; res(r.access_token); },
+      error_callback:()=>rej(new Error('Se cerró la ventana de Google antes de dar el permiso.'))});
+    c.requestAccessToken();
+  });
+}
+async function driveCreate(blob,name,googleMime){
+  const tok=await driveToken(), form=new FormData();
+  form.append('metadata',new Blob([JSON.stringify({name,mimeType:googleMime})],{type:'application/json'})); form.append('file',blob);
+  const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',{method:'POST',headers:{Authorization:'Bearer '+tok},body:form});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){ if(r.status===401) driveTok=null; throw new Error(r.status===403?'Google Drive rechazó la solicitud. Falta activar la API de Google Drive en el proyecto de Google de esta plataforma.':'No se pudo crear el archivo en Google Drive.'); }
+  return j.webViewLink||('https://drive.google.com/open?id='+j.id);
+}
+async function dxDrive(kind,btn){
+  const it=dxUI.view.item, label=btn.textContent, say=h=>{ if($('dxBarMsg')) $('dxBarMsg').innerHTML=h; };
+  btn.disabled=true; btn.textContent='Conectando con Google…'; say('');
+  try{
+    await driveToken();                         // primero el permiso: debe salir del clic
+    btn.textContent='Creando el archivo…';
+    let url;
+    if(kind==='doc'){ const blob=await saDocx(dxBlocks(it),false,null); url=await driveCreate(blob,it.titulo+' — '+project.name,'application/vnd.google-apps.document'); }
+    else { const blob=new Blob([XLSX.write(dxWorkbook(it),{bookType:'xlsx',type:'array'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); url=await driveCreate(blob,it.titulo+' — '+project.name,'application/vnd.google-apps.spreadsheet'); }
+    say(`<div class="banner info" style="margin:0;">Listo: el archivo está en tu Google Drive. <a href="${esc(url)}" target="_blank" rel="noopener">Abrir en Google ${kind==='doc'?'Docs':'Sheets'}</a></div>`);
+  }catch(e){ say(`<div class="banner bad" style="margin:0;">${esc(e.message||'No se pudo crear el archivo.')}</div>`); }
+  btn.disabled=false; btn.textContent=label;
 }
 
 /* =========================================================
