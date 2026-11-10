@@ -554,9 +554,12 @@ async function api(action, body, retried){
   const ses=rawSession();
   const cred=authMode==='pw'?{sessionToken:ses?ses.token:''}:{idToken:getToken()};
   let res;
+  // Apps Script corta cualquier ejecución a los 6 minutos: si no hay respuesta antes, se avisa en vez de esperar sin fin.
+  const ctl=new AbortController(), timer=setTimeout(()=>ctl.abort(),330000);
   try{
-    res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},cred,body||{}))});
-  }catch(e){ throw {error:'network',message:'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'}; }
+    res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},cred,body||{})),signal:ctl.signal});
+  }catch(e){ clearTimeout(timer); throw (e&&e.name==='AbortError')?{error:'timeout',message:'El servidor tardó más de 5 minutos y no respondió. Intenta de nuevo; si se repite, revisa en Apps Script > Ejecuciones qué pasó con la solicitud.'}:{error:'network',message:'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'}; }
+  clearTimeout(timer);
   let j;
   try{ j=await res.json(); }catch(e){ throw {error:'bad',message:'El servidor respondió de forma inesperada. Verifica que Code.gs esté actualizado y desplegado como "Nueva versión".'}; }
   if(j.error==='auth' && action!=='me' && !retried){ await requireRelogin(); return api(action,body,true); }
@@ -1824,17 +1827,34 @@ async function dxGenerate(){
   if(largo<80){ dxUI.err='Responde al menos la problemática y un par de preguntas más, o sube un documento.'; dxUI.typing=false; dxRender(); return; }
   const slug=project.slug, herr=dxUI.herr, sa=project.data.sa;
   dxUI.busy=true; dxUI.err=''; dxUI.typing=false; dxRender();
+  const t0=Date.now(), reloj=setInterval(()=>{ const b=$('dxGo'); if(b&&dxUI.busy) b.textContent='Trabajando… '+Math.round((Date.now()-t0)/1000)+' s (suele tardar de 1 a 3 minutos)'; },1000);
   try{
     const r=await api('dxAnalyze',{slug,herr,respuestas:resp,documento:dxUI.doc,contexto:(sa&&sa.ctx)||{proyecto:project.name,organizacion:project.client}});
     if(!project||project.slug!==slug) return;
     if(r.sa) project.saQuota=r.sa;
-    const it=Object.assign({},r.data,{id:'',herr,herramienta:r.herramienta||dxName(herr),createdAt:new Date().toISOString()});
-    it.titulo=it.titulo||it.herramienta; it.secciones=saL(it.secciones); it.incognitas=saL(it.incognitas); it.metas=saL(it.metas);
+    const it=dxNorm(Object.assign({},r.data,{id:'',herr,herramienta:r.herramienta||dxName(herr),createdAt:new Date().toISOString()}));
+    if(!it.secciones.length) throw {message:'El diagnóstico llegó vacío. Intenta de nuevo.'};
+    dxViewTest(it);                                   // si no se puede dibujar, se avisa aquí y no se queda "trabajando"
     dxUI.busy=false; dxUI.view={item:it,saved:false};
-  }catch(e){ if(!project||project.slug!==slug) return; if(e.sa) project.saQuota=e.sa; dxUI.busy=false; dxUI.err=e.message||'No se pudo generar el diagnóstico.'; }
+  }catch(e){ clearInterval(reloj); if(!project||project.slug!==slug) return; if(e&&e.sa) project.saQuota=e.sa; console.error(e); dxUI.busy=false; dxUI.view=null; dxUI.err=(e&&e.message)||'No se pudo generar el diagnóstico.'; }
+  clearInterval(reloj);
   dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
 }
-function dxShow(id){ const it=project.data.dx.find(x=>x.id===id); if(!it) return; dxUI.view={item:it,saved:true}; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); }
+// Deja el resultado en la forma que la página sabe dibujar, venga como venga del modelo.
+function dxNorm(it){
+  const txt=v=>v==null?'':(typeof v==='object'?Object.values(v).map(x=>x==null?'':String(x)).join(' · '):String(v));
+  const arr=v=>Array.isArray(v)?v:(v==null||v===''?[]:[v]);
+  it.titulo=txt(it.titulo)||it.herramienta||'Diagnóstico'; it.resumen=txt(it.resumen);
+  it.secciones=arr(it.secciones).filter(s=>s&&typeof s==='object').map(s=>{
+    const o={titulo:txt(s.titulo),parrafos:arr(s.parrafos).map(txt).filter(Boolean),lista:arr(s.lista).map(txt).filter(Boolean)};
+    const t=s.tabla; if(t&&typeof t==='object'){ const cols=arr(t.columnas).map(txt), filas=arr(t.filas).filter(f=>f!=null).map(f=>{ const c=Array.isArray(f)?f:(typeof f==='object'?Object.values(f):[f]); return cols.map((x,i)=>txt(c[i])); }); if(cols.length&&filas.length) o.tabla={columnas:cols,filas}; }
+    return o; });
+  it.incognitas=arr(it.incognitas).map(txt).filter(Boolean);
+  it.metas=arr(it.metas).filter(m=>m&&typeof m==='object').map(m=>({prioridad:txt(m.prioridad),meta:txt(m.meta),responsable:txt(m.responsable),horizonte:txt(m.horizonte)}));
+  return it;
+}
+function dxViewTest(it){ saBlocksHtml(dxBlocks(it)); }
+function dxShow(id){ const it0=project.data.dx.find(x=>x.id===id); if(!it0) return; const it=dxNorm(it0); dxUI.view={item:it,saved:true}; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); }
 function dxBack(){ if(dxUI.view&&!dxUI.view.saved&&!confirm('Este diagnóstico no se ha agregado al proyecto. Si sales, se pierde. ¿Salir?')) return; dxUI.view=null; dxRender(); }
 function dxViewHtml(){
   const v=dxUI.view, it=v.item, E=canSA();
