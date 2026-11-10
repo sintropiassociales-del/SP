@@ -117,7 +117,7 @@
   .modal-bg{position:fixed; inset:0; background:rgba(31,27,46,.55); z-index:500; display:none; align-items:flex-start; justify-content:center; padding:40px 20px; overflow:auto;}
   .modal-bg.show{display:flex;}
   .modal-card{background:var(--white); border-radius:14px; padding:28px; width:100%; max-width:640px; box-shadow:0 20px 60px rgba(0,0,0,.3);}
-  .modal-card.narrow{max-width:420px;}
+  .modal-card.narrow{max-width:420px;} .modal-card.wide{max-width:900px;}
   .modal-title{font-family:'Montserrat','Open Sans',sans-serif; font-weight:700; color:var(--purple); font-size:18px;}
   .modal-sub{font-size:12.5px; color:var(--grey); margin:6px 0 18px; line-height:1.5;}
   .modal-actions{display:flex; gap:10px; margin-top:20px; justify-content:flex-end; flex-wrap:wrap;}
@@ -279,7 +279,18 @@
   .sa-doc h1{font-size:22px; color:var(--purple); margin:0;} .sa-doc h2{font-size:17px; color:var(--purple); margin:22px 0 6px;} .sa-doc h3{font-size:15px; margin:16px 0 4px;} .sa-doc h4{font-family:'Montserrat','Open Sans',sans-serif; font-size:13.5px; color:var(--orange-dark); margin:12px 0 4px;}
   .sa-doc .sa-scroll{margin:6px 0 12px;} .sa-dmeta{font-size:12px !important; color:var(--grey);}
   table.sa-ind{min-width:1100px; margin:0;} table.sa-ind td{font-size:12.5px;} table.sa-ind textarea{min-height:44px;}
-  @media (max-width:860px){ .sa-two{grid-template-columns:1fr;} .sa-ficha{grid-template-columns:1fr;} }
+  .step-n{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--purple-light); color:var(--purple); font-size:11.5px; font-weight:700; margin-right:8px; vertical-align:1px;}
+  .tab.active .step-n{background:var(--purple); color:var(--white);}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .user-row.v3{grid-template-columns:1fr 1.25fr 1.25fr 150px auto; align-items:center;}
+  .pw-cell{display:flex; gap:6px;} .pw-cell input{min-width:0;}
+  .creds{background:var(--ok-light); border-radius:10px; padding:12px 14px; margin-top:12px; font-size:12.5px; line-height:1.6;}
+  .creds div{display:flex; justify-content:space-between; gap:10px; align-items:center; padding:4px 0; flex-wrap:wrap;} .creds code{font-size:12px; background:var(--white); padding:2px 6px; border-radius:5px;}
+  .pw-form label{margin-top:12px;} .pw-form .btn{margin-top:16px; width:100%; padding:12px;}
+  .login-sep{font-size:11.5px; color:var(--grey); border-top:1px solid var(--line); margin-top:22px; padding-top:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
+  .sa-sum{background:var(--ok-light); border-color:var(--ok-light);} .sa-sum li{display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; list-style:none; padding:6px 0; border-bottom:1px solid rgba(31,157,107,.18); margin:0 !important;} .sa-sum ul{margin:8px 0 10px !important;}
+  .sa-quota{font-size:12.5px; color:var(--grey); margin:10px 0 0 !important;}
+  @media (max-width:860px){ .sa-two{grid-template-columns:1fr;} .sa-ficha{grid-template-columns:1fr;} .user-row.v3{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -290,9 +301,9 @@
       <div class="eyebrow">Sintropía Social</div>
       <h1>Seguimiento claro de cada proyecto</h1>
       <div class="accent-rule"><i></i><i></i><i></i></div>
-      <p>Entregables, bitácora, herramientas y planeación en un solo lugar, con acceso por cuenta de Google y permisos por rol.</p>
+      <p>Del documento del proyecto a su plan de trabajo, y del plan a su seguimiento: actividades, entregables, bitácora, herramientas e indicadores en un solo lugar.</p>
       <div class="login-points">
-        <div><b>Acceso seguro</b>Entras con tu cuenta de Google. No hay contraseñas que compartir.</div>
+        <div><b>Acceso por proyecto</b>Cada proyecto tiene su liga. Entras con el correo y la contraseña que te asignó Sintropía Social.</div>
         <div><b>Cada proyecto con su vigencia</b>El acceso dura lo que dura el proyecto.</div>
         <div><b>Roles definidos</b>Quien administra, quien coordina y quien solo consulta.</div>
       </div>
@@ -301,13 +312,15 @@
   </div>
   <div class="login-main">
     <div class="login-card">
-      <h2>Iniciar sesión</h2>
+      <h2 id="loginTitle">Iniciar sesión</h2>
       <div class="accent-rule"><i></i><i></i><i></i></div>
-      <div class="sub">Usa la cuenta de Google con la que Sintropía Social te dio acceso al proyecto.</div>
+      <div class="sub" id="loginSub"></div>
       <div id="loginMsg"></div>
-      <div id="gisBtn"></div>
+      <div id="pwBox"></div>
+      <div class="login-sep hidden" id="adminSep">Administración de Sintropía Social</div>
+      <div id="gisBtn" style="margin-top:14px;"></div>
       <div id="loginSetup"></div>
-      <div class="login-note">Si tu cuenta no aparece con proyectos asignados, escribe a Sintropía Social para que te agreguen con el correo de Google que usas.</div>
+      <div class="login-note" id="loginNote"></div>
     </div>
   </div>
 </div>
@@ -342,22 +355,14 @@
     </div>
     <div class="toolbar-row" id="pToolbar"></div>
 
-    <section class="overview">
+    <section class="overview" id="pOverview">
       <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Entregables</div></div>
       <div class="stat"><div class="stat-num" id="statActivities">0</div><div class="stat-label">Actividades totales</div></div>
       <div class="stat"><div class="stat-num" id="statDoneAct">0</div><div class="stat-label">Actividades entregadas</div></div>
       <div class="stat"><div class="stat-num" id="statSessions">0</div><div class="stat-label">Sesiones registradas</div></div>
     </section>
 
-    <nav class="tabs" id="projTabs">
-      <button class="tab active" data-tab="entregables">Entregables</button>
-      <button class="tab" data-tab="bitacora">Bitácora de sesiones</button>
-      <button class="tab" data-tab="caja">Caja de herramientas</button>
-      <button class="tab" data-tab="planeacion">Planeación estratégica</button>
-      <button class="tab" data-tab="evaluacion">Evaluación de competencias</button>
-      <button class="tab" data-tab="indicadores">Indicadores</button>
-      <button class="tab hidden" data-tab="sintro" id="tabSintro">Sintro Activities</button>
-    </nav>
+    <nav class="tabs" id="projTabs"></nav>
 
     <section class="panel active" id="panel-entregables">
       <h2 class="panel-title" style="margin-top:0;">Entregables y actividades</h2>
@@ -451,7 +456,7 @@
 
     <section class="panel" id="panel-sintro">
       <h2 class="panel-title" style="margin-top:0;">Sintro Activities</h2>
-      <p class="panel-desc">Del documento del proyecto a su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Lo que salga de aquí se puede pasar al seguimiento del proyecto.</p>
+      <p class="panel-desc" id="saPanelDesc"></p>
       <div id="saBox"></div>
     </section>
 
@@ -524,11 +529,20 @@ function tokenValid(t){
 }
 function gisConfigured(){ return GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('PEGA_AQUI')===-1; }
 
+/* Sesión por liga de proyecto (correo y contraseña). El Admin general entra con Google. */
+const SESSION_KEY='st_session';
+let authMode='';   // 'pw' = sesión de proyecto · 'google' = Admin general
+function rawSession(){ try{ return JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null')||window.__ses||null; }catch(e){ return window.__ses||null; } }
+function getSession(){ const s=rawSession(); return s&&s.token&&s.exp*1000>Date.now()+15000?s:null; }
+function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(SESSION_KEY,JSON.stringify(s)); else sessionStorage.removeItem(SESSION_KEY); }catch(e){} }
+function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
+
 async function api(action, body, retried){
-  const token=getToken();
+  const ses=rawSession();
+  const cred=authMode==='pw'?{sessionToken:ses?ses.token:''}:{idToken:getToken()};
   let res;
   try{
-    res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,idToken:token},body||{}))});
+    res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},cred,body||{}))});
   }catch(e){ throw {error:'network',message:'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'}; }
   let j;
   try{ j=await res.json(); }catch(e){ throw {error:'bad',message:'El servidor respondió de forma inesperada. Verifica que Code.gs esté actualizado y desplegado como "Nueva versión".'}; }
@@ -549,43 +563,85 @@ function renderGisButton(el){
   whenGis(()=>{ initGis(); google.accounts.id.renderButton(el,{theme:'outline',size:'large',text:'signin_with',shape:'rectangular',logo_alignment:'left',locale:'es',width:300}); });
 }
 function onCredential(resp){
-  setToken(resp.credential);
+  setToken(resp.credential); setSession(null); authMode='google';
   if(reloginResolve){ const r=reloginResolve; reloginResolve=null; closeModal(); r(); return; }
   afterLogin();
 }
 function requireRelogin(){
   return new Promise(res=>{
     reloginResolve=res;
+    if(authMode==='pw'){
+      const ses=rawSession()||{};
+      openModal(`<div class="modal-title">Tu sesión expiró</div><div class="modal-sub">Por seguridad, la sesión se cierra cada cierto tiempo. Escribe tu contraseña y continuarás justo donde estabas.</div>${pwFormHtml('re',ses.email||'')}<div class="modal-actions"><button class="btn" onclick="reloginResolve=null; closeModal(); logout();">Salir</button></div>`,true);
+      return;
+    }
     openModal(`<div class="modal-title">Tu sesión expiró</div><div class="modal-sub">Por seguridad, Google cierra la sesión cada cierto tiempo. Vuelve a entrar con la misma cuenta y continuarás justo donde estabas.</div><div id="reBtn" style="min-height:44px;"></div><div class="modal-actions"><button class="btn" onclick="reloginResolve=null; closeModal(); logout();">Salir</button></div>`,true);
     renderGisButton($('reBtn'));
   });
 }
+function pwFormHtml(pre,email){
+  return `<form class="pw-form" onsubmit="doPwLogin('${pre}'); return false;"><div id="${pre}Msg"></div>
+    <label for="${pre}Email">Correo</label><input type="email" id="${pre}Email" autocomplete="username" value="${esc(email||'')}" ${email&&pre==='re'?'readonly':''}>
+    <label for="${pre}Pass">Contraseña</label><input type="password" id="${pre}Pass" autocomplete="current-password">
+    <button class="btn primary" id="${pre}Btn" type="submit">Entrar al proyecto</button></form>`;
+}
+async function doPwLogin(pre){
+  const email=$(pre+'Email').value.trim().toLowerCase(), password=$(pre+'Pass').value, btn=$(pre+'Btn');
+  const slug=pre==='re'?((rawSession()||{}).slug||linkSlug()):linkSlug();
+  const say=t=>{ $(pre+'Msg').innerHTML=t?`<div class="msg-box">${esc(t)}</div>`:''; };
+  if(!email||!password){ say('Escribe tu correo y tu contraseña.'); return; }
+  btn.disabled=true; btn.textContent='Entrando…'; say('');
+  let j;
+  try{ const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',slug,email,password})}); j=await res.json(); }
+  catch(e){ j={error:'network',message:'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'}; }
+  if(!j||j.error||!j.token){ btn.disabled=false; btn.textContent='Entrar al proyecto'; say((j&&j.message)||'No se pudo iniciar sesión.'); return; }
+  setSession({token:j.token,exp:j.exp,slug:j.slug,email:j.email}); setToken(''); authMode='pw';
+  if(reloginResolve){ const r=reloginResolve; reloginResolve=null; closeModal(); r(); return; }
+  afterLogin();
+}
 function showLogin(msg){
   $('app').classList.add('hidden'); $('waBtn').classList.add('hidden'); $('loginView').classList.remove('hidden');
   $('loginMsg').innerHTML = msg ? `<div class="msg-box">${esc(msg)}</div>` : '';
+  const slug=linkSlug();
+  $('loginTitle').textContent=slug?'Entrar al proyecto':'Acceso de administración';
+  $('loginSub').textContent=slug?'Escribe el correo y la contraseña que Sintropía Social te asignó para este proyecto.':'Esta entrada es para la administración de Sintropía Social, con su cuenta de Google.';
+  $('pwBox').innerHTML=slug?pwFormHtml('lg',''):'';
+  $('adminSep').classList.toggle('hidden',!slug);
+  $('loginNote').textContent=slug?'Si no tienes tu contraseña o dejó de funcionar, escribe a Sintropía Social para que te asignen una nueva.':'Si te compartieron la liga de un proyecto, ábrela: ahí entras con tu correo y tu contraseña.';
   if(!gisConfigured()){
     $('loginSetup').innerHTML=`<div class="setup-warn">Falta configurar el ID de cliente de Google en este archivo (GOOGLE_CLIENT_ID). Sigue la guía de configuración y vuelve a publicar la página.</div>`;
   } else { $('loginSetup').innerHTML=''; renderGisButton($('gisBtn')); }
 }
 function logout(){
+  const ses=rawSession(), wasPw=authMode==='pw';
+  if(wasPw&&ses){ fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'logout',sessionToken:ses.token})}).catch(()=>{}); }
+  setSession(null);
   setToken(''); closeModal(); stopProject();
   session={user:null,isSuper:false,projects:[],openTickets:0};
   try{ if(window.google&&google.accounts&&google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
-  history.replaceState(null,'',location.pathname);
-  showLogin();
+  // quien entró por la liga de un proyecto vuelve a la entrada de ese proyecto
+  history.replaceState(null,'',location.pathname+(wasPw&&ses&&ses.slug?'?p='+encodeURIComponent(ses.slug):''));
+  authMode=''; showLogin();
 }
 async function afterLogin(){
   try{
     const me=await api('me');
     session={user:me.user,isSuper:me.isSuper,projects:me.projects,openTickets:me.openTickets||0};
+    session.viaPassword=!!me.viaPassword;
   }catch(e){
-    setToken('');
-    showLogin(e.error==='auth' ? 'No pudimos validar tu sesión de Google. Intenta de nuevo. Si el problema continúa, revisa que el ID de cliente esté bien configurado.' : (e.message||'No se pudo iniciar sesión.'));
+    const pw=authMode==='pw'; setToken(''); setSession(null); authMode='';
+    showLogin(e.error==='auth' ? (pw?'Tu sesión expiró. Vuelve a entrar.':'No pudimos validar tu sesión de Google. Intenta de nuevo. Si el problema continúa, revisa que el ID de cliente esté bien configurado.') : (e.message||'No se pudo iniciar sesión.'));
+    return;
+  }
+  if(!session.isSuper && !session.viaPassword){
+    // Google es solo para la administración; las personas de cada proyecto entran por su liga.
+    setToken(''); authMode='';
+    showLogin('Esta cuenta de Google no es de administración. Si tienes un proyecto, ábrelo desde su liga y entra con tu correo y contraseña.');
     return;
   }
   $('loginView').classList.add('hidden'); $('app').classList.remove('hidden');
   renderUserChip();
-  const slug=new URLSearchParams(location.search).get('p');
+  const slug=session.viaPassword?((rawSession()||{}).slug||linkSlug()):linkSlug();
   if(slug){ openProject(slug); } else goHome();
 }
 function renderUserChip(){
@@ -593,7 +649,7 @@ function renderUserChip(){
   $('userChip').innerHTML=(u.picture?`<img src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer">`:`<span class="ph">${esc(ini)}</span>`)+`<span>${esc(u.email)}</span>`;
 }
 async function refreshMe(){
-  const me=await api('me'); session.projects=me.projects; session.openTickets=me.openTickets||0; session.isSuper=me.isSuper;
+  const me=await api('me'); session.projects=me.projects; session.openTickets=me.openTickets||0; session.isSuper=me.isSuper; session.viaPassword=!!me.viaPassword;
 }
 
 /* =========================================================
@@ -609,7 +665,9 @@ async function goHome(){
   $('homeBtn').classList.add('hidden');
   renderHome();
 }
-function statusChip(s){ return `<span class="chip ${s}">${s==='activo'?'Activo':(s==='vencido'?'Vigencia vencida':'Cerrado')}</span>`; }
+function statusChip(s){ return `<span class="chip ${s==='archivado'?'cerrado':s}">${s==='activo'?'Activo':(s==='vencido'?'Vigencia vencida':(s==='archivado'?'Archivado':'Cerrado'))}</span>`; }
+const MOD_LABEL={both:'Track + Activities',track:'Solo Sintropía Track',activities:'Solo Sintro Activities'};
+function modSelect(id,cur){ return `<select id="${id}">${[['both','Herramienta completa: Sintropía Track + Sintro Activities'],['track','Solo Sintropía Track (seguimiento)'],['activities','Solo Sintro Activities (del documento al plan)']].map(o=>`<option value="${o[0]}" ${cur===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`; }
 function daysLeftText(p){
   if(!p.expiresAt) return '';
   const n=dayOffset(p.expiresAt,todayIso());
@@ -631,7 +689,7 @@ function renderHome(){
   } else {
     let html=`<div class="proj-head"><div><h1 style="font-size:24px;margin:0;">Mis proyectos</h1><div class="accent-rule"><i></i><i></i><i></i></div></div></div>`;
     if(!session.projects.length){
-      html+=`<div class="card tint"><b>Tu cuenta aún no tiene proyectos asignados.</b><p style="margin:8px 0 0; font-size:13.5px; line-height:1.6;">Estás usando <b>${esc(session.user.email)}</b>. Pide a Sintropía Social que te agregue a un proyecto con ese correo de Google. Si usas otra cuenta de Google, cierra sesión y entra con la correcta.</p></div>`;
+      html+=`<div class="card tint"><b>No hay un proyecto disponible para tu acceso.</b><p style="margin:8px 0 0; font-size:13.5px; line-height:1.6;">Estás usando <b>${esc(session.user.email)}</b>. Si el proyecto cambió o se cerró, escribe a Sintropía Social.</p></div>`;
     } else {
       html+=`<div class="proj-cards">`+session.projects.map(p=>`
         <div class="proj-card"><div style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><span class="role-chip ${p.role}">${roleLabel(p.role)}</span>${statusChip(p.status)}</div>
@@ -647,33 +705,53 @@ function setHomeTab(t){ homeTab=t; renderHome(); }
 
 /* ---- super: proyectos ---- */
 function renderSuperProjects(){
-  const rows=session.projects.map(p=>`<tr>
+  const act=session.projects.filter(p=>p.status!=='archivado'), arch=session.projects.filter(p=>p.status==='archivado');
+  const row=(p,archived)=>`<tr>
     <td><b>${esc(p.name)}</b><div style="font-size:11.5px;color:var(--grey);">${esc(p.client||'')}</div></td>
+    <td style="font-size:12px;">${esc(MOD_LABEL[p.modules]||MOD_LABEL.both)}</td>
     <td>${fmt(p.expiresAt,true)}<div style="font-size:11.5px;color:var(--grey);">${daysLeftText(p)}</div></td>
     <td>${statusChip(p.status)}</td>
     <td>${p.usersCount||0}</td>
     <td>${p.openTickets?`<span class="chip abierto">${p.openTickets}</span>`:'0'}</td>
-    <td style="white-space:nowrap;"><button class="btn small primary" onclick="openProject('${esc(p.slug)}')">Abrir</button> <button class="btn small" onclick="manageProject('${esc(p.slug)}')">Gestionar</button></td></tr>`).join('');
+    <td><div class="row-actions"><button class="btn small primary" onclick="openProject('${esc(p.slug)}')">Abrir</button>${archived
+      ?`<button class="btn small" onclick="rowAction('${esc(p.slug)}','restaurar')">Restaurar</button>`
+      :`<button class="btn small" onclick="manageProject('${esc(p.slug)}')">Gestionar</button>${p.status==='cerrado'?`<button class="btn small" onclick="rowAction('${esc(p.slug)}','reabrir')">Reabrir</button>`:`<button class="btn small" onclick="rowAction('${esc(p.slug)}','cerrar')">Cerrar</button>`}<button class="btn small" onclick="rowAction('${esc(p.slug)}','archivar')">Archivar</button>`}<button class="btn small danger" onclick="rowAction('${esc(p.slug)}','eliminar')">Eliminar</button></div></td></tr>`;
+  const table=(list,archived)=>`<div class="sa-scroll" style="border:none;border-radius:0;"><table class="grid"><thead><tr><th>Proyecto</th><th>Herramientas</th><th>Vigencia</th><th>Estatus</th><th>Usuarios</th><th>Sugerencias abiertas</th><th></th></tr></thead><tbody>${list.map(p=>row(p,archived)).join('')}</tbody></table></div>`;
   $('homeBody').innerHTML=`
     <div class="card tint">
       <h3 style="margin:0 0 12px;font-size:15px;color:var(--purple);">Nuevo proyecto</h3>
       <div class="form-grid">
         <div><label>Nombre del proyecto</label><input type="text" id="npName" placeholder="Ej. Diagnóstico organizacional - Cliente X"></div>
         <div><label>Cliente (opcional)</label><input type="text" id="npClient"></div>
+        <div><label>Herramientas que incluye la liga</label>${modSelect('npModules','both')}</div>
         <div><label>Vigencia: el proyecto termina el</label><input type="date" id="npExpires"></div>
-        <div style="display:flex;align-items:flex-end;"><button class="btn primary" onclick="createProject()">Crear proyecto</button></div>
+        <div class="full"><button class="btn primary" onclick="createProject()">Crear proyecto y su liga</button></div>
       </div>
-      <p style="font-size:12px;color:var(--grey);margin:12px 0 0;line-height:1.55;">Después de crearlo, entra a <b>Gestionar</b> para agregar los correos de Google de cada persona y asignar su rol.</p>
+      <p style="font-size:12px;color:var(--grey);margin:12px 0 0;line-height:1.55;">Cada proyecto tiene su propia liga. Después de crearlo, en <b>Gestionar</b> asignas el correo, la contraseña y el rol de cada persona.</p>
     </div>
-    <h3 style="font-size:15px;margin:0 0 12px;">Proyectos (${session.projects.length})</h3>
-    ${session.projects.length?`<table class="grid"><thead><tr><th>Proyecto</th><th>Vigencia</th><th>Estatus</th><th>Usuarios</th><th>Sugerencias abiertas</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="empty">Aún no hay proyectos. Crea el primero arriba.</p>'}`;
+    <h3 style="font-size:15px;margin:0 0 12px;">Proyectos (${act.length})</h3>
+    ${act.length?table(act,false):'<p class="empty">Aún no hay proyectos abiertos. Crea el primero arriba.</p>'}
+    ${arch.length?`<h3 style="font-size:15px;margin:30px 0 4px;">Archivados (${arch.length})</h3><p class="panel-desc" style="margin-bottom:12px;">Fuera de la lista principal y sin acceso para el equipo. Puedes consultarlos, restaurarlos o eliminarlos.</p>${table(arch,true)}`:''}`;
+}
+async function rowAction(slug,kind){
+  const p=session.projects.find(x=>x.slug===slug); if(!p) return;
+  const C={
+    cerrar:['Cerrar proyecto',`Las personas de "${p.name}" dejarán de tener acceso de inmediato. El proyecto sigue en tu lista y puedes reabrirlo cuando quieras.`,'Cerrar proyecto',true,'updateMeta',{closed:true},'Proyecto cerrado'],
+    reabrir:['Reabrir proyecto',`Las personas de "${p.name}" recuperan su acceso, mientras la vigencia siga activa.`,'Reabrir proyecto',false,'updateMeta',{closed:false},'Proyecto reabierto'],
+    archivar:['Archivar proyecto',`"${p.name}" sale de la lista principal y pasa a Archivados. Se cierra el acceso del equipo; tú puedes consultarlo, restaurarlo o eliminarlo después.`,'Archivar proyecto',true,'updateMeta',{archived:true},'Proyecto archivado'],
+    restaurar:['Restaurar proyecto',`"${p.name}" vuelve a la lista principal y el equipo recupera su acceso, mientras la vigencia siga activa.`,'Restaurar proyecto',false,'updateMeta',{archived:false,closed:false},'Proyecto restaurado'],
+    eliminar:['Eliminar proyecto',`Se eliminará "${p.name}" con todos sus datos, accesos y análisis. No se puede deshacer.`,'Eliminar para siempre',true,'deleteProject',{},'Proyecto eliminado'],
+  }[kind]; if(!C) return;
+  if(!(await askConfirm(C[0],C[1],C[2],C[3]))) return;
+  try{ await api(C[4],Object.assign({slug},C[5])); toast(C[6]); await refreshMe(); renderHome(); }
+  catch(e){ toast(e.message||'No se pudo completar la acción.',true); }
 }
 async function createProject(){
   const name=$('npName').value.trim(), client=$('npClient').value.trim(), exp=$('npExpires').value;
   if(name.length<3){ toast('Escribe el nombre del proyecto.',true); return; }
   if(!exp){ toast('Indica la fecha en que termina el proyecto.',true); return; }
   try{
-    const r=await api('createProject',{name,client,expiresAt:exp,data:defaultProjectData()});
+    const r=await api('createProject',{name,client,expiresAt:exp,modules:$('npModules').value,data:defaultProjectData()});
     toast('Proyecto creado'); await refreshMe(); renderHome(); manageProject(r.slug);
   }catch(e){ toast(e.message||'No se pudo crear el proyecto.',true); }
 }
@@ -683,31 +761,37 @@ let mg=null;
 async function manageProject(slug){
   try{
     const r=await api('getProject',{slug});
-    mg={slug, project:r.project, users:r.users.map(u=>({email:u.email,role:u.role}))};
+    mg={slug, project:r.project, sa:r.sa||{limit:3,used:0}, creds:[], users:r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''}))};
     renderManage();
   }catch(e){ toast(e.message||'No se pudo abrir el proyecto.',true); }
 }
 function renderManage(){
   const p=mg.project;
-  const users=mg.users.map((u,i)=>`<div class="user-row"><input type="email" value="${esc(u.email)}" placeholder="correo@gmail.com" onchange="mg.users[${i}].email=this.value.trim().toLowerCase()"><select onchange="mg.users[${i}].role=this.value"><option value="admin" ${u.role==='admin'?'selected':''}>Admin de proyecto</option><option value="coordinacion" ${u.role==='coordinacion'?'selected':''}>Coordinación</option></select><button class="btn small danger" onclick="mg.users.splice(${i},1); renderManage()">Quitar</button></div>`).join('');
+  const users=mg.users.map((u,i)=>`<div class="user-row v3"><input type="text" value="${esc(u.name)}" placeholder="Nombre" onchange="mg.users[${i}].name=this.value.trim()"><input type="email" value="${esc(u.email)}" placeholder="correo@ejemplo.com" onchange="mg.users[${i}].email=this.value.trim().toLowerCase()"><div class="pw-cell"><input type="text" value="${esc(u.password)}" placeholder="${u.hasPassword?'Guardada. Escribe para cambiarla':'Contraseña (mín. 8)'}" autocomplete="off" oninput="mg.users[${i}].password=this.value"><button class="btn small" title="Generar una contraseña" onclick="mg.users[${i}].password=genPw(); renderManage()">Generar</button></div><select onchange="mg.users[${i}].role=this.value"><option value="admin" ${u.role==='admin'?'selected':''}>Admin de proyecto</option><option value="coordinacion" ${u.role==='coordinacion'?'selected':''}>Coordinación</option></select><button class="btn small danger" onclick="mg.users.splice(${i},1); renderManage()">Quitar</button></div>`).join('');
+  const creds=mg.creds.length?`<div class="creds"><b>Accesos listos para compartir.</b> Las contraseñas solo se muestran ahora: después quedan cifradas y no se pueden consultar, solo cambiar.${mg.creds.map((c,i)=>`<div><span>${esc(c.email)} · <code>${esc(c.password)}</code></span><button class="btn small" onclick="copyText(credText(${i}))">Copiar acceso</button></div>`).join('')}</div>`:'';
   openModal(`
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><div class="modal-title">Gestionar proyecto</div><div class="modal-sub" style="margin-bottom:0;">${esc(p.name)}</div></div>${statusChip(p.status)}</div>
     <div class="section-sep"><h4>Datos</h4>
       <div class="form-grid"><div><label>Nombre</label><input type="text" id="mgName" value="${esc(p.name)}"></div><div><label>Cliente</label><input type="text" id="mgClient" value="${esc(p.client)}"></div></div>
       <div style="margin-top:10px;"><button class="btn small primary" onclick="saveMgMeta()">Guardar datos</button></div></div>
+    <div class="section-sep"><h4>Herramientas de la liga</h4>
+      <div class="modal-sub" style="margin-bottom:10px;">Qué ve quien entra a este proyecto: la herramienta completa o solo una. En Sintro Activities, el Admin de proyecto puede analizar documentos hasta el tope que definas; tus propios análisis no cuentan.</div>
+      <div class="form-grid"><div><label>Herramientas</label>${modSelect('mgModules',p.modules||'both')}</div><div><label>Análisis permitidos al equipo (usados: ${mg.sa.used})</label><input type="number" id="mgSaLimit" min="0" max="100" value="${mg.sa.limit}"></div></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn small primary" onclick="saveMgTools(false)">Guardar herramientas</button><button class="btn small" onclick="saveMgTools(true)">Reiniciar contador de análisis</button></div></div>
     <div class="section-sep"><h4>Vigencia</h4>
       <div class="modal-sub" style="margin-bottom:10px;">Solo tú puedes ampliarla o cerrar el proyecto. Al vencer o cerrar, Admin de proyecto y Coordinación pierden el acceso; tú sigues viendo todo.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><input type="date" id="mgExp" value="${esc(p.expiresAt)}" style="width:170px;"><button class="btn small primary" onclick="saveMgExp()">Guardar vigencia</button><button class="btn small" onclick="extendMg(30)">Ampliar 30 días</button><button class="btn small" onclick="extendMg(90)">Ampliar 90 días</button></div>
       <div style="margin-top:12px;">${p.closed?`<button class="btn small orange" onclick="toggleCloseMg(false)">Reabrir proyecto</button>`:`<button class="btn small danger" onclick="toggleCloseMg(true)">Cerrar proyecto ahora</button>`}</div></div>
     <div class="section-sep"><h4>Usuarios y roles</h4>
-      <div class="modal-sub" style="margin-bottom:10px;"><b>Admin de proyecto:</b> ve y descarga todo, cambia fechas y envía sugerencias que te llegan como ticket. <b>Coordinación:</b> solo ve y descarga. Usa el correo de la cuenta de Google de cada persona.</div>
+      <div class="modal-sub" style="margin-bottom:10px;">Asigna a cada persona su correo, su contraseña y su rol para esta liga. <b>Admin de proyecto:</b> ve y descarga todo, cambia fechas, usa Sintro Activities y envía sugerencias que te llegan como ticket. <b>Coordinación:</b> solo ve y descarga.</div>
       ${users||'<p class="empty">Sin usuarios todavía.</p>'}
-      <div style="display:flex;gap:8px;margin-top:6px;"><button class="btn small" onclick="mg.users.push({email:'',role:'coordinacion'}); renderManage()">Agregar usuario</button><button class="btn small primary" onclick="saveMgUsers()">Guardar usuarios</button></div></div>
+      <div style="display:flex;gap:8px;margin-top:6px;"><button class="btn small" onclick="mg.users.push({email:'',role:'coordinacion',name:'',hasPassword:false,password:''}); renderManage()">Agregar usuario</button><button class="btn small primary" onclick="saveMgUsers()">Guardar usuarios</button></div>${creds}</div>
     <div class="section-sep"><h4>Liga del proyecto</h4>
       <div style="display:flex;gap:8px;"><input type="text" readonly value="${esc(projectLink(p.slug))}" onfocus="this.select()"><button class="btn small" onclick="copyText('${esc(projectLink(p.slug))}')">Copiar</button></div>
-      <div class="modal-sub" style="margin:8px 0 0;">Quien abra la liga entra con su cuenta de Google; solo verá el proyecto si su correo está en la lista de arriba.</div></div>
+      <div class="modal-sub" style="margin:8px 0 0;">Cada liga es independiente: quien la abra entra con el correo y la contraseña de arriba, y solo ve este proyecto con el rol que le asignaste.</div></div>
     ${p.closed?`<div class="section-sep"><h4>Eliminar</h4><div class="modal-sub">Borra el proyecto y sus datos de forma permanente. Solo disponible con el proyecto cerrado.</div><button class="btn small danger" onclick="deleteMg()">Eliminar proyecto</button></div>`:''}
     <div class="modal-actions"><button class="btn primary" onclick="closeModal(); refreshMe().then(renderHome)">Listo</button></div>`);
+  $('modalCard').classList.add('wide');
 }
 async function mgCall(action,body,okMsg){
   try{ const r=await api(action,Object.assign({slug:mg.slug},body)); if(okMsg) toast(okMsg); return r; }
@@ -721,8 +805,22 @@ async function toggleCloseMg(close){
   const r=await mgCall('updateMeta',{closed:close},close?'Proyecto cerrado':'Proyecto reabierto'); if(r){ mg.project=r.project; }
   renderManage();
 }
+function genPw(){ const abc='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', a=new Uint32Array(12); crypto.getRandomValues(a); return Array.from(a,n=>abc[n%abc.length]).join(''); }
+function credText(i){ const c=mg.creds[i]; return 'Acceso a '+mg.project.name+' (Sintropía Social)\nLiga: '+projectLink(mg.slug)+'\nCorreo: '+c.email+'\nContraseña: '+c.password; }
 async function saveMgUsers(){
-  const users=mg.users.filter(u=>u.email); const r=await mgCall('setUsers',{users},'Usuarios guardados'); if(r){ mg.users=r.users; renderManage(); }
+  const users=mg.users.filter(u=>u.email);
+  const sin=users.find(u=>!u.hasPassword&&!u.password); if(sin){ toast('Asigna una contraseña a '+sin.email+'.',true); return; }
+  const corta=users.find(u=>u.password&&u.password.length<8); if(corta){ toast('La contraseña de '+corta.email+' debe tener al menos 8 caracteres.',true); return; }
+  const sent=users.filter(u=>u.password).map(u=>({email:u.email,password:u.password}));
+  const r=await mgCall('setUsers',{users:users.map(u=>({email:u.email,role:u.role,name:u.name,password:u.password||''}))},'Usuarios guardados');
+  if(r){ mg.users=r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''})); mg.creds=sent; renderManage(); }
+}
+async function saveMgTools(reset){
+  if(reset && !(await askConfirm('Reiniciar contador','El equipo del proyecto vuelve a tener disponibles todos sus análisis de Sintro Activities.','Reiniciar'))){ renderManage(); return; }
+  const body=reset?{saReset:true}:{modules:$('mgModules').value,saLimit:parseInt($('mgSaLimit').value,10)};
+  const r=await mgCall('updateMeta',body,reset?'Contador reiniciado':'Herramientas guardadas');
+  if(r){ mg.project=r.project; if(r.sa) mg.sa=r.sa; if(project&&project.slug===mg.slug){ project.modules=r.project.modules; if(r.sa) project.saQuota=r.sa; renderProject(); } }
+  renderManage();
 }
 async function deleteMg(){
   const name=mg.project.name;
@@ -800,7 +898,7 @@ async function openProject(slug){
   $('homeView').classList.add('hidden');
   try{
     const r=await api('getProject',{slug});
-    project=r.project; role=r.role; project.data=normalizeData(project.data);
+    project=r.project; role=r.role; project.data=normalizeData(project.data); project.modules=project.modules||'both'; project.saQuota=r.sa||{limit:0,used:0};
   }catch(e){
     history.replaceState(null,'',location.pathname);
     $('projectView').classList.add('hidden'); $('homeView').classList.remove('hidden'); $('homeBtn').classList.add('hidden');
@@ -812,6 +910,7 @@ async function openProject(slug){
   $('projectView').classList.remove('hidden');
   $('waBtn').classList.remove('hidden');
   editModeOn=false; openBlocks={}; openGanttSub={}; openObs={};
+  $('projTabs').innerHTML='';
   setSync(''); renderProject(); window.scrollTo(0,0);
 }
 
@@ -824,10 +923,11 @@ function renderProject(){
   $('footVig').textContent='Vigencia del proyecto: '+fmt(p.expiresAt,true);
   let b='';
   if(role==='super' && p.status!=='activo') b+=`<div class="banner warn">${p.status==='cerrado'?'Este proyecto está cerrado.':'La vigencia de este proyecto terminó.'} Solo tú, como Admin general, puedes verlo. Ajusta la vigencia o reábrelo desde Gestionar.</div>`;
-  if(role==='admin') b+=`<div class="banner info">Tu rol es Admin de proyecto: puedes cambiar fechas, descargar la información y enviar sugerencias al Admin general.</div>`;
+  if(role==='admin') b+=`<div class="banner info">Tu rol es Admin de proyecto: ${project.modules==='activities'?'puedes usar Sintro Activities, descargar sus resultados y enviar sugerencias al Admin general.':(project.modules==='track'?'puedes cambiar fechas, descargar la información y enviar sugerencias al Admin general.':'puedes usar Sintro Activities y pasar su resultado al seguimiento, cambiar fechas, descargar la información y enviar sugerencias al Admin general.')}</div>`;
   if(role==='coordinacion') b+=`<div class="banner info">Tu rol es Coordinación: puedes consultar el proyecto y descargar la información.</div>`;
   $('projBanners').innerHTML=b;
-  let tb=`<button class="btn primary" onclick="exportProjectPDF()">Descargar proyecto en PDF</button><button class="btn" onclick="exportProjectWord()">Descargar en Word</button><button class="btn" onclick="exportProjectExcel()">Descargar en Excel</button>`;
+  let tb=hasTrack()?`<button class="btn primary" onclick="exportProjectPDF()">Descargar proyecto en PDF</button><button class="btn" onclick="exportProjectWord()">Descargar en Word</button><button class="btn" onclick="exportProjectExcel()">Descargar en Excel</button>`:'';
+  $('pOverview').classList.toggle('hidden',!hasTrack());
   if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">Sugerir un cambio</button>`;
   if(role==='super') tb+=`<button class="btn" onclick="manageProject('${esc(p.slug)}')">Gestionar proyecto</button>`;
   $('pToolbar').innerHTML=tb;
@@ -839,7 +939,22 @@ function renderProject(){
   $('reportAdminControls').style.display=canEdit()?'flex':'none';
   renderAll();
 }
-function renderAll(){ renderReport(); renderDeliverables(); renderLogs(); renderTools(); renderGoals(); renderGantt(); renderComps(); renderIndicators(); renderSintro(); }
+function renderAll(){ renderTabs(); renderReport(); renderDeliverables(); renderLogs(); renderTools(); renderGoals(); renderGantt(); renderComps(); renderIndicators(); renderSintro(); }
+
+/* ---- pestañas: secuencia numerada, según las herramientas del proyecto y el rol ---- */
+const TAB_DEFS=[['sintro','Sintro Activities'],['entregables','Entregables'],['bitacora','Bitácora de sesiones'],['caja','Caja de herramientas'],['planeacion','Planeación estratégica'],['evaluacion','Evaluación de competencias'],['indicadores','Indicadores']];
+const hasTrack=()=>project.modules!=='activities';
+const hasSA=()=>project.modules!=='track';
+const canSA=()=>(role==='super'||role==='admin')&&hasSA();
+function tabVisible(k){ if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)); return hasTrack(); }
+function renderTabs(){
+  const nav=$('projTabs'), vis=TAB_DEFS.filter(t=>tabVisible(t[0]));
+  const act=nav.querySelector('.tab.active'); let cur=act?act.dataset.tab:'';
+  if(!vis.some(t=>t[0]===cur)) cur=vis.length?vis[0][0]:'';
+  nav.innerHTML=vis.length?vis.map((t,i)=>`<button class="tab ${t[0]===cur?'active':''}" data-tab="${t[0]}"${t[0]==='sintro'?' id="tabSintro"':''}><span class="step-n">${i+1}</span>${t[1]}</button>`).join(''):'<p class="empty" style="padding:10px 0;">Aún no hay contenido disponible para tu rol en este proyecto.</p>';
+  document.querySelectorAll('#projectView .panel').forEach(x=>x.classList.toggle('active',x.id==='panel-'+cur));
+}
+function gotoTab(k){ const t=document.querySelector('#projTabs .tab[data-tab="'+k+'"]'); if(t){ t.click(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); } }
 
 /* ---- guardado (solo Admin general) ---- */
 let dirty=false, saving=false, saveTimer=null, conflict=false;
@@ -1231,7 +1346,7 @@ function renderIndicators(){
   const w=$('indList'); if(!w) return; const E=canEdit(), list=project.data.indicators;
   $('addIndBtn').classList.toggle('hidden',!E);
   $('indDesc').textContent=E?'Registra el valor actual de cada indicador conforme se mide. Línea base y meta se ajustan cuando se levante la línea base.':'Avance de los indicadores del proyecto.';
-  if(!list.length){ w.innerHTML=`<p class="empty">Aún no hay indicadores.${E?' Se crean al pasar a seguimiento un análisis de Sintro Activities, o puedes agregarlos a mano.':''}</p>`; return; }
+  if(!list.length){ w.innerHTML=`<p class="empty">Aún no hay indicadores.${E?' Llegan solos al colocar en el proyecto un análisis de Sintro Activities, o puedes agregarlos a mano.':''}</p>`; return; }
   const cell=(x,k)=>{
     if(!E) return esc(x[k]||'');
     if(k==='actividad'||k==='nombre'||k==='medio'||k==='obs') return `<textarea onchange="setInd('${x.id}','${k}',this.value)">${esc(x[k]||'')}</textarea>`;
@@ -1253,7 +1368,14 @@ async function removeInd(id){ if(!(await askConfirm('Quitar indicador','Se elimi
 const SA_MAX_DOC=90000;
 const SA_URL_LB='https://sintropiassociales-del.github.io/panel/diagnostico.html';
 const SA_TABS=[['lectura','Lectura'],['ejes','Ejes y actividades'],['matriz','Matriz de indicadores'],['mejoras','Mejoras y recomendaciones'],['documento','Documento'],['critica','Lectura crítica']];
-let saUI={proj:null,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null};
+let saUI={proj:null,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null,summary:null};
+// análisis que le quedan al equipo del proyecto (el Admin general no tiene tope)
+function saLeft(){ if(role==='super') return null; const q=project.saQuota||{limit:0,used:0}; return Math.max(0,q.limit-q.used); }
+// Guarda el análisis en el proyecto (acción saSave: Admin general y Admin de proyecto).
+async function saPersist(){ const slug=project.slug; if(canEdit()) await flushNow(); const r=await api('saSave',{slug,sa:project.data.sa}); if(project&&project.slug===slug){ project.rev=r.rev; project.updatedAt=r.updatedAt; setSync('ok'); } }
+// Liga al Diagnóstico Social Rápido con los datos de la persona ya cargados (sin formulario de registro).
+function saDiagUrl(){ const u=session.user||{}; const o=(saUI.draft&&saUI.draft.organizacion)||project.client||''; const j=JSON.stringify({n:u.name||'',o:o,c:u.email||'',p:project.name}); return SA_URL_LB+'#cliente='+btoa(unescape(encodeURIComponent(j))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function saDiagLink(){ return `<a href="${SA_URL_LB}" target="_blank" rel="noopener" onclick="this.href=saDiagUrl()">Diagnóstico Social Rápido</a>`; }
 const saL=x=>Array.isArray(x)?x.filter(v=>v!=null&&String(v).trim()!==''):(x?[x]:[]);
 const saData=()=>project.data.sa&&saL(project.data.sa.ejes).length?project.data.sa:null;
 
@@ -1262,11 +1384,11 @@ function saNewDraft(){ const c=(project.data.sa&&project.data.sa.ctx)||{}; retur
 function renderSintro(){
   const box=$('saBox'); if(!box) return;
   if(saUI.proj!==project){ saUI={proj:project,mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null}; box.innerHTML=''; }
-  const sa=saData(), visible=canEdit()||(sa&&sa.visible);
-  const tab=$('tabSintro'); tab.classList.toggle('hidden',!visible);
-  if(!visible){ box.innerHTML=''; if(tab.classList.contains('active')) document.querySelector('#projTabs .tab[data-tab="entregables"]').click(); return; }
+  const sa=saData();
+  $('saPanelDesc').textContent=hasTrack()?'Empieza aquí. Sube el documento del proyecto y obtén el panorama general y su secuencia: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Con un botón, todo se reparte en las pestañas que siguen.':'Sube el documento del proyecto y obtén su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo.';
+  if(!tabVisible('sintro')){ box.innerHTML=''; return; }
   if(!saUI.mode) saUI.mode=sa?'results':'form';
-  if(!canEdit()) saUI.mode='results';
+  if(!canSA()) saUI.mode='results';
   if(saUI.mode==='run'){ if(!$('saProgress')) saDrawRun(); return; }
   if(saUI.mode==='form'){ if(!$('saForm')) saDrawForm(); return; }
   saDrawResults();
@@ -1293,7 +1415,7 @@ function saDrawForm(){
         <div><label>¿El proyecto cuenta con línea base? *</label>${sel('tieneLineaBase',[['Sí','Sí, la tengo'],['Parcial','Parcial: hay algunos datos'],['No','No']])}</div>
         <div class="full hidden" id="saLbBox"><label>Pega aquí la línea base o los datos de partida</label><textarea oninput="saUI.draft.lineaBase=this.value" placeholder="Cifras, hallazgos del diagnóstico, fecha en que se levantó…">${esc(d.lineaBase)}</textarea></div>
       </div>
-      <div class="banner warn hidden" id="saLbWarn">Sin línea base no hay contra qué medir el cambio: los indicadores saldrán con línea base y metas «por definir». Puedes levantar un punto de partida con el <a href="${SA_URL_LB}" target="_blank" rel="noopener">Diagnóstico Social Rápido</a> y volver con ese resultado, o seguir y definirla después.</div></div>
+      <div class="banner warn hidden" id="saLbWarn">Sin línea base no hay contra qué medir el cambio: los indicadores saldrán con línea base y metas «por definir». Puedes levantar un punto de partida con el ${saDiagLink()} y volver con ese resultado, o seguir y definirla después. Tus datos ya van cargados en esa liga: no hay formulario de registro, solo respondes las preguntas y el resultado llega a ${esc((session.user||{}).email||'tu correo')}.</div></div>
     <div class="card sa-trans"><h3 class="sa-h3">Temporalidad</h3><p class="sa-sub">Con la fecha de inicio, las actividades llegan al cronograma con fechas reales al pasarlas a seguimiento.</p>
       <div class="form-grid">
         <div><label>Fecha de inicio</label><input type="date" ${f('inicio')}></div>
@@ -1308,7 +1430,8 @@ function saDrawForm(){
       <div id="saFileMsg">${saUI.docMsg}</div>
       <label style="margin-top:14px;">O pega el texto del documento</label><textarea style="min-height:110px;" oninput="saUI.draft.texto=this.value">${esc(d.texto)}</textarea>
       <div id="saFormMsg"></div>
-      <button class="btn orange primary-action" onclick="saStart()">Analizar documento</button></div>
+      <button class="btn orange primary-action" onclick="saStart()" ${saLeft()===0?'disabled':''}>Analizar documento</button>
+      ${saLeft()===null?'':`<p class="sa-quota">${saLeft()===0?'Este proyecto ya usó todos sus análisis. Escribe a Sintropía Social si necesitas más.':'Análisis disponibles para este proyecto: '+saLeft()+' de '+project.saQuota.limit+'.'}</p>`}</div>
   </div>`;
   const drop=$('saDrop'), inp=$('saFile');
   drop.onclick=()=>inp.click();
@@ -1361,7 +1484,7 @@ function saDrawRun(){
   const r=saUI.run; const steps=[['lectura','Lectura del documento, transversalidades y división en ejes']];
   if(r.ejes) r.ejes.forEach((e,i)=>steps.push(['eje'+i,'Eje '+(i+1)+': '+e.nombre+' — subactividades, indicadores, entregables y productos']));
   else steps.push(['ejes','Desarrollo de cada eje: subactividades, indicadores, entregables y productos']);
-  steps.push(['analisis','Justificación, propuesta, mejoras y recomendaciones']);
+  steps.push(['analisis','Justificación, propuesta, mejoras y recomendaciones']); steps.push(['guardado','Guardar el análisis en el proyecto']);
   $('saBox').innerHTML=`<div class="card" id="saProgress" aria-live="polite"><h3 class="sa-h3">Leyendo el documento</h3><p class="sa-sub">Toma entre uno y cuatro minutos según el tamaño. Puedes revisar otras pestañas del proyecto mientras tanto, pero no cierres ni salgas de este proyecto.</p>
     <ul class="sa-steps">${steps.map(s=>{ const st=r.done[s[0]]?'done':(s[0]===r.active?(r.err?'fail':'on'):''); return `<li class="${st}"><span>${st==='done'?'Listo':(st==='on'?'En curso':(st==='fail'?'Falló':'Pendiente'))}</span>${esc(s[1])}</li>`; }).join('')}</ul>
     ${r.err?`<div class="banner bad">${esc(r.err)}</div><div class="toolbar-row"><button class="btn primary" onclick="saExec()">Reintentar desde aquí</button><button class="btn" onclick="saUI.mode='form'; renderSintro()">Volver al formulario</button></div>`:''}</div>`;
@@ -1374,6 +1497,7 @@ async function saExec(){
   try{
     if(!r.done.lectura){
       paint('lectura'); const a=await call('lectura'); if(!alive()) return;
+      if(a.sa) project.saQuota=a.sa;
       if(!a.data||!saL(a.data.ejes).length) throw {message:'No pude identificar ejes de trabajo en el documento. Revisa que el texto sea el del proyecto.'};
       r.ficha=a.data; r.ejes=saNormEjes(a.data.ejes); delete r.ficha.ejes; r.done.lectura=true;
     }
@@ -1391,11 +1515,16 @@ async function saExec(){
       if(!c.data) throw {message:'El análisis llegó vacío.'};
       r.analisis=c.data; r.done.analisis=true;
     }
-  }catch(e){ if(!alive()) return; r.err=e.message||'Algo falló en esta etapa.'; if(saUI.mode==='run') saDrawRun(); return; }
-  const prev=project.data.sa||{};
-  project.data.sa={ctx:r.ctx,docName:r.docName,ficha:r.ficha,ejes:r.ejes,analisis:r.analisis,critica:null,visible:!!prev.visible,sentAt:'',generatedAt:new Date().toISOString()};
-  saUI.docKept=r.doc; saUI.run=null; saUI.mode='results'; saUI.tab='lectura'; saUI.draft=null; saUI.docFile=''; saUI.docName=''; saUI.docMsg='';
-  persist(); renderSintro(); toast('Análisis listo y guardado en el proyecto');
+    if(!r.done.guardado){
+      paint('guardado');
+      if(!r.prev) r.prev={sa:project.data.sa||null};
+      project.data.sa={ctx:r.ctx,docName:r.docName,ficha:r.ficha,ejes:r.ejes,analisis:r.analisis,critica:null,visible:!!(r.prev.sa&&r.prev.sa.visible),sentAt:'',generatedAt:new Date().toISOString()};
+      try{ await saPersist(); }catch(e2){ if(alive()) project.data.sa=r.prev.sa; throw {message:'El análisis terminó, pero no se pudo guardar: '+(e2.message||'error de conexión')+' Reintenta: no se vuelve a analizar.'}; }
+      if(!alive()) return; r.done.guardado=true;
+    }
+  }catch(e){ if(!alive()) return; if(e&&e.sa) project.saQuota=e.sa; r.err=e.message||'Algo falló en esta etapa.'; if(saUI.mode==='run') saDrawRun(); return; }
+  saUI.docKept=r.doc; saUI.run=null; saUI.mode='results'; saUI.tab='lectura'; saUI.draft=null; saUI.docFile=''; saUI.docName=''; saUI.docMsg=''; saUI.summary=null;
+  renderAll(); toast('Análisis listo y guardado en el proyecto');
 }
 function saNormEjes(ejes){
   return saL(ejes).map((e,i)=>{ const id=e.id||('E'+(i+1));
@@ -1410,22 +1539,31 @@ function saName(){ const s=project.data.sa; return (s.ctx&&s.ctx.proyecto)||(s.f
 function saUl(arr,cls){ arr=saL(arr); return arr.length?`<ul${cls?` class="${cls}"`:''}>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''; }
 function saDrawResults(){
   const sa=saData(); if(!sa){ $('saBox').innerHTML='<p class="empty">Aún no hay análisis para este proyecto.</p>'; return; }
-  const E=canEdit(); let tabs=SA_TABS; if(!E&&!sa.critica) tabs=tabs.filter(t=>t[0]!=='critica');
+  const E=canSA(); let tabs=SA_TABS; if(!E&&!sa.critica) tabs=tabs.filter(t=>t[0]!=='critica');
   if(!tabs.some(t=>t[0]===saUI.tab)) saUI.tab='lectura';
-  const bar=E?`<div class="card tint sa-actions">
-      <div><b>${sa.sentAt?'Este análisis ya está en el seguimiento del proyecto.':'Pasa el análisis al seguimiento del proyecto.'}</b><span>Las actividades estratégicas llegan a Entregables y al cronograma con sus subactividades; los indicadores, a la pestaña Indicadores; los productos tentativos, a la Caja de herramientas.</span></div>
-      <div class="toolbar-row" style="margin:0;"><button class="btn primary" onclick="saToTracking()">${sa.sentAt?'Volver a pasar a seguimiento':'Pasar a seguimiento'}</button><button class="btn" onclick="saUI.mode='form'; saUI.draft=null; renderSintro()">Analizar otro documento</button>
-      <label class="sa-check"><input type="checkbox" ${sa.visible?'checked':''} onchange="saSetVisible(this.checked)"> Mostrar este análisis al equipo del proyecto</label></div></div>`:'';
+  const left=saLeft(), again=`<button class="btn" ${left===0?'disabled title="Este proyecto ya usó todos sus análisis"':''} onclick="saUI.mode='form'; saUI.draft=null; renderSintro()">Analizar otro documento</button>`;
+  const vis=`<label class="sa-check"><input type="checkbox" ${sa.visible?'checked':''} onchange="saSetVisible(this.checked)"> Mostrar este análisis a quien tiene rol de Coordinación</label>`;
+  const sm=saUI.summary;
+  const sum=sm?`<div class="card sa-sum"><b>Listo. Así quedó repartido el análisis en el proyecto:</b><ul>
+      <li><span><b>${sm.goals}</b> ejes de trabajo en Planeación estratégica</span><button class="btn small" onclick="gotoTab('planeacion')">Ver planeación</button></li>
+      <li><span><b>${sm.deliv}</b> actividades estratégicas con <b>${sm.subs}</b> subactividades y <b>${sm.ents}</b> entregables en Entregables y en el cronograma</span><button class="btn small" onclick="gotoTab('entregables')">Ver entregables</button></li>
+      <li><span><b>${sm.inds}</b> indicadores en Indicadores</span><button class="btn small" onclick="gotoTab('indicadores')">Ver indicadores</button></li>
+      <li><span><b>${sm.tools}</b> productos tentativos en Caja de herramientas</span><button class="btn small" onclick="gotoTab('caja')">Ver caja</button></li></ul>
+      <span style="font-size:12.5px;">El análisis de mejoras y recomendaciones, la lectura crítica, la matriz de indicadores y el documento se quedan aquí, en las pestañas de abajo, listos para descargar.</span></div>`:'';
+  const bar=!E?'':(hasTrack()?`<div class="card tint sa-actions">
+      <div><b>${sa.sentAt?'Este análisis ya está repartido en el proyecto.':'Reparte el análisis en las pestañas del proyecto.'}</b><span>Ejes → Planeación estratégica · Actividades estratégicas, subactividades y entregables → Entregables y cronograma · Indicadores → Indicadores · Productos tentativos → Caja de herramientas.</span></div>
+      <div class="toolbar-row" style="margin:0;"><button class="btn primary" id="saApplyBtn" onclick="saToTracking()">${sa.sentAt?'Volver a repartir en el proyecto':'Colocar en el proyecto'}</button>${again}${vis}</div></div>`
+    :`<div class="card tint sa-actions"><div><b>Tu análisis está listo.</b><span>Descarga la matriz de indicadores y el documento completo desde las pestañas de abajo.</span></div><div class="toolbar-row" style="margin:0;">${again}${vis}</div></div>`)+(left===null?'':`<p class="sa-quota" style="margin:-10px 0 14px !important;">Análisis disponibles para este proyecto: ${left} de ${project.saQuota.limit}.</p>`);
   const view={lectura:saVLectura,ejes:saVEjes,matriz:saVMatriz,mejoras:saVMejoras,documento:saVDocumento,critica:saVCritica}[saUI.tab]();
-  $('saBox').innerHTML=bar+`<nav class="tabs sa-tabs">${tabs.map(t=>`<button class="tab ${t[0]===saUI.tab?'active':''}" onclick="saSetTab('${t[0]}')">${t[1]}</button>`).join('')}</nav>`+view;
+  $('saBox').innerHTML=sum+bar+`<nav class="tabs sa-tabs">${tabs.map(t=>`<button class="tab ${t[0]===saUI.tab?'active':''}" onclick="saSetTab('${t[0]}')">${t[1]}</button>`).join('')}</nav>`+view;
 }
-function saSetVisible(v){ project.data.sa.visible=!!v; persist(); toast(v?'El equipo del proyecto ya puede ver el análisis':'El análisis quedó solo para ti'); }
+function saSetVisible(v){ project.data.sa.visible=!!v; saPersist().then(()=>toast(v?'Coordinación ya puede ver el análisis':'Coordinación ya no ve el análisis')).catch(e=>{ project.data.sa.visible=!v; saDrawResults(); toast(e.message||'No se pudo guardar.',true); }); }
 
 function saVLectura(){
   const s=project.data.sa, f=s.ficha||{}, p=f.proyecto||{}, c=f.contexto||{}, g=f.genero||{}, t=f.temporalidad||{}, x=s.ctx||{};
   const lb=String(c.linea_base||'').toLowerCase();
   return `<div class="card"><h3 class="sa-h3">${esc(saName())}</h3><dl class="sa-ficha"><dt>Organización</dt><dd>${esc(x.organizacion||p.organizacion||'No se indicó')}</dd><dt>Participan</dt><dd>${esc(x.participantes||p.participantes||'No se indicó')}</dd><dt>Objetivo general</dt><dd>${esc(p.objetivo_general||'El documento no lo enuncia')}</dd><dt>Resumen</dt><dd>${esc(p.resumen||'')}</dd>${s.docName?`<dt>Documento</dt><dd>${esc(s.docName)}</dd>`:''}</dl></div>
-    <div class="card sa-trans"><h3 class="sa-h3">Contexto</h3><p class="sa-sub">${esc([c.lugar||x.lugar,c.momento||x.etapa].filter(Boolean).join(' · '))}</p><p>${esc(c.lectura||'')}</p>${lb.indexOf('presente')===-1?`<div class="banner warn">Línea base ${esc(lb||'ausente')}. Los indicadores marcan su punto de partida como «por definir». Para levantarla puedes usar el <a href="${SA_URL_LB}" target="_blank" rel="noopener">Diagnóstico Social Rápido</a>.</div>`:''}</div>
+    <div class="card sa-trans"><h3 class="sa-h3">Contexto</h3><p class="sa-sub">${esc([c.lugar||x.lugar,c.momento||x.etapa].filter(Boolean).join(' · '))}</p><p>${esc(c.lectura||'')}</p>${lb.indexOf('presente')===-1?`<div class="banner warn">Línea base ${esc(lb||'ausente')}. Los indicadores marcan su punto de partida como «por definir». Para levantarla puedes usar el ${saDiagLink()}${canSA()?', con tus datos ya cargados':''}.</div>`:''}</div>
     <div class="card sa-trans sa-gen"><h3 class="sa-h3">Enfoque de género</h3><p>${esc(g.lectura||'')}</p>${saL(g.alertas).length?'<div class="sa-cap">Lo que hay que corregir en el documento</div>'+saUl(g.alertas):''}</div>
     <div class="card sa-trans"><h3 class="sa-h3">Temporalidad</h3><p class="sa-sub">${esc([x.inicio?fmt(x.inicio,true):t.inicio,x.fin?fmt(x.fin,true):t.fin,x.duracion||t.duracion].filter(Boolean).join(' · '))}</p><p>${esc(t.lectura||'')}</p></div>
     ${saL(f.vacios).length?`<div class="card"><h3 class="sa-h3">Lo que el documento no dice</h3><p class="sa-sub">Información que hace falta para planear o medir.</p>${saUl(f.vacios)}</div>`:''}`;
@@ -1456,7 +1594,7 @@ async function saCritica(){
     const r=await api('saAnalyze',{slug,etapa:'critica',contexto:s.ctx,documento:saUI.docKept,ficha:s.ficha,ejes:s.ejes,analisis:s.analisis});
     if(!project||project.slug!==slug) return;
     if(!r.data||!saL(r.data.parrafos).length) throw {message:'La lectura llegó vacía. Intenta de nuevo.'};
-    project.data.sa.critica=r.data; persist(); saDrawResults();
+    project.data.sa.critica=r.data; await saPersist(); saDrawResults();
   }catch(e){ if(!project||project.slug!==slug) return; if($('saCritBtn')){ b.disabled=false; b.textContent='Pedir lectura crítica ampliada'; $('saCritMsg').innerHTML=`<div class="banner bad" style="margin:0 0 12px;">${esc(e.message||'No se pudo generar la lectura.')}</div>`; } }
 }
 
@@ -1464,26 +1602,46 @@ async function saCritica(){
 function saAddMonths(iso,n){ const d=parseIso(iso); const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())); return isoOf(d); }
 function saSpan(x,def){ let a=parseInt(x.mes_inicio,10), b=parseInt(x.mes_fin,10); if(!(a>0)){ const m=String(x.periodo||'').match(/(\d+)(?:\D+(\d+))?/); if(m){ a=parseInt(m[1],10); b=parseInt(m[2]||m[1],10); } } if(!(a>0)) return def||null; if(!(b>=a)) b=a; return {a,b}; }
 async function saToTracking(){
-  if(!canEdit()) return; const s=project.data.sa, d=project.data, ini=s.ctx&&s.ctx.inicio, fin=s.ctx&&s.ctx.fin;
-  const again=d.deliverables.some(x=>x.sa)||d.indicators.some(x=>x.sa)||d.tools.some(x=>x.sa);
-  if(!(await askConfirm('Pasar a seguimiento', again?'Se reemplazará lo que llegó antes desde Sintro Activities: se pierden sus estatus, ligas, fechas ajustadas y valores de indicadores. Lo que agregaste a mano se conserva.':'Se crearán entregables con sus actividades, indicadores y herramientas a partir del análisis. Lo que ya tiene el proyecto se conserva.'+(ini?'':' Como no hay fecha de inicio, llegarán sin fechas: las pones después en el cronograma.'),'Pasar a seguimiento'))) return;
+  if(!canSA()||!hasTrack()) return; const cur=project.data, ini=cur.sa.ctx&&cur.sa.ctx.inicio, fin=cur.sa.ctx&&cur.sa.ctx.fin, slug=project.slug;
+  const again=cur.deliverables.some(x=>x.sa)||cur.indicators.some(x=>x.sa)||cur.tools.some(x=>x.sa)||cur.goals.some(x=>x.sa);
+  if(!(await askConfirm('Colocar en el proyecto', again?'Se reemplazará lo que llegó antes desde Sintro Activities: se pierden sus estatus, ligas, fechas ajustadas y valores de indicadores. Lo que se agregó a mano se conserva.':'Se crearán la planeación por ejes, los entregables con sus actividades, los indicadores y las herramientas a partir del análisis. Lo que ya tiene el proyecto se conserva.'+(ini?'':' Como no hay fecha de inicio, llegarán sin fechas: se ponen después en el cronograma.'),'Colocar en el proyecto'))) return;
+  const btn=$('saApplyBtn'); if(btn){ btn.disabled=true; btn.textContent='Colocando…'; }
+  if(canEdit()) await flushNow();
+  const d=JSON.parse(JSON.stringify(project.data)), sm={goals:0,deliv:0,subs:0,ents:0,inds:0,tools:0};
   // fuera lo que vino antes de Sintro Activities y los renglones de ejemplo sin tocar
   d.deliverables.filter(x=>x.sa).forEach(x=>{ delete d.ganttObs[x.id]; });
   d.deliverables=d.deliverables.filter(x=>!x.sa&&!(x.name==='Entregable 1'&&!x.start&&!x.end&&x.activities.every(a=>a.name==='Actividad 1'&&!a.link&&!a.desc)));
   d.tools=d.tools.filter(x=>!x.sa&&!(x.name==='Herramienta 1'&&!x.link&&!x.note&&!x.subitems.length));
   d.indicators=d.indicators.filter(x=>!x.sa);
+  d.goals=d.goals.filter(x=>!x.sa&&(x.area||x.meta||x.resp||x.horizonte));
   const clamp=v=>fin&&v>fin?fin:v;
   const range=sp=>ini&&sp?{start:clamp(saAddMonths(ini,sp.a-1)),end:clamp(addDaysIso(saAddMonths(ini,sp.b),-1))}:{start:'',end:''};
-  saEjes().forEach((e,i)=>e.actividades.forEach((a,j)=>{
-    const code=(i+1)+'.'+(j+1), sp=saSpan(a), rg=range(sp);
-    const acts=a.subactividades.map(su=>({id:uid(),name:su.nombre||'Subactividad',desc:[su.descripcion,su.responsable?'Quién la lleva: '+su.responsable+'.':''].filter(Boolean).join(' '),date:range(saSpan(su,sp)).end,status:'pendiente',link:''}))
-      .concat(a.entregables.map(en=>({id:uid(),name:'Entregable: '+en,desc:'Evidencia de la actividad. Pega aquí la liga cuando esté lista.',date:rg.end,status:'pendiente',link:''})));
-    d.deliverables.push({id:uid(),sa:a.id,name:code+' '+a.nombre,start:rg.start,end:rg.end,status:'pendiente',activities:acts});
-    a.indicadores.forEach(x=>d.indicators.push({id:uid(),sa:a.id,actividad:code+' '+a.nombre,nombre:x.nombre||'',tipo:x.tipo||'',linea_base:x.linea_base||'',meta:x.meta||'',frecuencia:x.frecuencia||'',medio:x.medio_verificacion||'',valor:'',obs:''}));
-    a.productos_tentativos.forEach(pr=>d.tools.push({id:uid(),sa:a.id,tag:e.nombre,name:pr,note:'Producto tentativo de la actividad '+code+' '+a.nombre+'.',due:rg.end,status:'pendiente',link:'',subitems:[]}));
-  }));
-  s.sentAt=new Date().toISOString(); persist(); renderAll();
-  toast('Listo: revisa Entregables, Indicadores y Caja de herramientas');
+  saEjes().forEach((e,i)=>{
+    let lo=0, hi=0;
+    e.actividades.forEach((a,j)=>{
+      const code=(i+1)+'.'+(j+1), sp=saSpan(a), rg=range(sp);
+      if(sp){ lo=lo?Math.min(lo,sp.a):sp.a; hi=Math.max(hi,sp.b); }
+      const acts=a.subactividades.map(su=>({id:uid(),name:su.nombre||'Subactividad',desc:[su.descripcion,su.responsable?'Quién la lleva: '+su.responsable+'.':''].filter(Boolean).join(' '),date:range(saSpan(su,sp)).end,status:'pendiente',link:''}))
+        .concat(a.entregables.map(en=>({id:uid(),name:'Entregable: '+en,desc:'Evidencia de la actividad. Pega aquí la liga cuando esté lista.',date:rg.end,status:'pendiente',link:''})));
+      d.deliverables.push({id:uid(),sa:a.id,name:code+' '+a.nombre,start:rg.start,end:rg.end,status:'pendiente',activities:acts});
+      sm.deliv++; sm.subs+=a.subactividades.length; sm.ents+=a.entregables.length;
+      a.indicadores.forEach(x=>{ d.indicators.push({id:uid(),sa:a.id,actividad:code+' '+a.nombre,nombre:x.nombre||'',tipo:x.tipo||'',linea_base:x.linea_base||'',meta:x.meta||'',frecuencia:x.frecuencia||'',medio:x.medio_verificacion||'',valor:'',obs:''}); sm.inds++; });
+      a.productos_tentativos.forEach(pr=>{ d.tools.push({id:uid(),sa:a.id,tag:e.nombre,name:pr,note:'Producto tentativo de la actividad '+code+' '+a.nombre+'.',due:rg.end,status:'pendiente',link:'',subitems:[]}); sm.tools++; });
+    });
+    const rgE=range(lo?{a:lo,b:hi}:null);
+    d.goals.push({id:uid(),sa:e.id,area:'Eje '+(i+1)+'. '+e.nombre,meta:e.proposito||'',resp:'',horizonte:rgE.start?fmt(rgE.start,true)+' a '+fmt(rgE.end,true):(lo?'Mes '+lo+(hi>lo?' a '+hi:''):'')}); sm.goals++;
+  });
+  const sa=Object.assign({},d.sa,{sentAt:new Date().toISOString()});
+  try{
+    const r=await api('saApply',{slug,baseRev:project.rev,deliverables:d.deliverables,tools:d.tools,indicators:d.indicators,goals:d.goals,ganttObs:d.ganttObs,sa});
+    if(!project||project.slug!==slug) return;
+    project.data=normalizeData(r.project.data); project.rev=r.project.rev; project.updatedAt=r.project.updatedAt;
+    saUI.summary=sm; setSync('ok'); renderAll(); toast('Análisis colocado en el proyecto');
+  }catch(e){
+    if(!project||project.slug!==slug) return;
+    if(e.error==='conflict'&&e.project){ project.data=normalizeData(e.project.data); project.rev=e.project.rev; renderAll(); toast('El proyecto cambió desde otra sesión y se actualizó. Vuelve a colocar el análisis.',true); }
+    else { saDrawResults(); toast(e.message||'No se pudo colocar el análisis.',true); if(e.error==='closed') goHome(); }
+  }
 }
 
 /* ---- contenido de los entregables: un modelo de bloques → vista, Word y PDF ---- */
@@ -1581,9 +1739,10 @@ function saPdf(B,landscape,title){
    ARRANQUE
 ========================================================= */
 window.addEventListener('DOMContentLoaded',()=>{
-  const t=getToken();
-  if(t && tokenValid(t)){ $('loginView').classList.add('hidden'); afterLogin(); }
-  else { setToken(''); showLogin(); }
+  const t=getToken(), ses=getSession(), link=linkSlug();
+  if(ses && (!link || link===ses.slug)){ authMode='pw'; $('loginView').classList.add('hidden'); afterLogin(); }
+  else if(t && tokenValid(t)){ authMode='google'; $('loginView').classList.add('hidden'); afterLogin(); }
+  else { setToken(''); if(ses&&link&&link!==ses.slug) setSession(null); showLogin(); }
 });
 </script>
 </body>
