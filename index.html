@@ -591,7 +591,7 @@ async function aiTest(){
   const s=x=>(Math.round(x/100)/10)+' s'; let h='';
   try{
     await aiReady();
-    const r=await api('aiTest',{},false,200000);
+    let r; try{ r=await api('aiTest',{},false,200000); }catch(e){ if(e&&e.ok&&e.version) r=e; else throw e; }   // la prueba puede traer su propio diagnóstico de error: se muestra, no se descarta
     h+=`<p><b>Apps Script publicado:</b> versión ${esc(String(r.version))}, al día.</p><p><b>Llave de Gemini:</b> ${r.llave?'configurada':'no está configurada'}.</p>`;
     if(r.error){ h+=`<div class="banner bad"><b>La IA no respondió.</b> ${esc(r.error)}</div><p><b>Modelos que se intentaron:</b> ${r.modelos.map(m=>'<code>'+esc(m)+'</code>').join(' ')}</p>`;
       if(r.disponibles&&r.disponibles.length) h+=`<p><b>Modelos Flash disponibles para tu llave:</b> ${r.disponibles.map(m=>'<code>'+esc(m)+'</code>').join(' ')}</p><p>Para usar uno de ellos: Apps Script > Configuración del proyecto > Propiedades del script > agrega <code>SA_GEMINI_MODEL</code> con ese nombre.</p>`;
