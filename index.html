@@ -301,7 +301,16 @@
   .dx-item{display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--line); padding:12px 0;} .dx-item:first-of-type{border-top:none;}
   .dx-item b{font-size:14px;} .dx-item small{display:block; color:var(--grey); font-size:12px;}
   .dx-bar{display:grid; gap:10px;} .dx-bar .toolbar-row{margin:0;} .dx-bar .lbl{font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--orange-dark); min-width:118px;}
-  @media (max-width:860px){ .dx-grid{grid-template-columns:1fr;} }
+  .dx-status{border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:0 0 16px; background:var(--white);}
+  .dx-status b{font-size:13.5px;} .dx-status ul{list-style:none; margin:8px 0 0; padding:0;}
+  .dx-status li{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; font-size:12.5px; padding:5px 0; border-top:1px solid var(--line); color:var(--grey);}
+  .dx-status li span.st{flex:0 0 150px; font-weight:700; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;}
+  .dx-status li.ia span.st{color:var(--ok);} .dx-status li.trabajando span.st{color:var(--orange-dark); animation:saPulse 1.2s ease-in-out infinite;} .dx-status li.fallo span.st{color:var(--red);}
+  .dx-status li.ia, .dx-status li.trabajando{color:var(--ink);}
+  .dx-notice{position:fixed; left:20px; bottom:20px; z-index:60; max-width:380px; background:var(--ink); color:var(--white); border-radius:14px; padding:14px 16px; box-shadow:0 10px 30px rgba(31,27,46,.3); font-size:13.5px; line-height:1.5;}
+  .dx-notice div{display:flex; gap:8px; margin-top:10px;}
+  @media (prefers-reduced-motion:reduce){ .dx-status li.trabajando span.st{animation:none;} }
+  @media (max-width:860px){ .dx-grid{grid-template-columns:1fr;} .dx-notice{left:12px; right:12px; max-width:none;} }
   @media (max-width:860px){ .sa-two{grid-template-columns:1fr;} .sa-ficha{grid-template-columns:1fr;} .user-row.v3{grid-template-columns:1fr;} }
 </style>
 </head>
@@ -333,6 +342,7 @@
       <div id="gisBtn" style="margin-top:14px;"></div>
       <div id="loginSetup"></div>
       <div class="login-note" id="loginNote"></div>
+      <div class="login-note" style="margin-top:10px;"><a href="privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a></div>
     </div>
   </div>
 </div>
@@ -473,7 +483,7 @@
       <div id="saBox"></div>
     </section>
 
-    <footer class="foot"><span>Sintropía Social — Plataforma de seguimiento</span><span id="footVig"></span></footer>
+    <footer class="foot"><span>Sintropía Social — Plataforma de seguimiento · <a href="privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a></span><span id="footVig"></span></footer>
   </div>
  </div>
 </div>
@@ -485,6 +495,7 @@
 
 <div class="modal-bg" id="modalBg"><div class="modal-card" id="modalCard"></div></div>
 <div id="toast"></div>
+<div class="dx-notice hidden" id="dxNotice" role="status"></div>
 
 <script>
 /* =========================================================
@@ -550,19 +561,19 @@ function getSession(){ const s=rawSession(); return s&&s.token&&s.exp*1000>Date.
 function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(SESSION_KEY,JSON.stringify(s)); else sessionStorage.removeItem(SESSION_KEY); }catch(e){} }
 function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
 
-async function api(action, body, retried){
+async function api(action, body, retried, ms){
   const ses=rawSession();
   const cred=authMode==='pw'?{sessionToken:ses?ses.token:''}:{idToken:getToken()};
   let res;
   // Apps Script corta cualquier ejecución a los 6 minutos: si no hay respuesta antes, se avisa en vez de esperar sin fin.
-  const ctl=new AbortController(), timer=setTimeout(()=>ctl.abort(),330000);
+  const ctl=new AbortController(), timer=setTimeout(()=>ctl.abort(),ms||330000);
   try{
     res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},cred,body||{})),signal:ctl.signal});
   }catch(e){ clearTimeout(timer); throw (e&&e.name==='AbortError')?{error:'timeout',message:'El servidor tardó más de 5 minutos y no respondió. Intenta de nuevo; si se repite, revisa en Apps Script > Ejecuciones qué pasó con la solicitud.'}:{error:'network',message:'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'}; }
   clearTimeout(timer);
   let j;
   try{ j=await res.json(); }catch(e){ throw {error:'bad',message:'El servidor respondió de forma inesperada. Verifica que Code.gs esté actualizado y desplegado como "Nueva versión".'}; }
-  if(j.error==='auth' && action!=='me' && !retried){ await requireRelogin(); return api(action,body,true); }
+  if(j.error==='auth' && action!=='me' && !retried){ await requireRelogin(); return api(action,body,true,ms); }
   if(j.error) throw j;
   return j;
 }
@@ -691,8 +702,10 @@ function daysLeftText(p){
   if(n===0) return 'termina hoy';
   return 'quedan '+n+' día'+(n===1?'':'s');
 }
+let npKeep={};   // lo escrito en "Nuevo proyecto" sobrevive a los refrescos de la lista
 function renderHome(){
   const h=$('homeView');
+  ['npName','npClient','npExpires','npModules'].forEach(k=>{ const el=$(k); if(el) npKeep[k]=el.value; });
   if(session.isSuper){
     h.innerHTML=`
       <div class="proj-head"><div><h1 style="font-size:24px;margin:0;">Panel del Admin general</h1><div class="accent-rule"><i></i><i></i><i></i></div></div><span class="role-chip super">Admin general</span></div>
@@ -748,6 +761,7 @@ function renderSuperProjects(){
     <h3 style="font-size:15px;margin:0 0 12px;">Proyectos (${act.length})</h3>
     ${act.length?table(act,false):'<p class="empty">Aún no hay proyectos abiertos. Crea el primero arriba.</p>'}
     ${arch.length?`<h3 style="font-size:15px;margin:30px 0 4px;">Archivados (${arch.length})</h3><p class="panel-desc" style="margin-bottom:12px;">Fuera de la lista principal y sin acceso para el equipo. Puedes consultarlos, restaurarlos o eliminarlos.</p>${table(arch,true)}`:''}`;
+  Object.keys(npKeep).forEach(k=>{ if(npKeep[k]&&$(k)) $(k).value=npKeep[k]; });
 }
 async function rowAction(slug,kind){
   const p=session.projects.find(x=>x.slug===slug); if(!p) return;
@@ -768,6 +782,7 @@ async function createProject(){
   if(!exp){ toast('Indica la fecha en que termina el proyecto.',true); return; }
   try{
     const r=await api('createProject',{name,client,expiresAt:exp,modules:$('npModules').value,data:defaultProjectData()});
+    ['npName','npClient','npExpires'].forEach(k=>{ if($(k)) $(k).value=''; }); npKeep={};
     toast('Proyecto creado'); await refreshMe(); renderHome(); manageProject(r.slug);
   }catch(e){ toast(e.message||'No se pudo crear el proyecto.',true); }
 }
@@ -1393,6 +1408,7 @@ async function saPersist(){ const slug=project.slug; if(canEdit()) await flushNo
 const saL=x=>Array.isArray(x)?x.filter(v=>v!=null&&String(v).trim()!==''):(x?[x]:[]);
 const saData=()=>project.data.sa&&saL(project.data.sa.ejes).length?project.data.sa:null;
 
+function dxReset(){ if(dxJob) dxJob.stop=true; dxJob=null; dxNotice(''); }
 function saSetArea(a){ saUI.area=a; dxUI.typing=false; if(a==='dx') dxUI.view=null; $('saBox').innerHTML=''; renderSintro(); }
 // Si el proyecto ya tiene una Línea base hecha con las herramientas de diagnóstico, se carga sola en el formulario.
 function saLineaBaseDx(){ const it=project.data.dx.filter(x=>x.herr==='linea').slice(-1)[0]; if(!it) return ''; const ts=it.secciones.filter(s=>s.tabla&&s.tabla.filas.length), t=ts.find(s=>/l[ií]nea base|variable|indicador/i.test(s.titulo||''))||ts[0]; return [it.resumen].concat(t?t.tabla.filas.map(f=>'- '+f.filter(Boolean).join(' | ')):[]).filter(Boolean).join('\n').slice(0,2800); }
@@ -1400,7 +1416,7 @@ function saNewDraft(){ const c0=(project.data.sa&&project.data.sa.ctx)||{}, lb=s
 
 function renderSintro(){
   const box=$('saBox'); if(!box) return;
-  if(saUI.proj!==project){ saUI={proj:project,area:'plan',mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null,summary:null}; dxUI=dxNew(); box.innerHTML=''; }
+  if(saUI.proj!==project){ saUI={proj:project,area:'plan',mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null,summary:null}; dxReset(); dxUI=dxNew(); box.innerHTML=''; }
   const sa=saData();
   $('saPanelDesc').textContent=hasTrack()?'Empieza aquí. Sube el documento del proyecto y obtén el panorama general y su secuencia: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Con un botón, todo se reparte en las pestañas que siguen.':'Sube el documento del proyecto y obtén su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo.';
   if(!tabVisible('sintro')){ box.innerHTML=''; $('saArea').innerHTML=''; return; }
@@ -1780,7 +1796,8 @@ const DX_Q_EXTRA={
   propuesta:[['Recursos, equipo y tiempo disponibles','¿Con qué recursos, equipo y tiempo cuentan?','']],
   teoria:[['Cómo creen que ocurrirá el cambio','¿Cómo creen que ocurrirá el cambio?','¿Por qué lo que hacen llevaría a lo que buscan? Cuéntalo paso a paso.'],['Qué tendría que ser cierto para que funcione','¿Qué tendría que ser cierto para que funcione?','Lo que se está dando por hecho: sobre las personas, las instituciones, el contexto.']]
 };
-function dxNew(){ return {herr:'',resp:{},doc:'',docName:'',docMsg:'',busy:false,err:'',view:null,typing:false}; }
+function dxNew(){ return {herr:'',resp:{},doc:'',docName:'',docMsg:'',err:'',view:null,draft:null,typing:false}; }
+let dxJob=null;   // profundización con IA en curso (sigue aunque cambies de pestaña)
 let dxUI=dxNew();
 const dxName=h=>(DX_HERR.find(x=>x[0]===h)||['','Diagnóstico'])[1];
 function dxLeft(){ if(role==='super') return null; const q=project.saQuota||{}; return Math.max(0,(q.dxLimit||0)-(q.dxUsed||0)); }
@@ -1794,6 +1811,8 @@ function dxRender(){
   const box=$('saBox'), E=canSA(), list=project.data.dx;
   if(dxUI.view){ box.innerHTML=`<div id="dxRoot">${dxViewHtml()}</div>`; return; }
   let h='<div id="dxRoot">';
+  const dr=dxUI.draft;
+  if(E&&dr) h+=`<div class="card tint"><div class="dx-item" style="padding:0;"><div><b>${esc(dr.item.titulo)}</b><small>${dxJob&&dxJob.view===dr?'La IA lo está profundizando: bloque '+(dxJob.i+1)+' de '+dxJob.n:'Resultado listo'} · aún no agregado al proyecto</small></div><div class="toolbar-row" style="margin:0;"><button class="btn small primary" onclick="dxUI.view=dxUI.draft; dxRender()">Abrir</button></div></div></div>`;
   if(E){
     const left=dxLeft();
     h+=`<div class="card"><h3 class="sa-h3">Elige la herramienta</h3><p class="sa-sub">Respondes unas preguntas, la IA arma el resultado y decides si lo agregas al proyecto.${left===null?'':' Diagnósticos disponibles para este proyecto: '+left+' de '+project.saQuota.dxLimit+'.'}</p>
@@ -1806,8 +1825,8 @@ function dxRender(){
           :`${q[2]?`<small>${esc(q[2])}</small>`:''}<textarea data-k="${esc(q[0])}" oninput="dxUI.typing=true; dxUI.resp[this.dataset.k]=this.value">${esc(dxUI.resp[q[0]]||'')}</textarea>`}</div>`).join('')}
         <div class="dx-q"><label>${dxUI.herr==='teoria'?'¿Ya tienes una teoría de cambio o un documento del proyecto? Súbelo: la devolución se hace sobre él (opcional)':'Documento de apoyo (opcional)'}</label><small>PDF, Word (.docx) o texto. Se lee en tu navegador; solo se envía el texto.</small><input type="file" accept=".pdf,.docx,.txt,.md" onchange="dxFile(this.files[0])"><div id="dxFileMsg">${dxUI.docMsg}</div></div>
         <div id="dxMsg">${dxUI.err?`<div class="banner bad" style="margin-top:12px;">${esc(dxUI.err)}</div>`:''}</div>
-        <button class="btn orange primary-action" id="dxGo" onclick="dxGenerate()" ${dxUI.busy||left===0?'disabled':''}>${dxUI.busy?'Trabajando… puede tardar un minuto':'Generar '+esc(dxName(dxUI.herr)).toLowerCase()}</button>
-        ${left===0?'<p class="sa-quota">Este proyecto ya usó todos sus diagnósticos. Escribe a Sintropía Social si necesitas más.</p>':''}</div>`;
+        <button class="btn orange primary-action" id="dxGo" onclick="dxGenerate()" ${dxJob?'disabled':''}>Generar ${esc(dxName(dxUI.herr)).toLowerCase()}</button>
+        <p class="sa-quota">${dxJob?'La IA sigue trabajando en otro resultado. Espera a que termine o detenla desde ese resultado.':(left===0?'Este proyecto ya usó sus diagnósticos con IA: recibirás la versión inmediata, sin profundización.':'El resultado aparece de inmediato; después la IA lo profundiza por bloques mientras lo revisas.')}</p></div>`;
     }
   }
   h+=`<div class="card"><h3 class="sa-h3">Diagnósticos del proyecto</h3><p class="sa-sub">Lo que ya se agregó al proyecto. Cualquier persona con acceso puede consultarlo y descargarlo.</p>${list.length?list.slice().reverse().map(it=>`<div class="dx-item"><div><b>${esc(it.titulo)}</b><small>${esc(it.herramienta||dxName(it.herr))} · ${esc(fmt(String(it.createdAt||'').slice(0,10),true))}</small></div><div class="toolbar-row" style="margin:0;"><button class="btn small primary" onclick="dxShow('${esc(it.id)}')">Abrir</button>${E?`<button class="btn small danger" onclick="dxRemove('${esc(it.id)}')">Quitar</button>`:''}</div></div>`).join(''):'<p class="empty">Aún no hay diagnósticos agregados.</p>'}</div></div>`;
@@ -1821,24 +1840,251 @@ async function dxFile(file){
   else { dxUI.doc=''; dxUI.docName=''; say(saUI.docMsg); }
   saUI.docFile=keepSa.f; saUI.docName=keepSa.n; saUI.docMsg=keepSa.m;
 }
+/* ---- Versión inmediata (makeDiag): se arma con reglas a partir de las respuestas, sin esperar a la IA ---- */
+const DX_REFS_TDC=[
+  'Anderson, A. A. (2005). The community builder’s approach to theory of change: A practical guide to theory development. The Aspen Institute Roundtable on Community Change.',
+  'Funnell, S. C., & Rogers, P. J. (2011). Purposeful program theory: Effective use of theories of change and logic models. Jossey-Bass.',
+  'Mayne, J. (2015). Useful theory of change models. Canadian Journal of Program Evaluation, 30(2), 119–142.',
+  'Retolaza Eguren, I. (2010). Teoría de cambio: Un enfoque de pensamiento-acción para navegar en la complejidad de los procesos de cambio social. PNUD; Hivos.',
+  'Rogers, P. (2014). Theory of change (Methodological Briefs: Impact Evaluation No. 2). UNICEF Office of Research.',
+  'Taplin, D. H., & Clark, H. (2012). Theory of change basics: A primer on theory of change. ActKnowledge.',
+  'Vogel, I. (2012). Review of the use of ‘Theory of Change’ in international development. UK Department for International Development.',
+  'Weiss, C. H. (1995). Nothing as practical as good theory: Exploring theory-based evaluation for comprehensive community initiatives for children and families. En J. P. Connell, A. C. Kubisch, L. B. Schorr y C. H. Weiss (Eds.), New approaches to evaluating community initiatives: Concepts, methods, and contexts. The Aspen Institute.'
+];
+function dxParts(t,max){ return String(t||'').split(/\n|;|,|\s+y\s+|\s+e\s+(?=[ih])/i).map(x=>x.trim().replace(/^[-•\d.)\s]+/,'').replace(/^(con|mediante|a través de|por medio de|que)\s+/i,'').replace(/\.+$/,'')).filter(x=>x.length>2).slice(0,max||6); }
+function dxCap(t){ t=String(t||'').trim(); return t?t.charAt(0).toUpperCase()+t.slice(1):t; }
+function makeDiag(herr,resp){
+  const g=i=>String(resp[DX_Q_BASE[i][0]]||'').trim(), ex=(DX_Q_EXTRA[herr]||[]).map(q=>String(resp[q[0]]||'').trim());
+  const quien=g(0), prob=g(1), det=g(2), fase=g(3), act=g(4), cam=g(5), x1=ex[0]||'', x2=ex[1]||'';
+  const PD='Por definir', Q=t=>'«'+t.replace(/\.+$/,'')+'»', actores=dxParts(act,7);
+  const P=(...t)=>t.filter(Boolean).join(' '), sec=(titulo,o)=>Object.assign({titulo,parrafos:[],lista:[]},o||{}), tab=(columnas,filas)=>({columnas,filas});
+  const quienes=quien||'las personas que participan', problema=prob||'la situación que quieren atender', cambio=cam||'el cambio que buscan';
+  // Recomendaciones prácticas: salen de lo que falta en las respuestas y del momento del proyecto
+  const rec=[];
+  const recFase={ 'Diag':'Levantar el punto de partida antes de comprometer metas: cuántas personas viven la situación, desde cuándo y cómo la enfrentan hoy. Quién: equipo del proyecto con personas de la comunidad. Evidencia: ficha de línea base con fecha.',
+    'Dise':'Llevar este diseño a una sesión de devolución con quienes participan antes de cerrarlo, y registrar qué cambiarían. Quién: coordinación y facilitación. Evidencia: minuta con los ajustes acordados.',
+    'Impl':'Contrastar lo planeado con lo que está ocurriendo: quién dejó de asistir, por qué, y qué actividad no está produciendo lo esperado. Quién: coordinación con monitoreo. Evidencia: corte de avance con decisiones de ajuste.',
+    'Eval':'Comparar contra el punto de partida; si no hubo línea base, reconstruirla con registros y con la memoria de quienes participaron, y decirlo así en el informe. Quién: monitoreo y evaluación. Evidencia: tabla de antes y después con sus fuentes.' }[fase.slice(0,4)];
+  const recComunes=()=>{
+    if(!det) rec.push('Describir con casos concretos cómo se manifiesta el problema y a quiénes afecta más. Quién: equipo del proyecto con dos o tres personas participantes. Evidencia: una página con tres casos.');
+    if(!actores.length) rec.push('Mapear a los actores: quién apoya, quién decide y quién podría resistirse. Quién: coordinación. Evidencia: lista de actores con su postura.');
+    if(recFase) rec.push(recFase);
+    rec.push('Revisar horarios, traslados y cargas de cuidado: ¿quién puede participar y quién no? Prever el cuidado de niñas y niños como responsabilidad compartida, no como asunto de las madres. Quién: coordinación de campo. Evidencia: calendario y presupuesto ajustados.');
+    rec.push('Cruzar el plan con el calendario real del territorio: ciclo agrícola y escolar, lluvias, festividades, periodos electorales. Quién: equipo con personas de la comunidad. Evidencia: calendario comentado.');
+    rec.push('Nombrar quién no está apareciendo en este diagnóstico y decidir cómo se le va a escuchar. Quién: todo el equipo. Evidencia: lista de voces ausentes y la forma de incluirlas.');
+    return sec('Recomendaciones prácticas',{lista:rec.slice(0,7)});
+  };
+  let titulo=dxName(herr)+': '+(project.name||''), resumen='', bloques=[], metas=[];
+  const incognitas=['¿Quién definió que este es el problema, y a quién no se le preguntó?','¿Qué están haciendo ya '+quienes+' para enfrentar la situación, sin el proyecto?','¿Qué tendría que pasar para que el cambio se sostenga cuando el proyecto termine?'];
+
+  if(herr==='arbol'){
+    const causas=dxParts(x1,8), solucion=/^(la\s+)?(falta|ausencia|carencia|inexistencia)\b|^no\s+(hay|existe|se\s+cuenta)/i.test(prob);
+    resumen=P('Árbol armado con',causas.length?causas.length+' causas que el equipo identifica':'el problema central, sin causas identificadas todavía','.',solucion?'El problema está escrito como una solución ausente: conviene reformularlo.':'');
+    bloques=[[
+      sec('Problema central',{parrafos:[P(prob?'Lo que nombran como problema es '+Q(prob)+'.':'Aún no hay un problema central escrito.',solucion?'Tal como está, describe la falta de una solución, no la situación que viven las personas. La pregunta que lo corrige: ¿qué les pasa a '+quienes+' porque eso falta? Esa respuesta es el problema.':'Verifiquen que describa una situación que viven '+quienes+', que sea una sola y que se pueda observar.',det?'Cómo se manifiesta, según lo que cuentan: '+det:'Falta describir cómo se manifiesta y a quiénes afecta más.')]}),
+      sec('Causas',{tabla:tab(['Nivel','Causa','Cómo se manifiesta','A quiénes afecta distinto'],(causas.length?causas:['Por identificar: pregunten cinco veces «¿por qué ocurre?»','Por identificar: una causa que dependa de decisiones de otros actores','Por identificar: una causa de fondo (económica, cultural o institucional)']).map(c=>['Por clasificar: directa o estructural',dxCap(c),det||'Por describir','Por precisar: mujeres, hombres, jóvenes, personas mayores']))})
+    ],[
+      sec('Efectos',{tabla:tab(['Efecto','En quién recae','Plazo'],[[det?dxCap(det):'Por identificar: lo que ya se ve hoy',quien||'Por precisar','Actual'],['Por identificar: qué cambia en los hogares y en el reparto del trabajo de cuidado','Por precisar','Mediano plazo'],['Por identificar: qué pierde la comunidad si nada cambia','Por precisar','Largo plazo']])}),
+      sec('Lectura del árbol',{parrafos:[P('Un árbol sirve si separa lo que el proyecto puede mover de lo que no.',causas.length?'De las causas anotadas, marquen cuáles dependen del trabajo con '+quienes+' y cuáles dependen de otros actores'+(actores.length?' ('+actores.join(', ')+')':'')+'.':'Todavía no hay causas para hacer esa separación.','Cada flecha entre una causa y el problema es una afirmación que habría que poder probar: ¿con qué dato o con qué testimonio?')]})
+    ],[
+      sec('Del árbol de problemas al de objetivos',{tabla:tab(['Causa','Medio u objetivo que le corresponde'],(causas.length?causas:['Por identificar']).map(c=>[dxCap(c),'Escribir en positivo la situación que habría cuando '+Q(c)+' deje de ocurrir']))}),
+      (rec.push('Validar el árbol con '+quienes+': que digan si esas son las causas y en qué orden las viven. Quién: facilitación. Evidencia: árbol corregido en papelógrafo o foto.'),recComunes())
+    ]];
+  }
+  else if(herr==='marco'){
+    const comp=dxParts(x1,5);
+    resumen=P('Matriz inicial con',comp.length?comp.length+' componentes':'el fin y el propósito; faltan los componentes','.',cam?'':'No hay propósito definido todavía.');
+    bloques=[[
+      sec('Lógica de la intervención',{parrafos:[P('La lógica que se lee en sus respuestas:',comp.length?'si se realizan '+comp.join(', ')+' con '+quienes+',':'si el proyecto trabaja con '+quienes+',','entonces '+(cam?Q(cam):'[propósito por definir]')+', y con ello se contribuye a reducir '+(prob?Q(prob):'[problema por definir]')+'.','Cada «entonces» es una apuesta: la matriz existe para volverla revisable.')]}),
+      sec('Matriz de marco lógico',{tabla:tab(['Nivel','Resumen narrativo','Indicadores','Medios de verificación','Supuestos'],[
+        ['Fin',prob?'Contribuir a reducir: '+prob:PD,'Por definir: indicador de impacto con fuente oficial o línea base','Por definir','Por definir: condiciones del contexto que el proyecto no controla'],
+        ['Propósito',cam?dxCap(cam):'Por definir: un solo cambio en las personas','Por definir: cuántas personas, qué cambia, para cuándo','Por definir: registro propio o levantamiento',actores.length?'Que '+actores.slice(0,3).join(', ')+' mantengan su participación':'Por definir']
+      ].concat((comp.length?comp:['Por definir']).map((c,i)=>['Componente '+(i+1),dxCap(c),'Por definir: cantidad, calidad y fecha','Por definir: listas, productos, memorias','Por definir'])).concat([['Actividades','Por desglosar: de una a dos por componente','Presupuesto y calendario','Registros administrativos','Recursos disponibles a tiempo']]))})
+    ],[
+      sec('Revisión de la lógica vertical',{lista:[cam?'El propósito está escrito. Revisen que sea un solo cambio en las personas y no una suma de componentes.':'Falta el propósito: sin él, los componentes no tienen hacia dónde sumar.',comp.length?'Pregunta de control: si los '+comp.length+' componentes se cumplen completos, ¿alcanza para que ocurra el propósito? Si la respuesta es «depende», falta un componente o un supuesto.':'Faltan los componentes: lo que el proyecto entrega y que está bajo su control.','Cada actividad debe poder ligarse a un componente. La que no se liga a ninguno, sobra o revela un componente no escrito.']}),
+      sec('Revisión de la lógica horizontal',{lista:['Un indicador por nivel que mida el cambio, no la asistencia. Contar personas que llegan no dice qué cambió en ellas.','Medios de verificación realistas: que no carguen más trabajo no pagado sobre las personas participantes.','Los supuestos son condiciones externas. Si depende del propio equipo, no es supuesto: es una actividad pendiente.','Desagregar por sexo y edad donde tenga sentido, e incluir al menos un indicador sobre quién decide y quién carga con el cuidado.']}),
+      (rec.push('Completar los indicadores de propósito y componentes con cantidad, calidad y fecha. Quién: monitoreo y evaluación con coordinación. Evidencia: matriz con todas las celdas llenas.'),recComunes())
+    ]];
+  }
+  else if(herr==='linea'){
+    resumen=P(x1?'Hay datos de partida reportados; el resto queda por levantar.':'No se reportaron datos previos: toda la línea base queda por levantar.','La tabla propone qué medir y con qué desagregación.');
+    bloques=[[
+      sec('Lo que ya se sabe',{parrafos:[x1?'Lo que reportan como datos existentes: '+x1+' Antes de usarlos, revisen de cuándo son, quién los levantó y a quiénes dejaron fuera.':'No se reportaron datos previos. Eso no es un defecto del proyecto, pero sí una decisión pendiente: sin punto de partida no hay contra qué medir el cambio.']}),
+      sec('Variables e indicadores de línea base',{tabla:tab(['Dimensión','Indicador','Dato actual','Fuente o técnica','Desagregación'],[
+        ['Problema',prob?'Magnitud de: '+prob:'Por definir','Por levantar','Encuesta breve o registros locales','Sexo, edad, localidad'],
+        ['Manifestación',det?dxCap(det):'Cómo se vive la situación en lo cotidiano','Por levantar','Entrevistas o grupo de conversación','Sexo, edad'],
+        ['Participación','Personas que participan y perfil',quien||'Por levantar','Registro de participantes','Sexo, edad, localidad'],
+        ['Cambio esperado',cam?'Punto de partida de: '+cam:'Por definir','Por levantar','Instrumento propio antes de iniciar','Sexo, edad'],
+        ['Tiempo y cuidados','Horas semanales de trabajo de cuidado no pagado','Por levantar','Diario de uso del tiempo (una semana)','Sexo, edad'],
+        ['Decisión','Quién decide sobre participar, sobre el ingreso y sobre el tiempo','Por levantar','Entrevista','Sexo, edad'],
+        ['Actores',actores.length?'Respaldo de: '+actores.slice(0,4).join(', '):'Actores que respaldan o frenan','Por levantar','Mapa de actores','Tipo de actor']
+      ])})
+    ],[
+      sec('Cómo levantarla',{lista:['Definir primero las preguntas que la línea base tiene que responder; después, el instrumento.','Levantar con '+quienes+' como coinvestigadoras y coinvestigadores, no solo como informantes.','Elegir el momento con el calendario local: no en cosecha, exámenes ni festividades.','Pedir consentimiento informado, explicar para qué se usarán los datos y devolver los resultados a la comunidad.','Registrar a quién no se pudo llegar y por qué: esa ausencia también es un dato.','Guardar instrumento, fecha y forma de selección: la medición final tendrá que repetirlos.']}),
+      sec('Para qué va a servir',{parrafos:['La línea base es lo que permitirá decir, al cierre, qué cambió y para quién. De ella salen las metas (cuánto es razonable mover) y el diseño de la evaluación (con qué se va a comparar). Si se levanta después de empezar, lo que mide ya es el proyecto en marcha.']}),
+      (rec.push('Elegir de la tabla los cinco indicadores indispensables y levantarlos antes de iniciar actividades. Quién: monitoreo y evaluación. Evidencia: base de datos con fecha de levantamiento.'),recComunes())
+    ]];
+  }
+  else if(herr==='smart'){
+    const tieneNum=/\d/.test(cam+x1), tienePlazo=/\d|mes|año|semana|trimestre|semestre/i.test(x1);
+    metas=[{prioridad:'Cambio central',meta:'Tentativa: '+(cam?dxCap(cam):'[cambio por definir]')+' en '+quienes+', medido contra la línea base, en '+(tienePlazo?'el plazo que indican ('+x1+')':'[plazo por definir]'),responsable:'Coordinación del proyecto',horizonte:tienePlazo?x1:PD},
+      {prioridad:'Punto de partida',meta:'Línea base levantada con datos desagregados por sexo y edad antes de iniciar actividades',responsable:'Monitoreo y evaluación',horizonte:'Primeros dos meses'},
+      {prioridad:'Participación y permanencia',meta:'Tentativa: [porcentaje por definir con línea base] de '+quienes+' concluye el proceso, sin brecha entre mujeres y hombres',responsable:'Coordinación de campo',horizonte:PD}];
+    if(x1&&x1!==cam) metas.splice(1,0,{prioridad:'Lo que quieren lograr',meta:'Tentativa: '+dxCap(x1)+', con cantidad y fecha por precisar',responsable:PD+' (rol)',horizonte:tienePlazo?x1:PD});
+    resumen=P(metas.length+' metas en versión tentativa.',tieneNum?'':'No hay cantidades en las respuestas: dependen de la línea base.',tienePlazo?'':'Falta el plazo.');
+    bloques=[[
+      sec('Del propósito a las metas',{parrafos:[P(cam?'El cambio que buscan es '+Q(cam)+'.':'Aún no está escrito el cambio que buscan.','Una meta lo vuelve revisable cuando dice qué cambia, en quién, cuánto y para cuándo.',tieneNum?'':'En sus respuestas no hay cantidades; por eso las metas van como tentativas y dependen de la línea base.')]}),
+      sec('Metas SMART',{tabla:tab(['Prioridad','Meta SMART','Indicador','Responsable','Horizonte'],metas.map(m=>[m.prioridad,m.meta,'Por definir: cómo se mide y con qué fuente',m.responsable,m.horizonte]))})
+    ],[
+      sec('Revisión de cada criterio',{lista:['Específica: '+(cam?'el cambio está nombrado; falta precisar en quién exactamente.':'falta nombrar el cambio.'),'Medible: '+(tieneNum?'hay cantidades; revisen de qué dato salen.':'no hay cantidades todavía; se fijan con la línea base.'),'Alcanzable: contrasten cada meta con el equipo, el presupuesto y el tiempo reales.','Relevante: pregunten a '+quienes+' si ese es el cambio que les importa.','Con tiempo: '+(tienePlazo?'hay un plazo; crúcenlo con el calendario del territorio.':'falta la fecha de cada meta.')]}),
+      (rec.push('Sustituir cada «tentativa» por una cantidad en cuanto exista la línea base. Quién: monitoreo y evaluación. Evidencia: tabla de metas con su dato de partida.'),recComunes())
+    ]];
+  }
+  else if(herr==='talleres'){
+    resumen='Secuencia base de cuatro sesiones, de lo que ya se sabe a la práctica en situación real. Duración y materiales quedan por definir.';
+    const tema=cam||prob||'el tema del taller', dur=x1||PD;
+    bloques=[[
+      sec('Propósito formativo y quiénes participan',{parrafos:[P('El taller se dirige a '+quienes+'.',x1?'Lo que definen sobre formato: '+x1+'.':'Falta definir número de sesiones y duración.','El propósito formativo no es «impartir» un tema: es que al terminar las personas puedan hacer algo que antes no podían, respecto de '+Q(tema)+'. Se parte de lo que ya saben hacer.')]}),
+      sec('Secuencia de sesiones',{tabla:tab(['Sesión','Propósito','Actividades','Materiales','Duración','Evidencia de aprendizaje'],[
+        ['1. Lo que ya sabemos','Reconocer saberes y experiencias sobre '+tema,'Ronda de experiencias; mapa colectivo de lo que el grupo ya hace','Papelógrafos, marcadores',dur,'Mapa de saberes del grupo'],
+        ['2. Práctica guiada','Probar una forma nueva de hacer, con acompañamiento','Demostración breve; práctica en parejas; devolución entre pares','Por definir según el tema',dur,'Producto de la práctica'],
+        ['3. Práctica en situación real','Aplicar lo aprendido en una situación propia','Cada persona trabaja sobre un caso suyo; asesoría en el momento','Casos de las y los participantes',dur,'Caso resuelto o avance documentado'],
+        ['4. Transferencia y acuerdos','Decidir cómo se usará después del taller','Plan personal o colectivo; acuerdos de seguimiento','Formato de plan',dur,'Plan con fecha de revisión']
+      ])})
+    ],[
+      sec('Condiciones para participar',{lista:['Horario decidido con el grupo, no antes de consultarlo.','Cuidado de niñas y niños durante las sesiones, previsto en el presupuesto y como responsabilidad compartida.','Traslados: distancia, costo y seguridad del trayecto, sobre todo al salir.','Accesibilidad del lugar y de los materiales; lengua en que se facilita.','Lo que cuesta asistir: tiempo de trabajo que se deja de hacer.']}),
+      sec('Cómo saber si se aprendió',{lista:['Durante: lo que las personas hacen en la práctica, no lo que dicen en una encuesta de satisfacción.','Al cierre: el producto de la sesión 3 comparado con el mapa de saberes de la sesión 1.','Después: una visita o llamada a las cuatro a seis semanas para ver qué se está usando y qué no.']}),
+      (rec.push('Probar la sesión 2 con un grupo pequeño antes de impartir todo el taller. Quién: facilitación. Evidencia: notas de qué se ajustó.'),recComunes())
+    ]];
+  }
+  else if(herr==='propuesta'){
+    resumen='Propuesta base con justificación, objetivos y plan en cuatro etapas, armada con sus respuestas. Recursos y periodos quedan por precisar.';
+    bloques=[[
+      sec('Justificación',{parrafos:[P(prob?'La situación que origina la propuesta es '+Q(prob)+'.':'Falta nombrar la situación que origina la propuesta.',det?'Así se vive: '+det:'Falta describir cómo se vive.','La justificación se sostiene cuando parte de lo que viven '+quienes+' y no de lo que la organización sabe hacer.')]}),
+      sec('Objetivos',{lista:['General: '+(cam?dxCap(cam):'Por definir: el cambio que se busca en las personas'),'Específico 1: conocer el punto de partida con '+quienes+'.','Específico 2: desarrollar con el grupo las acciones que atienden las causas a su alcance.','Específico 3: acordar con los actores clave'+(actores.length?' ('+actores.slice(0,3).join(', ')+')':'')+' las condiciones que el proyecto no controla.','Específico 4: dar seguimiento y devolver resultados a la comunidad.']}),
+      sec('Estrategia',{parrafos:[P('La comunidad participa desde el diseño: decide prioridades, horarios y formas de trabajo; la organización acompaña.',x1?'Recursos con que cuentan: '+x1+'.':'Falta precisar recursos, equipo y tiempo.')]})
+    ],[
+      sec('Plan de acción',{tabla:tab(['Etapa','Acciones','Quién participa','Periodo','Resultado esperado'],[
+        ['1. Punto de partida','Línea base y mapa de actores',quienes+'; equipo',PD,'Diagnóstico compartido'],
+        ['2. Diseño conjunto','Sesiones para priorizar y planear','Grupo de participantes; facilitación',PD,'Plan acordado'],
+        ['3. Implementación','Acciones acordadas; seguimiento mensual','Participantes; aliados'+(actores.length?': '+actores.slice(0,3).join(', '):''),PD,cam?dxCap(cam):'Por definir'],
+        ['4. Cierre y devolución','Medición final; asamblea de resultados','Comunidad; equipo',PD,'Resultados devueltos y acuerdos de continuidad']
+      ])}),
+      sec('Riesgos y supuestos',{tabla:tab(['Riesgo o supuesto','Qué tan probable','Qué hacer'],[
+        ['Baja permanencia por cargas de cuidado o de trabajo','Por valorar con el grupo','Ajustar horarios; prever cuidado infantil'],
+        [actores.length?'Que '+actores[0]+' retire su respaldo':'Que un actor clave retire su respaldo','Por valorar','Acuerdos por escrito; más de un aliado'],
+        ['Que el calendario del territorio desplace actividades','Por valorar','Planear con el calendario local a la vista']
+      ])})
+    ],[
+      sec('Seguimiento',{lista:['Personas que participan y permanecen, por sexo y edad. Medio: registro de participación.','Avance hacia el cambio buscado, contra la línea base. Medio: instrumento propio en tres momentos.','Acuerdos cumplidos por los actores aliados. Medio: minutas.','Cambios en quién decide y en el reparto del cuidado. Medio: entrevistas breves.']}),
+      (rec.push('Poner periodos y responsables a las cuatro etapas del plan. Quién: coordinación. Evidencia: cronograma con fechas.'),recComunes())
+    ]];
+  }
+  else { // teoría de cambio
+    const acts=dxParts(x1,6), sup=dxParts(x2,5), explica=/porque|para que|entonces|de modo que|así\s/i.test(x1);
+    resumen=P('Ruta de cambio inicial armada con sus respuestas.',acts.length&&!explica?'Lo que describen son actividades; falta explicar por qué producirían el cambio.':'',sup.length<2?'Hay '+(sup.length||'ningún')+' supuesto explícito: es el punto más débil.':'');
+    bloques=[[
+      sec('Devolución',{parrafos:[
+        P(x1?'A la pregunta de cómo ocurrirá el cambio responden: '+Q(x1)+'.':'No describieron cómo creen que ocurrirá el cambio.',acts.length&&!explica?'Eso enlista lo que el proyecto hace ('+acts.join(', ')+'), pero todavía no dice por qué hacerlo llevaría a '+(cam?Q(cam):'lo que buscan')+'. Entre la actividad y el cambio falta el eslabón: ¿qué pasa en las personas después de cada una? Como plantea Weiss, una teoría de cambio vale por los supuestos que vuelve explícitos, no por la lista de acciones.':'Revisen que cada paso diga qué cambia en las personas, no solo qué hace el proyecto.'),
+        P(x2?'Como condición para que funcione anotan: '+Q(x2)+'.':'No anotaron qué tendría que ser cierto para que funcione.',sup.length<2?'Con un solo supuesto la teoría queda sin sostén: faltan los que tienen que ver con las personas (que puedan y quieran participar), con las instituciones (que cumplan) y con el contexto (que no cambie en contra).':'Cada supuesto necesita una forma de verificarse; si no, es una esperanza.','¿Quién no aparece en lo que plantean? Revisen si están quienes deciden y quienes cargan con el cuidado.')]}),
+      sec('Cambio deseado',{parrafos:[P(cam?'El cambio que buscan: '+Q(cam)+'.':'Falta escribir el cambio deseado.','Para que funcione como punto de llegada tiene que ser un cambio en la vida de '+quienes+', observable y con plazo. Siguiendo a Anderson, se parte de ahí y se construye hacia atrás: qué tendría que haber ocurrido antes para que ese cambio sea posible.')]}),
+      sec('Contexto y actores',{tabla:tab(['Actor','Interés o postura','Papel en el cambio'],(actores.length?actores:['Por identificar: quién decide','Por identificar: quién apoya','Por identificar: quién podría resistirse']).map(a=>[dxCap(a),'Por precisar: apoya, es indiferente o se resiste','Por precisar: qué tendría que hacer para que el cambio ocurra']).concat([[dxCap(quienes),'Protagonistas del cambio','Deciden, participan y sostienen lo logrado']]))})
+    ],[
+      sec('Ruta de cambio',{tabla:tab(['Nivel','Cambio esperado','En quién','Supuesto que lo sostiene','Indicador'],[
+        ['Cambio de largo plazo',cam?dxCap(cam):PD,quien||'Por precisar',sup[0]?dxCap(sup[0]):'Por definir','Por definir: medido contra línea base'],
+        ['Resultado intermedio','Por definir: qué hacen distinto las personas con lo que aprendieron o recibieron',quien||'Por precisar','Que tengan condiciones para aplicarlo (tiempo, recursos, respaldo)','Por definir']
+      ].concat((acts.length?acts:['Por definir']).map(a=>['Resultado inmediato','Por definir: qué saben, tienen o pueden hacer tras '+Q(a),quien||'Por precisar','Que participen y permanezcan','Por definir'])).concat((acts.length?acts:['Por definir']).map(a=>['Actividad',dxCap(a),'Equipo del proyecto','Recursos y equipo disponibles a tiempo','Realizada con la calidad prevista'])))}),
+      sec('Supuestos críticos',{tabla:tab(['Supuesto','Evidencia que lo respalda o que falta','Cómo verificarlo','Qué pasa si no se cumple'],sup.map(x=>[dxCap(x),'Por documentar','Por definir','Por analizar']).concat([
+        ['Las personas pueden y quieren participar durante todo el proceso','Falta: datos de permanencia y de cargas de cuidado','Registro de asistencia y motivos de salida','Los resultados inmediatos no se alcanzan'],
+        ['Lo aprendido o recibido puede aplicarse en el contexto','Falta: condiciones reales de aplicación','Seguimiento a las seis semanas','Hay actividad pero no hay cambio'],
+        [actores.length?'Los actores clave ('+actores.slice(0,3).join(', ')+') cumplen su parte':'Los actores clave cumplen su parte','Falta: acuerdos formalizados','Minutas y cumplimiento de acuerdos','El cambio se detiene donde el proyecto no decide']
+      ]))})
+    ],[
+      sec('Lo que el proyecto controla, influye y solo le interesa',{lista:['Controla: '+(acts.length?acts.join(', '):'sus actividades')+', su calidad y su calendario.','Influye: lo que '+quienes+' hacen con lo aprendido o recibido, y la disposición de los actores cercanos.','Le interesa: '+(cam?cam:'el cambio de largo plazo')+', que depende también de factores que el proyecto no decide.']}),
+      sec('Narrativa de la teoría de cambio',{parrafos:['Si '+(acts.length?'se realizan '+acts.join(', '):'[actividades por definir]')+' con '+quienes+', entonces [resultado inmediato por definir], porque [mecanismo por explicar]. Si eso ocurre, entonces '+(cam?cam.replace(/\.+$/,''):'[cambio por definir]')+', siempre que '+(sup[0]?sup[0]:'[supuesto por definir]')+'. Los corchetes son el trabajo pendiente: cada uno es un eslabón que hoy se da por hecho.']}),
+      sec('Cómo usarla y cuándo revisarla',{lista:['Revisarla con el equipo y con participantes cada vez que haya datos nuevos; como señala Vogel, es proceso y producto a la vez.','Usar la tabla de supuestos como agenda de monitoreo: cada supuesto, una pregunta que se responde con datos.','Ajustarla cuando un supuesto no se cumpla, en lugar de forzar las actividades.']}),
+      (rec.push('Completar, para cada actividad, la frase «después de esto, las personas…»: ese es el resultado inmediato que falta. Quién: equipo con dos o tres participantes. Evidencia: ruta de cambio sin celdas «por definir».'),recComunes()),
+      sec('Referencias',{lista:DX_REFS_TDC})
+    ]];
+  }
+  return {titulo,resumen,bloques,incognitas,metas};
+}
+
+/* ---- generar: resultado inmediato + profundización con IA por bloques, en segundo plano ---- */
+function dxFlatten(v){ v.item.secciones=[].concat.apply([],v.blocks.map(b=>b.secciones)); return v; }
+function dxBlockNames(b){ return b.secciones.map(s=>s.titulo).filter(t=>t&&t!=='Referencias').join(', '); }
+function dxViewing(v){ const p=$('panel-sintro'); return !!(project&&dxUI.view===v&&saUI.area==='dx'&&p&&p.classList.contains('active')&&!$('projectView').classList.contains('hidden')); }
+function dxPaint(v){ if(dxViewing(v)){ const y=window.scrollY; dxRender(); window.scrollTo(0,y); } else if(project&&saUI.area==='dx'&&!dxUI.view&&!dxUI.typing&&$('dxRoot')) dxRender(); }
+function dxNotice(html){ const n=$('dxNotice'); if(!html){ n.classList.add('hidden'); n.innerHTML=''; return; } n.innerHTML=html; n.classList.remove('hidden'); }
+function dxGoToResult(){ dxNotice(''); const v=dxUI.lastDone; if(!v||!project) return; saUI.area='dx'; dxUI.view=v; dxUI.typing=false; $('saBox').innerHTML=''; gotoTab('sintro'); renderSintro(); }
 async function dxGenerate(){
+  if(dxJob){ toast('La IA sigue trabajando en otro resultado. Espera a que termine o detenla.',true); return; }
   const resp={}; Object.keys(dxUI.resp).forEach(k=>{ const v=String(dxUI.resp[k]||'').trim(); if(v) resp[k]=v; });
   const largo=Object.values(resp).join('').length+dxUI.doc.length;
   if(largo<80){ dxUI.err='Responde al menos la problemática y un par de preguntas más, o sube un documento.'; dxUI.typing=false; dxRender(); return; }
-  const slug=project.slug, herr=dxUI.herr, sa=project.data.sa;
-  dxUI.busy=true; dxUI.err=''; dxUI.typing=false; dxRender();
-  const t0=Date.now(), reloj=setInterval(()=>{ const b=$('dxGo'); if(b&&dxUI.busy) b.textContent='Trabajando… '+Math.round((Date.now()-t0)/1000)+' s (suele tardar de 1 a 3 minutos)'; },1000);
-  try{
-    const r=await api('dxAnalyze',{slug,herr,respuestas:resp,documento:dxUI.doc,contexto:(sa&&sa.ctx)||{proyecto:project.name,organizacion:project.client}});
-    if(!project||project.slug!==slug) return;
-    if(r.sa) project.saQuota=r.sa;
-    const it=dxNorm(Object.assign({},r.data,{id:'',herr,herramienta:r.herramienta||dxName(herr),createdAt:new Date().toISOString()}));
-    if(!it.secciones.length) throw {message:'El diagnóstico llegó vacío. Intenta de nuevo.'};
-    dxViewTest(it);                                   // si no se puede dibujar, se avisa aquí y no se queda "trabajando"
-    dxUI.busy=false; dxUI.view={item:it,saved:false};
-  }catch(e){ clearInterval(reloj); if(!project||project.slug!==slug) return; if(e&&e.sa) project.saQuota=e.sa; console.error(e); dxUI.busy=false; dxUI.view=null; dxUI.err=(e&&e.message)||'No se pudo generar el diagnóstico.'; }
-  clearInterval(reloj);
+  if(dxUI.draft&&!dxUI.draft.saved&&!confirm('Hay un resultado que no agregaste al proyecto. Si generas otro, se pierde. ¿Continuar?')) return;
+  const herr=dxUI.herr, base=makeDiag(herr,resp), sa=project.data.sa;
+  const view={saved:false, herr, resp, doc:dxUI.doc, ctx:(sa&&sa.ctx)||{proyecto:project.name,organizacion:project.client},
+    item:dxNorm({id:'',herr,herramienta:dxName(herr),createdAt:new Date().toISOString(),titulo:base.titulo,resumen:base.resumen,secciones:[],incognitas:base.incognitas,metas:base.metas}),
+    blocks:base.bloques.map(secs=>({estado:'base',secciones:dxNorm({secciones:secs}).secciones}))};
+  dxFlatten(view);
+  dxUI.err=''; dxUI.typing=false; dxUI.view=view; dxUI.draft=view; dxNotice('');
   dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
+  dxDeepen(view);                                   // no se espera: el resultado inmediato ya está en pantalla
+}
+function dxPrevio(v,hasta){ let t=''; for(let i=0;i<hasta;i++){ if(v.blocks[i].estado!=='ia') continue; v.blocks[i].secciones.forEach(s=>{ if(s.titulo==='Referencias') return; t+='## '+s.titulo+'\n'+s.parrafos.join(' ')+'\n'+s.lista.map(l=>'- '+l).join('\n')+(s.tabla?'\n'+s.tabla.filas.map(f=>'- '+f.join(' | ')).join('\n'):'')+'\n'; }); } return t.slice(0,6000); }
+async function dxDeepen(view, soloPendientes){
+  if(dxJob) return; const slug=project.slug, n=view.blocks.length, job={view,slug,i:0,n,stop:false}; dxJob=job;
+  const alive=()=>project&&project.slug===slug&&dxJob===job&&!job.stop;
+  let sinCupo=false, fallos=0;
+  for(let i=0;i<n;i++){
+    if(!alive()) break;
+    const b=view.blocks[i]; if(b.estado==='ia') continue;
+    job.i=i; b.estado='trabajando'; b.err=''; dxPaint(view);
+    let r=null, err=null;
+    for(let t=0;t<2&&!r&&alive();t++){
+      // el cupo se descuenta una sola vez por resultado: después de un bloque logrado, los demás no cuentan
+      try{ r=await api('dxAnalyze',{slug,herr:view.herr,bloque:i,respuestas:view.resp,documento:view.doc,contexto:view.ctx,previo:dxPrevio(view,i)},false,170000); }
+      catch(e){ err=e; if(['limit','forbidden','closed','invalid'].indexOf(e.error)!==-1) break; }
+    }
+    if(!(project&&project.slug===slug&&dxJob===job)) return;     // se cambió de proyecto: se abandona sin tocar nada
+    if(r&&r.data){
+      if(r.sa) project.saQuota=r.sa; view.contado=true;
+      const d=dxNorm({secciones:r.data.secciones,titulo:r.data.titulo,resumen:r.data.resumen,incognitas:r.data.incognitas,metas:r.data.metas});
+      if(d.secciones.length){ view.blocks[i]={estado:'ia',secciones:d.secciones};
+        if(i===0){ if(r.data.titulo) view.item.titulo=d.titulo; if(d.resumen) view.item.resumen=d.resumen; }
+        if(d.metas.length) view.item.metas=d.metas;
+        if(d.incognitas.length) view.item.incognitas=d.incognitas;
+      } else { b.estado='fallo'; b.err='La IA devolvió este bloque vacío.'; fallos++; }
+    } else {
+      if(err&&err.sa) project.saQuota=err.sa;
+      if(err&&err.error==='limit'){ sinCupo=true; for(let k=i;k<n;k++) if(view.blocks[k].estado!=='ia'){ view.blocks[k].estado='base'; view.blocks[k].err='Sin profundización: el proyecto ya usó sus diagnósticos con IA.'; } dxFlatten(view); break; }
+      b.estado=job.stop?'base':'fallo'; b.err=job.stop?'':((err&&err.message)||'No respondió a tiempo.'); if(!job.stop) fallos++;
+    }
+    dxFlatten(view); dxPaint(view);
+  }
+  const detenido=job.stop; dxJob=null;
+  if(!(project&&project.slug===slug)) return;
+  view.blocks.forEach(b=>{ if(b.estado==='trabajando') b.estado='base'; });
+  dxFlatten(view);
+  const completos=view.blocks.filter(b=>b.estado==='ia').length;
+  // si ya estaba agregado al proyecto, se actualiza solo con la versión profundizada
+  if(view.saved&&completos){ try{ if(canEdit()) await flushNow(); const r=await api('dxSave',{slug,item:view.item}); if(project&&project.slug===slug){ project.data=normalizeData(r.project.data); project.rev=r.project.rev; setSync('ok'); view.updated=true; } }catch(e){ view.updateErr=e.message||'No se pudo actualizar en el proyecto.'; } }
+  if(!(project&&project.slug===slug)) return;
+  dxUI.lastDone=view;
+  if(dxViewing(view)){ dxPaint(view); if(!detenido) toast(sinCupo?'Quedó la versión inmediata: el proyecto ya usó sus diagnósticos con IA':(fallos?'La IA terminó; '+fallos+' bloque(s) quedaron en versión inmediata':'La IA terminó de profundizar el resultado'),!!fallos&&!sinCupo); }
+  else { renderAll(); if(!detenido&&completos) dxNotice(`<b>${fallos?'La IA terminó, con '+fallos+' bloque(s) pendientes':'La IA terminó de profundizar'}</b><br>${esc(view.item.titulo)}${view.updated?'<br>Ya se actualizó en el proyecto.':(view.saved?'':'<br>Ábrelo para revisarlo y agregarlo al proyecto.')}<div><button class="btn small orange" onclick="dxGoToResult()">Ver resultado</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`); }
+}
+function dxStop(){ if(dxJob){ dxJob.stop=true; toast('La IA se detendrá al terminar el bloque en curso'); } }
+function dxRetry(){ const v=dxUI.view; if(!v||!v.blocks||dxJob) return; v.blocks.forEach(b=>{ if(b.estado==='fallo') b.estado='base'; }); dxDeepen(v); dxPaint(v); }
+function dxStatusHtml(v){
+  if(!v.blocks) return '';
+  const lab={base:'Versión inmediata',trabajando:'La IA está trabajando',ia:'Profundizado con IA',fallo:'No se pudo profundizar'}, run=dxJob&&dxJob.view===v;
+  const pend=v.blocks.some(b=>b.estado==='fallo'||b.estado==='base'), ia=v.blocks.filter(b=>b.estado==='ia').length;
+  return `<div class="dx-status" aria-live="polite"><b>${run?'El resultado inmediato ya está completo abajo. La IA lo está profundizando por bloques: puedes leerlo, descargarlo, agregarlo al proyecto o irte a otra pestaña; te aviso cuando termine.':(ia===v.blocks.length?'Resultado completo: todos los bloques fueron profundizados con IA.':(ia?'Resultado listo. Algunos bloques quedaron en versión inmediata.':'Resultado en versión inmediata, armado con tus respuestas.'))}</b>
+    <ul>${v.blocks.map((b,i)=>`<li class="${b.estado}"><span class="st">${lab[b.estado]}</span><span>Bloque ${i+1}: ${esc(dxBlockNames(b))}${b.err?' — '+esc(b.err):''}</span></li>`).join('')}</ul>
+    ${v.updated?'<p class="sa-quota">La versión profundizada ya se actualizó en el proyecto.</p>':''}${v.updateErr?`<p class="sa-quota" style="color:var(--red);">${esc(v.updateErr)} Usa «Actualizar en el proyecto».</p>`:''}
+    <div class="toolbar-row" style="margin:10px 0 0;">${run?'<button class="btn small" onclick="dxStop()">Detener la IA</button>':(pend&&canSA()?'<button class="btn small primary" onclick="dxRetry()">Profundizar con IA lo pendiente</button>':'')}</div></div>`;
 }
 // Deja el resultado en la forma que la página sabe dibujar, venga como venga del modelo.
 function dxNorm(it){
@@ -1854,13 +2100,14 @@ function dxNorm(it){
   return it;
 }
 function dxViewTest(it){ saBlocksHtml(dxBlocks(it)); }
-function dxShow(id){ const it0=project.data.dx.find(x=>x.id===id); if(!it0) return; const it=dxNorm(it0); dxUI.view={item:it,saved:true}; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); }
-function dxBack(){ if(dxUI.view&&!dxUI.view.saved&&!confirm('Este diagnóstico no se ha agregado al proyecto. Si sales, se pierde. ¿Salir?')) return; dxUI.view=null; dxRender(); }
+function dxShow(id){ const it0=project.data.dx.find(x=>x.id===id); if(!it0) return; if(dxJob&&dxJob.view.item.id===id){ dxUI.view=dxJob.view; dxUI.typing=false; dxRender(); return; } const it=dxNorm(JSON.parse(JSON.stringify(it0))); dxUI.view={item:it,saved:true}; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); }
+function dxBack(){ dxUI.view=null; dxRender(); }   // el resultado sin agregar queda a la mano en la lista de herramientas
 function dxViewHtml(){
   const v=dxUI.view, it=v.item, E=canSA();
   return `<div class="toolbar-row" style="margin:0 0 14px;"><button class="btn small" onclick="dxBack()">Volver a las herramientas</button></div>
+    ${dxStatusHtml(v)}
     <div class="card tint dx-bar">
-      <div class="toolbar-row"><span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${it.herr==='smart'&&hasTrack()?'<button class="btn small" onclick="gotoTab(\'planeacion\')">Ver metas en Planeación</button>':''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">Aún no está guardado.${it.herr==='smart'&&hasTrack()?' Al agregarlo, las metas llegan a Planeación estratégica.':''}</span>`:'')}</div>
+      <div class="toolbar-row"><span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${it.herr==='smart'&&hasTrack()?'<button class="btn small" onclick="gotoTab(\'planeacion\')">Ver metas en Planeación</button>':''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${v.blocks&&E&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!(dxJob&&dxJob.view===v)?'<button class="btn small" id="dxAddBtn" onclick="dxAdd()">Actualizar en el proyecto</button>':''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">Aún no está guardado.${dxJob&&dxJob.view===v?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${it.herr==='smart'&&hasTrack()?' Las metas llegan a Planeación estratégica.':''}</span>`:'')}</div>
       <div class="toolbar-row"><span class="lbl">Descargar</span><button class="btn small" onclick="dxDownload('pdf')">PDF</button><button class="btn small" onclick="dxDownload('docx')">Word (.docx)</button><button class="btn small" onclick="dxDownload('xlsx')">Excel (.xlsx)</button></div>
       <div class="toolbar-row"><span class="lbl">Mi Google Drive</span><button class="btn small" onclick="dxDrive('doc',this)">Crear Google Docs</button><button class="btn small" onclick="dxDrive('sheet',this)">Crear Google Sheets</button><span style="font-size:12px;color:var(--grey);">Se crea en la cuenta de Google que elijas, no en la de Sintropía Social.</span></div>
       <div id="dxBarMsg"></div>
@@ -1901,7 +2148,9 @@ async function dxAdd(){
     const r=await api('dxSave',{slug,item:dxUI.view.item});
     if(!project||project.slug!==slug) return;
     project.data=normalizeData(r.project.data); project.rev=r.project.rev; project.updatedAt=r.project.updatedAt; setSync('ok');
-    const it=project.data.dx.find(x=>x.id===r.id); dxUI.view={item:it||dxUI.view.item,saved:true};
+    const it=project.data.dx.find(x=>x.id===r.id), v=dxUI.view;
+    v.item.id=r.id; v.saved=true; v.updated=!(dxJob&&dxJob.view===v)&&!!v.blocks&&v.blocks.some(x=>x.estado==='ia'); v.updateErr='';   // se conserva la misma vista: la IA puede seguir completándola
+    if(dxUI.draft===v) dxUI.draft=null;
     renderAll(); toast(it&&it.herr==='smart'&&hasTrack()?'Agregado. Las metas ya están en Planeación estratégica':'Diagnóstico agregado al proyecto');
   }catch(e){ if(!project||project.slug!==slug) return; if(b){ b.disabled=false; b.textContent='Agregar al proyecto'; } toast(e.message||'No se pudo agregar.',true); }
 }
