@@ -579,13 +579,13 @@ function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(
 function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
 
 // Antes de usar la IA se confirma que el Apps Script publicado es el que esta página espera (si no, las llamadas se quedarían esperando).
-const AI_VERSION=10; let aiOk=false;
+const AI_VERSION=11; let aiOk=false, aiBg=false;
 async function aiReady(){
   if(aiOk) return;
   const viejo={error:'old',message:(session&&session.isSuper)?'El Apps Script publicado es una versión anterior a esta página. En Apps Script: Implementar > Administrar implementaciones > editar (lápiz) > Versión: «Nueva versión» > Implementar. Guardar el archivo no basta.':'La herramienta se está actualizando y la IA aún no está disponible. Avisa a Sintropía Social; mientras tanto queda la versión inmediata.'};
   let r; try{ r=await api('version',{},false,30000); }catch(e){ if(e&&(e.error==='bad_request'||e.error==='bad')) throw viejo; throw e; }
   if(!(r.version>=AI_VERSION)) throw viejo;
-  aiOk=true;
+  aiOk=true; aiBg=!!r.segundoPlano;
 }
 async function aiTest(){
   const b=$('aiTestBtn'), o=$('aiTestOut'); b.disabled=true; b.textContent='Probando…'; o.innerHTML='<p>Enviando una solicitud corta a la IA. Tarda unos segundos.</p>';
@@ -593,7 +593,7 @@ async function aiTest(){
   try{
     await aiReady();
     let r; try{ r=await api('aiTest',{},false,200000); }catch(e){ if(e&&e.ok&&e.version) r=e; else throw e; }   // la prueba puede traer su propio diagnóstico de error: se muestra, no se descarta
-    h+=`<p><b>Apps Script publicado:</b> versión ${esc(String(r.version))}, al día.</p><p><b>Llave de Gemini:</b> ${r.llave?'configurada':'no está configurada'}.</p>`;
+    h+=`<p><b>Apps Script publicado:</b> versión ${esc(String(r.version))}, al día.</p><p><b>Trabajo en segundo plano:</b> ${r.segundoPlano?'instalado: los diagnósticos se terminan aunque se cierre la página.':'sin instalar. En el editor de Apps Script elige la función <code>instalarSegundoPlano</code>, pulsa Ejecutar y acepta los permisos (una sola vez).'}</p><p><b>Llave de Gemini:</b> ${r.llave?'configurada':'no está configurada'}.</p>`;
     if(r.error){ h+=`<div class="banner bad"><b>La IA no respondió.</b> ${esc(r.error)}</div><p><b>Modelos que se intentaron:</b> ${r.modelos.map(m=>'<code>'+esc(m)+'</code>').join(' ')}</p>`;
       if(r.disponibles&&r.disponibles.length) h+=`<p><b>Modelos Flash disponibles para tu llave:</b> ${r.disponibles.map(m=>'<code>'+esc(m)+'</code>').join(' ')}</p><p>Para usar uno de ellos: Apps Script > Configuración del proyecto > Propiedades del script > agrega <code>SA_GEMINI_MODEL</code> con ese nombre.</p>`;
       if(r.listaError) h+=`<p>${esc(r.listaError)}</p>`; }
@@ -1957,7 +1957,7 @@ function dxRender(){
         <p class="sa-quota">${dxJob?'La IA sigue trabajando en otro resultado. Espera a que termine o detenla desde ese resultado.':(left===0?'Este proyecto ya usó sus diagnósticos con IA: recibirás la versión inmediata, sin profundización.':'El resultado aparece de inmediato, con propuestas que puedes corregir ahí mismo; después la IA lo profundiza paso a paso mientras lo revisas.')}</p></div>`;
     }
   }
-  h+=`<div class="card"><h3 class="sa-h3">Diagnósticos del proyecto</h3><p class="sa-sub">Lo que ya se agregó al proyecto. Cualquier persona con acceso puede consultarlo y descargarlo.</p>${list.length?list.slice().reverse().map(it=>`<div class="dx-item"><div><b>${esc(it.titulo)}</b><small>${esc(it.herramienta||dxName(it.herr))} · ${esc(fmt(String(it.createdAt||'').slice(0,10),true))}</small></div><div class="toolbar-row" style="margin:0;"><button class="btn small primary" onclick="dxShow('${esc(it.id)}')">Abrir</button>${E?`<button class="btn small danger" onclick="dxRemove('${esc(it.id)}')">Quitar</button>`:''}</div></div>`).join(''):'<p class="empty">Aún no hay diagnósticos agregados.</p>'}</div></div>`;
+  h+=`<div class="card"><h3 class="sa-h3">Diagnósticos del proyecto</h3><p class="sa-sub">Lo agregado al proyecto y los borradores en curso. Cualquier persona con acceso puede consultarlos y descargarlos.</p>${list.length?list.slice().reverse().map(it=>`<div class="dx-item"><div><b>${esc(it.titulo)}</b><small>${esc(it.herramienta||dxName(it.herr))} · ${esc(fmt(String(it.createdAt||'').slice(0,10),true))}${it.borrador?' · Borrador: aún no se reparte en las pestañas':''}${it.ia&&it.ia.estado==='trabajando'?' · La IA sigue trabajando ('+it.ia.pasos.filter(e=>e==='ia'||e==='tuya').length+' de '+it.ia.pasos.length+' pasos)':(it.ia&&it.ia.estado==='parcial'?' · Quedaron pasos sin profundizar':'')}</small></div><div class="toolbar-row" style="margin:0;"><button class="btn small primary" onclick="dxShow('${esc(it.id)}')">Abrir</button>${E?`<button class="btn small danger" onclick="dxRemove('${esc(it.id)}')">Quitar</button>`:''}</div></div>`).join(''):'<p class="empty">Aún no hay diagnósticos agregados.</p>'}</div></div>`;
   box.innerHTML=h;
 }
 async function dxFile(file){
@@ -2319,7 +2319,6 @@ async function dxGenerate(){
   const resp={}; Object.keys(dxUI.resp).forEach(k=>{ const v=String(dxUI.resp[k]||'').trim(); if(v) resp[k]=v; });
   const largo=Object.values(resp).join('').length+dxUI.doc.length;
   if(largo<80){ dxUI.err='Responde al menos la problemática y un par de preguntas más, o sube un documento.'; dxUI.typing=false; dxRender(); return; }
-  if(dxUI.draft&&!dxUI.draft.saved&&!confirm('Hay un resultado que no agregaste al proyecto. Si generas otro, se pierde. ¿Continuar?')) return;
   const herr=dxUI.herr, base=makeDiag(herr,resp), sa=project.data.sa;
   // un paso = una sección (las referencias acompañan al último paso): llamadas cortas a la IA, una por una
   const pasos=[]; base.bloques.forEach(bl=>bl.forEach(s=>{ if(s.titulo==='Referencias'&&pasos.length) pasos[pasos.length-1].push(s); else pasos.push([s]); }));
@@ -2332,72 +2331,76 @@ async function dxGenerate(){
   dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
   dxDeepen(view);                                   // no se espera: el resultado inmediato ya está en pantalla
 }
-function dxPrevio(v,menos){ let t=''; v.blocks.forEach((b,i)=>{ if(i===menos||b.estado!=='ia') return; b.secciones.forEach(s=>{ if(s.titulo==='Referencias') return; t+='## '+s.titulo+'\n'+s.parrafos.join(' ')+'\n'+s.lista.map(l=>'- '+l).join('\n')+(s.tabla?'\n'+s.tabla.filas.map(f=>'- '+f.join(' | ')).join('\n'):'')+'\n'; }); }); return t.slice(0,5000); }
 const dxHecho=b=>b.estado==='ia'||b.estado==='tuya';
+const dxSleep=ms=>new Promise(r=>setTimeout(r,ms));
+// Pone en la vista lo que el servidor ya trabajó, sin pisar lo que la persona corrigió
+function dxApply(v,ia,it){
+  if(!ia||!v.blocks) return;
+  ia.pasos.forEach((e,i)=>{ const b=v.blocks[i]; if(!b) return; const er=(ia.errores&&ia.errores[i])||'';
+    if(e==='ia'||e==='tuya'){ if(dxHecho(b)) return; const s0=it&&it.secciones[ia.off+i], s=s0?dxNorm({secciones:[s0]}).secciones[0]:null;
+      if(e==='tuya'||!s){ b.estado='tuya'; b.err=''; if(ia.alt&&ia.alt[i]) b.alt=[dxNorm({secciones:[ia.alt[i]]}).secciones[0]]; }
+      else if(b.secciones.some(x=>x._ed)){ b.estado='tuya'; b.alt=[s]; b.err=''; }
+      else v.blocks[i]={estado:'ia',secciones:[s]}; }
+    else if(e==='fallo'){ b.estado='fallo'; b.err=er||'No se pudo profundizar.'; }
+    else { b.estado='base'; b.err=er?'Reintentando. Último intento: '+er:''; } });
+  if(it){ if(!v.item._edT){ v.item.titulo=it.titulo||v.item.titulo; v.item.resumen=it.resumen||v.item.resumen; } if(!v.item._edQ&&saL(it.incognitas).length) v.item.incognitas=it.incognitas.slice(); if(saL(it.metas).length) v.item.metas=it.metas; }
+  if(dxJob&&dxJob.view===v&&!dxJob.stop){ const p=v.blocks.find(b=>b.estado==='base'); if(p) p.estado='trabajando'; }
+  dxFlatten(v);
+}
+function dxTake(r){ if(r&&r.project){ project.data=normalizeData(r.project.data); project.rev=r.project.rev; project.updatedAt=r.project.updatedAt; setSync('ok'); } if(r&&r.sa) project.saQuota=r.sa; }
 async function dxDeepen(view){
   if(dxJob) return; const slug=project.slug, n=view.blocks.length, job={view,slug,n,stop:false,hechos:view.blocks.filter(dxHecho).length}; dxJob=job;
   const same=()=>project&&project.slug===slug&&dxJob===job, alive=()=>same()&&!job.stop;
-  let sinCupo=false, fallos=0, viejo='';
+  let sinCupo=false, viejo='', falla='';
   view.aviso=''; dxPaint(view);
   try{ await aiReady(); }catch(e){ viejo=(e&&e.message)||'No hay respuesta del servidor.'; }
   if(!same()) return;
-  const cola=viejo?[]:view.blocks.map((b,i)=>i).filter(i=>!dxHecho(view.blocks[i]));
-  const paso=async i=>{
-    const b=view.blocks[i]; b.estado='trabajando'; b.err=''; b.t0=Date.now(); dxPaint(view);
-    let r=null, err=null;
-    for(let t=0;t<2&&!r&&alive();t++){
-      // el cupo se descuenta una sola vez por resultado: todos los pasos llevan el mismo identificador
-      try{ r=await api('dxAnalyze',{slug,herr:view.herr,paso:i,run:view.run,respuestas:view.resp,documento:view.doc,contexto:view.ctx,previo:dxPrevio(view,i)},false,110000); }
-      catch(e){ err=e; if(['limit','forbidden','closed','invalid'].indexOf(e.error)!==-1) break; }
+  if(!viejo){ try{
+    if(!view.started){
+      // el servidor guarda desde ya la versión inmediata como borrador y se queda con el trabajo: si la página se cierra, no se pierde
+      if(canEdit()) await flushNow();
+      const r=await api('dxStart',{slug,item:view.item,off:(view.pre||[]).length,respuestas:view.resp,documento:view.doc,contexto:view.ctx,url:location.href.split('#')[0]});
+      if(!same()) return;
+      view.item.id=r.id; view.started=true; view.borrador=true; aiBg=!!r.segundoPlano; dxTake(r); if(dxUI.draft===view) dxUI.draft=null; dxApply(view,r.ia,null); dxPaint(view);
     }
-    if(!same()) return;                                           // se cambió de proyecto: se abandona sin tocar nada
-    const actual=view.blocks[i];
-    if(r&&r.data){
-      if(r.sa) project.saQuota=r.sa; view.contado=true;
-      const d=dxNorm({secciones:r.data.secciones,titulo:r.data.titulo,resumen:r.data.resumen,incognitas:r.data.incognitas,metas:r.data.metas});
-      // cada paso conserva sus títulos y su número de secciones: así lo que se está editando no cambia de lugar
-      const secs=actual.secciones.map((s0,j)=>{ const s=d.secciones[j]; if(!s) return s0; s.titulo=s0.titulo; return s; });
-      if(d.metas.length) view.item.metas=d.metas;                  // si hay tabla de metas, manda la tabla (ver dxSyncMetas)
-      if(d.secciones.length){
-        if(actual.secciones.some(s=>s._ed)){ actual.estado='tuya'; actual.alt=secs; actual.err=''; }      // la persona ya corrigió este paso: se respeta
-        else view.blocks[i]={estado:'ia',secciones:secs,seg:Math.round((Date.now()-b.t0)/1000)};
-        if(i===0&&!view.item._edT){ if(r.data.titulo) view.item.titulo=d.titulo; if(d.resumen) view.item.resumen=d.resumen; }
-        if(d.incognitas.length&&!view.item._edQ) view.item.incognitas=d.incognitas;
-        job.hechos++;
-      } else { actual.estado='fallo'; actual.err='La IA devolvió este paso vacío.'; fallos++; }
-    } else {
-      if(err&&err.sa) project.saQuota=err.sa;
-      if(err&&err.error==='limit'){ sinCupo=true; view.aviso='Sin profundización: el proyecto ya usó sus diagnósticos con IA.'; actual.estado='base'; }
-      else { actual.estado=job.stop?'base':'fallo'; actual.err=job.stop?'':((err&&err.message)||'No respondió a tiempo.'); if(!job.stop) fallos++; }
+    while(alive()){
+      const r=await api('dxWork',{slug,id:view.item.id},false,200000);
+      if(!same()) return;
+      const antes=job.hechos; dxApply(view,r.ia,r.item); job.hechos=view.blocks.filter(dxHecho).length;
+      const k=project.data.dx.findIndex(x=>x.id===view.item.id); if(k!==-1){ project.data.dx[k]=r.item; } project.rev=Math.max(project.rev,r.rev||0); if(r.sa) project.saQuota=r.sa;
+      dxPaint(view);
+      if(r.fin) break;
+      await dxSleep(job.hechos!==antes?400:(r.turno==='ocupado'?6000:(window.DX_WAIT||12000)));       // si un paso falló, se espera antes de insistir
     }
-    dxFlatten(view); dxPaint(view);
-  };
-  // el primer paso va solo (es el que descuenta del cupo); después, dos a la vez
-  if(cola.length) await paso(cola.shift());
-  const fila=async()=>{ while(cola.length&&alive()&&!sinCupo) await paso(cola.shift()); };
-  await Promise.all([fila(),fila()]);
+    if(same()&&job.stop){ try{ const r=await api('dxCancel',{slug,id:view.item.id}); }catch(e){} try{ const r2=await api('dxWork',{slug,id:view.item.id,soloEstado:true}); if(same()) dxApply(view,r2.ia,r2.item); }catch(e){} }
+  }catch(e){ if(e&&e.sa) project.saQuota=e.sa; if(e&&e.error==='limit'){ sinCupo=true; view.aviso='Sin profundización: el proyecto ya usó sus diagnósticos con IA.'; } else falla=(e&&e.message)||'Se perdió la conexión con el servidor.'; } }
   if(dxJob!==job) return;
   const detenido=job.stop; dxJob=null;
   if(!(project&&project.slug===slug)) return;
   view.blocks.forEach(b=>{ if(b.estado==='trabajando') b.estado='base'; });
-  if(viejo){ view.aviso=viejo; fallos=view.blocks.filter(b=>!dxHecho(b)).length; }
+  if(viejo) view.aviso=viejo;
+  if(falla) view.aviso=falla+(view.started?(aiBg?' El trabajo sigue en el servidor: vuelve a abrir este diagnóstico en unos minutos.':' Vuelve a abrir este diagnóstico para retomarlo.'):'');
   dxFlatten(view);
-  const completos=view.blocks.filter(dxHecho).length;
-  // si ya estaba agregado al proyecto, se actualiza solo con la versión profundizada
-  if(view.saved&&completos&&!viejo){ try{ if(canEdit()) await flushNow(); const r=await api('dxSave',{slug,item:view.item}); if(project&&project.slug===slug){ project.data=normalizeData(r.project.data); project.rev=r.project.rev; setSync('ok'); view.updated=true; view.dirty=false; } }catch(e){ view.updateErr=e.message||'No se pudo actualizar en el proyecto.'; } }
+  // lo que ya estaba agregado se actualiza solo en el servidor conforme avanza la IA: aquí solo se refresca el proyecto
+  if(view.started&&!viejo&&!falla){ try{ const r=await api('getProject',{slug}); if(project&&project.slug===slug&&r.project){ project.data=normalizeData(r.project.data); project.rev=r.project.rev; if(view.saved) view.updated=true; } }catch(e){} }
   if(!(project&&project.slug===slug)) return;
+  const completos=view.blocks.filter(dxHecho).length, fallos=view.blocks.length-completos;
   dxUI.lastDone=view;
-  if(dxViewing(view)){ dxPaint(view); if(!detenido) toast(viejo?'Quedó la versión inmediata: falta publicar la nueva versión del Apps Script':(sinCupo?'Quedó la versión inmediata: el proyecto ya usó sus diagnósticos con IA':(fallos?'La IA terminó; '+fallos+' paso(s) quedaron en versión inmediata':'La IA terminó de profundizar el resultado')),!!fallos&&!sinCupo); }
-  else { renderAll(); if(!detenido&&completos) dxNotice(`<b>${fallos?'La IA terminó, con '+fallos+' paso(s) pendientes':'La IA terminó de profundizar'}</b><br>${esc(view.item.titulo)}${view.updated?'<br>Ya se actualizó en el proyecto.':(view.saved?'':'<br>Ábrelo para revisarlo y agregarlo al proyecto.')}<div><button class="btn small orange" onclick="dxGoToResult()">Ver resultado</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`); }
+  if(dxViewing(view)){ dxPaint(view); if(!detenido) toast(viejo?'Quedó la versión inmediata: falta publicar la nueva versión del Apps Script':(sinCupo?'Quedó la versión inmediata: el proyecto ya usó sus diagnósticos con IA':(falla?'Se perdió la conexión; el resultado quedó guardado como borrador':(fallos?'La IA terminó; '+fallos+' paso(s) quedaron en versión inmediata':'La IA terminó de profundizar el resultado'))),!!(fallos||falla)&&!sinCupo); }
+  else { renderAll(); if(!detenido&&completos&&!falla) dxNotice(`<b>${fallos?'La IA terminó, con '+fallos+' paso(s) pendientes':'La IA terminó de profundizar'}</b><br>${esc(view.item.titulo)}${view.saved?'<br>Ya se actualizó en el proyecto.':'<br>Quedó guardado como borrador: ábrelo para revisarlo y agregarlo al proyecto.'}<div><button class="btn small orange" onclick="dxGoToResult()">Ver resultado</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`); }
 }
-function dxStop(){ if(dxJob){ dxJob.stop=true; toast('La IA se detendrá al terminar los pasos en curso'); } }
-function dxRetry(){ const v=dxUI.view; if(!v||!v.blocks||dxJob) return; v.blocks.forEach(b=>{ if(b.estado==='fallo') b.estado='base'; }); dxDeepen(v); dxPaint(v); }
+function dxStop(){ if(dxJob){ dxJob.stop=true; toast('La IA se detendrá al terminar el paso en curso'); } }
+async function dxRetry(){
+  const v=dxUI.view; if(!v||!v.blocks||dxJob) return; const slug=project.slug;
+  if(v.started){ try{ await api('dxRetry',{slug,id:v.item.id}); }catch(e){ v.aviso=(e&&e.message)||'No se pudo retomar.'; dxPaint(v); return; } if(!project||project.slug!==slug) return; }
+  v.blocks.forEach(b=>{ if(b.estado==='fallo'){ b.estado='base'; b.err=''; } }); dxDeepen(v); dxPaint(v);
+}
 function dxUseAlt(i){ const v=dxUI.view, b=v&&v.blocks&&v.blocks[i]; if(!b||!b.alt) return; if(!confirm('Se reemplazará lo que corregiste en este paso por la versión de la IA. ¿Continuar?')) return; v.blocks[i]={estado:'ia',secciones:b.alt}; dxFlatten(v); dxTouch(v); dxPaint(v); }
 function dxStatusHtml(v){
   if(!v.blocks) return '';
   const run=dxJob&&dxJob.view===v, lab={base:run?'En espera':'Versión inmediata',trabajando:'La IA está trabajando',ia:'Profundizado con IA',fallo:'No se pudo profundizar',tuya:'Tu versión'};
   const n=v.blocks.length, ia=v.blocks.filter(dxHecho).length, pend=n-ia;
-  return `<div class="dx-status" aria-live="polite"><b>${run?'El resultado inmediato ya está completo abajo. La IA lo profundiza paso a paso, una sección por paso ('+ia+' de '+n+'): puedes leerlo, corregirlo, descargarlo, agregarlo al proyecto o irte a otra pestaña; te aviso cuando termine.':(ia===n?'Resultado completo: todos los pasos fueron profundizados con IA.':(ia?'Resultado listo. '+pend+' paso(s) quedaron en versión inmediata.':'Resultado en versión inmediata, armado con tus respuestas.'))}</b>
+  return `<div class="dx-status" aria-live="polite"><b>${run?'El resultado inmediato ya está completo abajo. La IA lo profundiza paso a paso, una sección por paso ('+ia+' de '+n+'): puedes leerlo, corregirlo, descargarlo o agregarlo al proyecto. Ya quedó guardado como borrador'+(aiBg?' y el trabajo sigue en el servidor aunque cambies de pestaña o cierres la página; al terminar te llega un correo.':': puedes cambiar de pestaña; si cierras la página, el trabajo se retoma cuando vuelvas a abrir este diagnóstico.'):(ia===n?'Resultado completo: todos los pasos fueron profundizados con IA.':(ia?'Resultado listo. '+pend+' paso(s) quedaron en versión inmediata.':'Resultado en versión inmediata, armado con tus respuestas.'))}</b>
     ${v.aviso?`<div class="banner bad" style="margin:10px 0 0;">${esc(v.aviso)}</div>`:''}
     <div class="sa-bar" style="margin:10px 0 2px;" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${ia}"><i style="width:${Math.round(ia/n*100)}%"></i></div>
     <ul>${v.blocks.map((b,i)=>`<li class="${b.estado}"><span class="st">${lab[b.estado]}</span><span>Paso ${i+1}: ${esc(dxBlockNames(b))}${b.estado==='ia'&&b.seg?' · '+b.seg+' s':''}${b.estado==='tuya'?' — la IA terminó, pero conservé lo que corregiste':''}${b.err?' — '+esc(b.err):''}</span>${b.estado==='tuya'&&b.alt?`<button class="btn small" onclick="dxUseAlt(${i})">Usar la versión de la IA</button>`:''}</li>`).join('')}</ul>
@@ -2413,9 +2416,14 @@ function dxSyncMetas(it){
 }
 function dxProjRow(v){
   const it=v.item, E=canSA(), run=dxJob&&dxJob.view===v;
-  return `<span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${v.colocado&&hasTrack()?`<span style="font-size:12px;color:var(--grey);">Colocado: ${v.colocado.entregables} en Entregables, ${v.colocado.metas} en Planeación, ${v.colocado.indicadores} en Indicadores.</span>`:''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${E&&(v.dirty||(v.blocks&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!run))?`<button class="btn small ${v.dirty?'primary':''}" id="dxAddBtn" onclick="dxAdd()">${v.dirty?'Guardar cambios':'Actualizar en el proyecto'}</button>${v.dirty?'<span style="font-size:12px;color:var(--grey);">Hay correcciones sin guardar.</span>':''}`:''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">Aún no está guardado.${run?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${hasTrack()?' Al agregarlo, lo que corresponde llega solo a Entregables, Planeación estratégica e Indicadores.':''}</span>`:'')}`;
+  return `<span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${v.colocado&&hasTrack()?`<span style="font-size:12px;color:var(--grey);">Colocado: ${v.colocado.entregables} en Entregables, ${v.colocado.metas} en Planeación, ${v.colocado.indicadores} en Indicadores.</span>`:''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${E&&(v.dirty||(v.blocks&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!run))?`<button class="btn small ${v.dirty?'primary':''}" id="dxAddBtn" onclick="dxAdd()">${v.dirty?'Guardar cambios':'Actualizar en el proyecto'}</button>${v.dirty?'<span style="font-size:12px;color:var(--grey);">Hay correcciones sin guardar.</span>':''}`:''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">${v.borrador?'Guardado como borrador: no se pierde si sales, y tus correcciones se guardan solas.':'Aún no está guardado.'}${run?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${hasTrack()?' Al agregarlo, lo que corresponde llega solo a Entregables, Planeación estratégica e Indicadores.':''}</span>`:'')}`;
 }
-function dxTouch(v){ v.dirty=true; v.updated=false; const r=$('dxProjRow'); if(r) r.innerHTML=dxProjRow(v); }
+let dxAutoT=null;
+function dxTouch(v){ v.dirty=true; v.updated=false; const r=$('dxProjRow'); if(r) r.innerHTML=dxProjRow(v); if(v.borrador&&!v.saved&&v.started){ clearTimeout(dxAutoT); dxAutoT=setTimeout(()=>dxAutoSave(v),1500); } }
+async function dxAutoSave(v){
+  if(!project||!v.item.id||v.saved||!v.borrador) return; const slug=project.slug;
+  try{ dxSyncMetas(v.item); const r=await api('dxSave',{slug,item:v.item,borrador:true}); if(project&&project.slug===slug){ dxTake(r); v.dirty=false; } }catch(e){}
+}
 function dxEdit(el){
   const v=dxUI.view; if(!v||!canSA()) return; const it=v.item, p=el.dataset.p.split('.'), val=String(el.innerText||'').replace(/\s*\n+\s*/g,' ').replace(/ /g,' ').trim();
   if(p[0]==='t'){ it.titulo=val; it._edT=true; }
@@ -2459,7 +2467,18 @@ function dxNorm(it){
   return it;
 }
 function dxViewTest(it){ saBlocksHtml(dxBlocks(it)); }
-function dxShow(id){ const it0=project.data.dx.find(x=>x.id===id); if(!it0) return; if(dxJob&&dxJob.view.item.id===id){ dxUI.view=dxJob.view; dxUI.typing=false; dxRender(); return; } const it=dxNorm(JSON.parse(JSON.stringify(it0))); dxUI.view={item:it,saved:true}; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'}); }
+function dxShow(id){
+  const it0=project.data.dx.find(x=>x.id===id); if(!it0) return;
+  if(dxJob&&dxJob.view.item.id===id){ dxUI.view=dxJob.view; dxUI.typing=false; dxRender(); return; }
+  const it=dxNorm(JSON.parse(JSON.stringify(it0))), v={item:it,saved:!it0.borrador,borrador:!!it0.borrador,herr:it.herr};
+  const ia=it0.ia;
+  if(ia&&Array.isArray(ia.pasos)&&ia.pasos.length&&it.secciones.length>=ia.off+ia.pasos.length){
+    v.started=true; v.pre=it.secciones.slice(0,ia.off); v.post=it.secciones.slice(ia.off+ia.pasos.length);
+    v.blocks=ia.pasos.map((e,i)=>({estado:e==='ia'?'ia':(e==='tuya'?'tuya':(e==='fallo'?'fallo':'base')),secciones:[it.secciones[ia.off+i]]}));
+  }
+  dxUI.view=v; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
+  if(ia&&ia.estado==='trabajando'&&v.blocks&&canSA()&&!dxJob) dxDeepen(v);       // la IA seguía trabajando: se retoma el seguimiento
+}
 function dxBack(){ dxUI.view=null; dxRender(); }   // el resultado sin agregar queda a la mano en la lista de herramientas
 function dxViewHtml(){
   const v=dxUI.view, E=canSA();
@@ -2510,7 +2529,7 @@ async function dxAdd(){
     if(!project||project.slug!==slug) return;
     project.data=normalizeData(r.project.data); project.rev=r.project.rev; project.updatedAt=r.project.updatedAt; setSync('ok');
     const it=project.data.dx.find(x=>x.id===r.id), v=dxUI.view;
-    v.item.id=r.id; v.saved=true; v.dirty=false; v.updated=!(dxJob&&dxJob.view===v)&&!!v.blocks&&v.blocks.some(x=>x.estado==='ia'); v.updateErr='';   // se conserva la misma vista: la IA puede seguir completándola
+    v.item.id=r.id; v.saved=true; v.borrador=false; clearTimeout(dxAutoT); v.dirty=false; v.updated=!(dxJob&&dxJob.view===v)&&!!v.blocks&&v.blocks.some(x=>x.estado==='ia'); v.updateErr='';   // se conserva la misma vista: la IA puede seguir completándola
     if(dxUI.draft===v) dxUI.draft=null;
     v.colocado=r.colocado||null; renderAll(); const c=r.colocado, partes=c?[[c.entregables,'entregable(s) en Entregables'],[c.metas,'meta(s) en Planeación estratégica'],[c.indicadores,'indicador(es) en Indicadores']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]):[]; toast(partes.length?'Agregado al proyecto: '+partes.join(', '):'Diagnóstico agregado al proyecto');
   }catch(e){ if(!project||project.slug!==slug) return; if(b){ b.disabled=false; b.textContent='Agregar al proyecto'; } toast(e.message||'No se pudo agregar.',true); }
