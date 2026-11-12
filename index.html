@@ -579,7 +579,7 @@ function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(
 function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
 
 // Antes de usar la IA se confirma que el Apps Script publicado es el que esta página espera (si no, las llamadas se quedarían esperando).
-const AI_VERSION=11; let aiOk=false, aiBg=false;
+const AI_VERSION=12; let aiOk=false, aiBg=false;
 async function aiReady(){
   if(aiOk) return;
   const viejo={error:'old',message:(session&&session.isSuper)?'El Apps Script publicado es una versión anterior a esta página. En Apps Script: Implementar > Administrar implementaciones > editar (lápiz) > Versión: «Nueva versión» > Implementar. Guardar el archivo no basta.':'La herramienta se está actualizando y la IA aún no está disponible. Avisa a Sintropía Social; mientras tanto queda la versión inmediata.'};
@@ -1480,6 +1480,9 @@ function renderSintro(){
   const planOk=canSA()||!!(sa&&sa.visible); if(!planOk) saUI.area='dx';
   $('saArea').innerHTML=(planOk&&(canSA()||project.data.dx.length))?`<div class="sa-switch"><button class="${saUI.area==='plan'?'on':''}" onclick="saSetArea('plan')">Del documento al plan</button><button class="${saUI.area==='dx'?'on':''}" onclick="saSetArea('dx')">Herramientas de diagnóstico${project.data.dx.length?' ('+project.data.dx.length+')':''}</button></div>`:'';
   if(saUI.area==='dx'){ if(!$('dxRoot')||!dxUI.typing) dxRender(); return; }
+  const sj=project.data.saJob;
+  if(canSA()&&!saUI.run&&sj&&sj.estado==='trabajando'&&!saUI.resumed){ saUI.resumed=true; saUI.run={slug:project.slug,ctx:{},doc:'',docName:sj.docName||'',ficha:null,ejes:null,analisis:null,done:{},active:'',err:'',job:true}; saUI.mode='run'; saExec(); }
+  if(canSA()&&!saUI.run&&sa&&sa.porColocar&&!saUI.placing){ saUI.placing=true; saAutoPlace().then(p=>{ if(p) toast('El análisis que terminó en el servidor ya se repartió en Entregables, Planeación e Indicadores'); renderAll(); }); }
   if(!saUI.mode) saUI.mode=sa?'results':'form';
   if(!canSA()) saUI.mode='results';
   if(saUI.mode==='run'){ if(!$('saProgress')) saDrawRun(); return; }   // el análisis sigue aunque se cambie de pestaña o de área
@@ -1620,75 +1623,81 @@ function saSteps(r){
 }
 function saDrawRun(){
   const r=saUI.run, steps=saSteps(r), hechos=steps.filter(s=>r.done[s[0]]).length, activo=steps.find(s=>s[0]===r.active), trabajando=!r.err&&!!r.active;
-  $('saBox').innerHTML=`<div class="card" id="saProgress" aria-live="polite"><h3 class="sa-h3">${r.err?'El análisis se detuvo':'La IA está trabajando en tu documento'}</h3><p class="sa-sub">Paso ${Math.min(hechos+1,steps.length)} de ${steps.length}. Puedes leer la revisión inmediata de abajo o irte a otra pestaña del proyecto: te aviso cuando termine. No cierres ni salgas de este proyecto.</p>
+  $('saBox').innerHTML=`<div class="card" id="saProgress" aria-live="polite"><h3 class="sa-h3">${r.err?'El análisis se detuvo':'La IA está trabajando en tu documento'}</h3><p class="sa-sub">Paso ${Math.min(hechos+1,steps.length)} de ${steps.length}. Puedes leer la revisión inmediata de abajo o irte a otra pestaña. ${aiBg?'El trabajo ya está en el servidor: sigue aunque cierres la página y al terminar te llega un correo.':'El trabajo quedó guardado en el servidor: si cierras la página, se retoma cuando vuelvas a abrir el proyecto.'}</p>${r.nota?`<p class="sa-quota" style="color:var(--orange-dark,#B45309);">${esc(r.nota)}</p>`:''}
     ${trabajando?`<div class="sa-work"><i class="dot"></i><div><b>${esc(activo?activo[1]:'Trabajando')}</b><span>En curso · <span id="saClock">${saElapsed(r)}</span>. Cada paso suele tardar menos de un minuto.</span></div></div>`:''}
     <div class="sa-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${hechos}"><i style="width:${Math.round(hechos/steps.length*100)}%"></i></div>
     <ul class="sa-steps">${steps.map(s=>{ const st=r.done[s[0]]?'done':(s[0]===r.active?(r.err?'fail':'on'):''); return `<li class="${st}"><span>${st==='done'?'Listo':(st==='on'?'En curso':(st==='fail'?'Falló':'Pendiente'))}</span>${esc(s[1])}</li>`; }).join('')}</ul>
-    ${r.err?`<div class="banner bad">${esc(r.err)}</div><div class="toolbar-row"><button class="btn primary" onclick="saExec()">Reintentar desde aquí</button><button class="btn" onclick="saUI.mode='form'; renderSintro()">Volver al formulario</button></div>`:''}</div>${saQuickHtml(r.quick)}`;
+    ${r.err?`<div class="banner bad">${esc(r.err)}</div><div class="toolbar-row"><button class="btn primary" onclick="saExec()">Reintentar desde aquí</button><button class="btn" onclick="saUI.run=null; saUI.mode='form'; renderSintro()">Volver al formulario</button></div>`:''}</div>${saQuickHtml(r.quick)}`;
   saTick();
 }
 function saElapsed(r){ const s=Math.max(0,Math.round((Date.now()-((r&&r.tRun)||Date.now()))/1000)); return s<60?s+' s':Math.floor(s/60)+' min '+(s%60)+' s'; }
 function saTick(){ const r=saUI.run, c=$('saClock'); if(r&&c) c.textContent=saElapsed(r); }
 function saViewingPlan(){ const p=$('panel-sintro'); return !!(saUI.area==='plan'&&p&&p.classList.contains('active')&&!$('projectView').classList.contains('hidden')); }
 function saGoToPlan(){ dxNotice(''); if(!project) return; saUI.area='plan'; $('saBox').innerHTML=''; gotoTab('sintro'); renderSintro(); }
+// Pone en la pantalla de avance lo que el servidor reporta
+function saJobApply(r,j){
+  if(!j) return; const h=j.hechos||{};
+  r.done={ficha:!!h.ficha,ejes:!!h.ejes,analisis:!!h.analisis,guardado:!!h.guardado}; (h.dev||[]).forEach((x,i)=>{ if(x) r.done['eje'+i]=true; });
+  if(j.ejes&&j.ejes.length) r.ejes=j.ejes.map(n=>({nombre:n}));
+  r.active=j.activo||r.active||''; if(j.t0&&!r.tSrv){ r.tSrv=true; r.tRun=j.t0; } if(j.docName&&!r.docName) r.docName=j.docName;
+  r.nota=(j.estado==='trabajando'&&j.error)?'Reintentando este paso. Último intento: '+j.error:'';
+}
 async function saExec(){
-  const r=saUI.run; if(!r) return; r.err='';
+  const r=saUI.run; if(!r) return; const retry=!!r.err&&!!r.job; r.err='';
   const alive=()=>project&&project.slug===r.slug&&saUI.run===r;
-  const paint=k=>{ r.active=k; r.t0=Date.now(); if(alive()&&saUI.mode==='run'&&saUI.area==='plan') saDrawRun(); };
-  // cada paso es una llamada corta; si no responde a tiempo, se reintenta una vez sola
-  const call=async(etapa,extra)=>{ let err; for(let t=0;t<2;t++){ try{ return await api('saAnalyze',Object.assign({slug:r.slug,etapa,contexto:r.ctx,documento:r.doc},extra||{}),false,170000); }catch(e){ err=e; if(['timeout','network','ai','bad','server'].indexOf(e.error)===-1||!alive()) break; } } throw err; };
-  if(!r.quick) r.quick=saQuick(r.doc);
-  r.tRun=Date.now();
+  const paint=()=>{ if(alive()&&saUI.mode==='run'&&saUI.area==='plan') saDrawRun(); };
+  if(!r.quick&&r.doc) r.quick=saQuick(r.doc);
+  if(!r.tRun) r.tRun=Date.now();
   clearInterval(saUI.clock); saUI.clock=setInterval(saTick,1000);
+  let fin=null;
+  if(!r.active) r.active='ficha'; paint();
   try{
     await aiReady(); if(!alive()) return;
-    if(!r.done.ficha){
-      paint('ficha'); const a=await call('ficha'); if(!alive()) return;
-      if(a.sa) project.saQuota=a.sa;
-      if(!a.data||!a.data.proyecto) throw {message:'No pude leer el documento como un proyecto. Revisa que el texto sea el correcto.'};
-      r.ficha=a.data; delete r.ficha.ejes; r.done.ficha=true;
-    }
-    if(!r.done.ejes){
-      paint('ejes'); const a2=await call('ejes',{ficha:r.ficha}); if(!alive()) return;
-      if(!a2.data||!saL(a2.data.ejes).length) throw {message:'No pude identificar ejes de trabajo en el documento. Revisa que el texto sea el del proyecto.'};
-      r.ejes=saNormEjes(a2.data.ejes); r.done.ejes=true;
-    }
-    for(let i=0;i<r.ejes.length;i++){
-      if(r.done['eje'+i]) continue;
-      paint('eje'+i); const e=r.ejes[i];
-      const b=await call('desarrollo',{ficha:Object.assign({},r.ficha,{ejes:r.ejes.map(x=>({id:x.id,nombre:x.nombre}))}),eje:{id:e.id,nombre:e.nombre,proposito:e.proposito,actividades:e.actividades.map(x=>({id:x.id,nombre:x.nombre,descripcion:x.descripcion,periodo:x.periodo,mes_inicio:x.mes_inicio,mes_fin:x.mes_fin}))}});
+    if(!r.job){
+      // el servidor se queda con el documento y con el trabajo: si la página se cierra, sigue solo
+      r.active='ficha'; paint();
+      if(canEdit()) await flushNow();
+      const a=await api('saStartJob',{slug:r.slug,contexto:r.ctx,documento:r.doc,docName:r.docName,quick:r.quick,url:location.href.split('#')[0]});
       if(!alive()) return;
-      const dev=saL(b.data&&b.data.actividades);
-      e.actividades.forEach((x,j)=>{ const m=dev.find(v=>v.id===x.id)||dev[j]; if(!m) return; x.subactividades=saL(m.subactividades); x.indicadores=saL(m.indicadores); x.entregables=saL(m.entregables); x.productos_tentativos=saL(m.productos_tentativos); });
-      r.done['eje'+i]=true;
+      r.job=true; aiBg=!!a.segundoPlano; if(a.sa) project.saQuota=a.sa; project.rev=Math.max(project.rev,a.rev||0); project.data.saJob={estado:'trabajando'}; saJobApply(r,a.job); paint();
     }
-    if(!r.done.analisis){
-      paint('analisis'); const c=await call('analisis',{ficha:r.ficha,ejes:r.ejes}); if(!alive()) return;
-      if(!c.data) throw {message:'El análisis llegó vacío.'};
-      r.analisis=c.data; r.done.analisis=true;
+    let primera=true;
+    while(alive()){
+      const w=await api('saWork',{slug:r.slug,reintentar:retry&&primera,conRevision:!r.quick},false,240000);
+      if(!alive()) return; primera=false;
+      if(w.sa) project.saQuota=w.sa; if(w.quick&&!r.quick) r.quick=w.quick;
+      const antes=JSON.stringify(r.done); saJobApply(r,w.job); paint();
+      if(w.job.estado==='listo'){ fin=w; break; }
+      if(w.job.estado==='sin'){ if(w.project&&w.project.data&&w.project.data.sa&&w.project.data.saJob&&w.project.data.saJob.estado==='listo'){ fin=w; break; } throw {message:'El servidor ya no tiene este análisis en curso (pasaron más de seis horas). Vuelve al formulario y analízalo de nuevo: tus datos siguen ahí.'}; }
+      if(w.job.estado==='fallo') throw {message:w.job.error||'El análisis se detuvo.'};
+      await dxSleep(JSON.stringify(r.done)!==antes?400:(w.turno==='ocupado'?6000:(window.DX_WAIT||12000)));
     }
-    if(!r.done.guardado){
-      paint('guardado');
-      if(!r.prev) r.prev={sa:project.data.sa||null};
-      project.data.sa={ctx:r.ctx,docName:r.docName,ficha:r.ficha,ejes:r.ejes,analisis:r.analisis,quick:r.quick,critica:null,visible:!!(r.prev.sa&&r.prev.sa.visible),sentAt:'',generatedAt:new Date().toISOString()};
-      try{ await saPersist(); }catch(e2){ if(alive()) project.data.sa=r.prev.sa; throw {message:'El análisis terminó, pero no se pudo guardar: '+(e2.message||'error de conexión')+' Reintenta: no se vuelve a analizar.'}; }
-      if(!alive()) return; r.done.guardado=true;
-    }
+    if(!alive()) return;
+    project.data=normalizeData(fin.project.data); project.rev=fin.project.rev; project.updatedAt=fin.project.updatedAt; setSync('ok');
   }catch(e){
     clearInterval(saUI.clock); if(!alive()) return; if(e&&e.sa) project.saQuota=e.sa; r.err=(e&&e.message)||'Algo falló en esta etapa.';
+    if(e&&e.error==='limit'){ r.job=false; }
+    if(project.data.saJob) project.data.saJob.estado='fallo';
     if(saUI.mode==='run'&&saUI.area==='plan') saDrawRun();
     if(!saViewingPlan()) dxNotice(`<b>El análisis del documento se detuvo</b><br>${esc(r.err)}<div><button class="btn small orange" onclick="saGoToPlan()">Ir a reintentar</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`);
     return; }
   clearInterval(saUI.clock);
   const viendo=saViewingPlan();
-  saUI.docKept=r.doc; saUI.run=null; saUI.mode='results'; saUI.tab='lectura'; saUI.draft=null; saUI.docFile=''; saUI.docName=''; saUI.docMsg=''; saUI.summary=null;
+  saUI.docKept=r.doc||''; saUI.run=null; saUI.mode='results'; saUI.tab='lectura'; saUI.draft=null; saUI.docFile=''; saUI.docName=''; saUI.docMsg=''; saUI.summary=null;
   saForget();
   // primera vez: el análisis se reparte solo en Entregables, Caja de herramientas, Planeación e Indicadores. Si ya había algo colocado antes, se pregunta (botón «Colocar en el proyecto») para no pisar estatus ni valores.
-  let puesto=false;
-  if(hasTrack()&&canSA()){ const cur=project.data; if(!(cur.deliverables.some(x=>x.sa)||cur.indicators.some(x=>x.sa)||cur.tools.some(x=>x.sa)||cur.goals.some(x=>x.sa))){ try{ await saToTracking(true); puesto=!!saUI.summary; }catch(e){} if(!project||project.slug!==r.slug) return; } }
+  const puesto=await saAutoPlace(); if(!project||project.slug!==r.slug) return;
   renderAll();
   if(viendo) toast(puesto?'Análisis listo: ya está repartido en Entregables, Planeación e Indicadores':'Análisis listo y guardado en el proyecto');
   else dxNotice(`<b>El análisis de tu documento está listo</b><br>Ya quedó guardado en el proyecto${puesto?' y repartido en Entregables, Planeación estratégica e Indicadores.':'.'+(hasTrack()?' Ábrelo para revisarlo y colocarlo en las pestañas.':'')}<div><button class="btn small orange" onclick="saGoToPlan()">Ver análisis</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`);
+}
+// El análisis que terminó en el servidor llega con la marca «porColocar»: la primera vez se reparte solo en las pestañas.
+async function saAutoPlace(){
+  const slug=project.slug, sa=project.data.sa; if(!sa||!sa.porColocar||!canSA()) return false;
+  let puesto=false; const cur=project.data;
+  if(hasTrack()&&!(cur.deliverables.some(x=>x.sa)||cur.indicators.some(x=>x.sa)||cur.tools.some(x=>x.sa)||cur.goals.some(x=>x.sa))){ try{ await saToTracking(true); puesto=!!saUI.summary; }catch(e){} if(!project||project.slug!==slug) return puesto; }
+  try{ delete project.data.sa.porColocar; await saPersist(); }catch(e){}
+  return puesto;
 }
 function saNormEjes(ejes){
   return saL(ejes).map((e,i)=>{ const id=e.id||('E'+(i+1));
