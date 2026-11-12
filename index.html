@@ -579,7 +579,7 @@ function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(
 function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
 
 // Antes de usar la IA se confirma que el Apps Script publicado es el que esta página espera (si no, las llamadas se quedarían esperando).
-const AI_VERSION=8; let aiOk=false;
+const AI_VERSION=10; let aiOk=false;
 async function aiReady(){
   if(aiOk) return;
   const viejo={error:'old',message:(session&&session.isSuper)?'El Apps Script publicado es una versión anterior a esta página. En Apps Script: Implementar > Administrar implementaciones > editar (lápiz) > Versión: «Nueva versión» > Implementar. Guardar el archivo no basta.':'La herramienta se está actualizando y la IA aún no está disponible. Avisa a Sintropía Social; mientras tanto queda la versión inmediata.'};
@@ -1455,7 +1455,21 @@ function dxReset(){ if(dxJob) dxJob.stop=true; dxJob=null; dxNotice(''); }
 function saSetArea(a){ saUI.area=a; dxUI.typing=false; if(a==='dx') dxUI.view=null; $('saBox').innerHTML=''; renderSintro(); }
 // Si el proyecto ya tiene una Línea base hecha con las herramientas de diagnóstico, se carga sola en el formulario.
 function saLineaBaseDx(){ const it=project.data.dx.filter(x=>x.herr==='linea').slice(-1)[0]; if(!it) return ''; const ts=it.secciones.filter(s=>s.tabla&&s.tabla.filas.length), t=ts.find(s=>/l[ií]nea base|variable|indicador/i.test(s.titulo||''))||ts[0]; return [it.resumen].concat(t?t.tabla.filas.map(f=>'- '+f.filter(Boolean).join(' | ')):[]).filter(Boolean).join('\n').slice(0,2800); }
-function saNewDraft(){ const c0=(project.data.sa&&project.data.sa.ctx)||{}, lb=saLineaBaseDx(); const c=(!c0.lineaBase&&lb)?Object.assign({},c0,{lineaBase:lb,tieneLineaBase:c0.tieneLineaBase==='Sí'?'Sí':'Parcial'}):c0; const otra=/^Otro: /.test(c.etapa||''); return {proyecto:c.proyecto||project.name||'',organizacion:c.organizacion||project.client||'',participantes:c.participantes||'',lugar:c.lugar||'',etapa:otra?'Otro':(c.etapa||''),etapaOtra:otra?c.etapa.slice(6):'',circunstancia:c.circunstancia||'',tieneLineaBase:c.tieneLineaBase||'',lineaBase:c.lineaBase||'',inicio:c.inicio||'',fin:c.fin||'',duracion:c.duracion||'',notas:c.notas||'',texto:''}; }
+const saKey=()=>'sa_draft_'+(project?project.slug:'');
+let saKeepT=null;
+function saKeep(){ try{ if(!project||!saUI.draft||saUI.mode==='results') return; localStorage.setItem(saKey(),JSON.stringify({d:saUI.draft,doc:saUI.docFile||'',name:saUI.docName||'',at:Date.now()})); }catch(e){} }
+function saKept(){ try{ const j=JSON.parse(localStorage.getItem(saKey())||'null'); return j&&j.d&&typeof j.d==='object'?j:null; }catch(e){ return null; } }
+function saForget(){ try{ localStorage.removeItem(saKey()); }catch(e){} }
+['input','change'].forEach(ev=>document.addEventListener(ev,e=>{ if(e.target&&e.target.closest&&e.target.closest('#saForm')){ clearTimeout(saKeepT); saKeepT=setTimeout(saKeep,400); } }));
+function saCtxOf(d){ const ctx=Object.assign({},d); delete ctx.texto; if(ctx.etapa==='Otro') ctx.etapa='Otro: '+String(d.etapaOtra||'').trim(); delete ctx.etapaOtra; return ctx; }
+async function saSaveCtx(btn){
+  const slug=project.slug, ctx=saCtxOf(saUI.draft); ctx._at=new Date().toISOString(); btn.disabled=true; btn.textContent='Guardando…';
+  try{ if(canEdit()) await flushNow(); const r=await api('saSave',{slug,ctx}); if(project&&project.slug===slug){ project.data.saCtx=r.ctx; project.rev=r.rev; saKeep(); toast('Datos guardados en el proyecto'); } }
+  catch(e){ toast((e&&e.message)||'No se pudieron guardar los datos.',true); }
+  btn.disabled=false; btn.textContent='Guardar estos datos';
+}
+function saBlank(){ saForget(); saUI.docFile=''; saUI.docName=''; saUI.docMsg=''; saUI.restored=false; saUI.draft=Object.assign(saNewDraft(),{participantes:'',lugar:'',etapa:'',etapaOtra:'',circunstancia:'',tieneLineaBase:'',lineaBase:'',inicio:'',fin:'',duracion:'',notas:''}); $('saBox').innerHTML=''; renderSintro(); }
+function saNewDraft(){ const s0=project.data.sa||{}, g0=project.data.saCtx, c0=(g0&&(!s0.ctx||String(g0._at||'')>String(s0.generatedAt||'')))?g0:(s0.ctx||g0||{}), lb=saLineaBaseDx(); const c=(!c0.lineaBase&&lb)?Object.assign({},c0,{lineaBase:lb,tieneLineaBase:c0.tieneLineaBase==='Sí'?'Sí':'Parcial'}):c0; const otra=/^Otro: /.test(c.etapa||''); return {proyecto:c.proyecto||project.name||'',organizacion:c.organizacion||project.client||'',participantes:c.participantes||'',lugar:c.lugar||'',etapa:otra?'Otro':(c.etapa||''),etapaOtra:otra?c.etapa.slice(6):'',circunstancia:c.circunstancia||'',tieneLineaBase:c.tieneLineaBase||'',lineaBase:c.lineaBase||'',inicio:c.inicio||'',fin:c.fin||'',duracion:c.duracion||'',notas:c.notas||'',texto:''}; }
 
 function renderSintro(){
   const box=$('saBox'); if(!box) return;
@@ -1475,7 +1489,8 @@ function renderSintro(){
 
 /* ---- formulario: contexto, temporalidad y documento ---- */
 function saDrawForm(){
-  if(!saUI.draft) saUI.draft=saNewDraft();
+  if(!saUI.draft){ saUI.draft=saNewDraft(); saUI.restored=false;
+    const k=saKept(); if(k){ Object.assign(saUI.draft,k.d); saUI.restored=true; if(k.doc&&!saUI.docFile){ saUI.docFile=k.doc; saUI.docName=k.name||'Documento'; saUI.docMsg=`<p class="sa-file ok">${esc(saUI.docName)} — ${k.doc.length.toLocaleString('es-MX')} caracteres, recuperado de tu sesión anterior. No hace falta subirlo otra vez.</p>`; } } }
   const d=saUI.draft, f=(k,ph)=>`value="${esc(d[k])}" oninput="saUI.draft.${k}=this.value"${ph?` placeholder="${esc(ph)}"`:''}`;
   const sel=(k,opts)=>`<select onchange="saUI.draft.${k}=this.value; saLbToggle()"><option value="">Selecciona…</option>${opts.map(o=>{const v=Array.isArray(o)?o[0]:o,t=Array.isArray(o)?o[1]:o; return `<option value="${esc(v)}" ${d[k]===v?'selected':''}>${esc(t)}</option>`;}).join('')}</select>`;
   $('saBox').innerHTML=`<div id="saForm">
@@ -1510,7 +1525,8 @@ function saDrawForm(){
       <div id="saFileMsg">${saUI.docMsg}</div>
       <label style="margin-top:14px;">O pega el texto del documento</label><textarea style="min-height:110px;" oninput="saUI.draft.texto=this.value">${esc(d.texto)}</textarea>
       <div id="saFormMsg"></div>
-      <button class="btn orange primary-action" onclick="saStart()" ${saLeft()===0?'disabled':''}>Analizar documento</button>
+      <div class="toolbar-row" style="margin:0;"><button class="btn orange primary-action" onclick="saStart()" ${saLeft()===0?'disabled':''}>Analizar documento</button><button class="btn" id="saCtxBtn" onclick="saSaveCtx(this)">Guardar estos datos</button>${saUI.restored?'<button class="btn small" onclick="saBlank()">Empezar en blanco</button>':''}</div>
+      <p class="sa-note" id="saKeepNote" style="margin:10px 0 0 !important;">${saUI.restored?'Recuperé lo que habías llenado. ':''}Lo que escribes se conserva solo en este navegador, aunque el análisis falle o recargues la página. Con «Guardar estos datos» queda en el proyecto, disponible desde cualquier dispositivo y para las herramientas de diagnóstico.</p>
       ${saLeft()===null?'':`<p class="sa-quota">${saLeft()===0?'Este proyecto ya usó todos sus análisis. Escribe a Sintropía Social si necesitas más.':'Análisis disponibles para este proyecto: '+saLeft()+' de '+project.saQuota.limit+'.'}</p>`}</div>
   </div>`;
   const drop=$('saDrop'), inp=$('saFile');
@@ -1543,7 +1559,7 @@ async function saReadFile(file){
     t=String(t||'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
     if(t.length<200) throw new Error('No pude extraer texto de este archivo (¿es un PDF escaneado?). Pega el texto en el recuadro de abajo.');
     saUI.docFile=t; saUI.docName=file.name;
-    saFileMsg(`<p class="sa-file ok">${esc(file.name)} — ${t.length.toLocaleString('es-MX')} caracteres leídos.${t.length>SA_MAX_DOC?' El documento es largo: se analizan los primeros '+SA_MAX_DOC.toLocaleString('es-MX')+' caracteres.':''}</p>`);
+    saFileMsg(`<p class="sa-file ok">${esc(file.name)} — ${t.length.toLocaleString('es-MX')} caracteres leídos.${t.length>SA_MAX_DOC?' El documento es largo: se analizan los primeros '+SA_MAX_DOC.toLocaleString('es-MX')+' caracteres.':''}</p>`); saKeep();
   }catch(e){ saUI.docFile=''; saUI.docName=''; saFileMsg(`<div class="banner bad" style="margin-top:10px;">${esc(e.message||'No se pudo leer el archivo.')}</div>`); }
 }
 
@@ -1556,7 +1572,7 @@ function saStart(){
   if(d.etapa==='Otro'&&!String(d.etapaOtra||'').trim()) return msg('Elegiste «Otro» en la etapa del proyecto: descríbela en el campo que aparece debajo.');
   if(d.inicio&&d.fin&&d.fin<d.inicio) return msg('La fecha de cierre es anterior a la de inicio.');
   if(doc.length<200) return msg('Sube el documento o pega su texto (al menos unos párrafos).');
-  const ctx=Object.assign({},d); delete ctx.texto; if(ctx.etapa==='Otro') ctx.etapa='Otro: '+String(d.etapaOtra).trim(); delete ctx.etapaOtra; if(!ctx.duracion) ctx.duracion=saMonths(d.inicio,d.fin);
+  const ctx=saCtxOf(d); if(!ctx.duracion) ctx.duracion=saMonths(d.inicio,d.fin);
   saUI.run={slug:project.slug,ctx,doc:doc.slice(0,SA_MAX_DOC),docName:saUI.docName,ficha:null,ejes:null,analisis:null,done:{},active:'',err:''};
   saUI.mode='run'; saDrawRun(); saExec();
   window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
@@ -1666,9 +1682,13 @@ async function saExec(){
   clearInterval(saUI.clock);
   const viendo=saViewingPlan();
   saUI.docKept=r.doc; saUI.run=null; saUI.mode='results'; saUI.tab='lectura'; saUI.draft=null; saUI.docFile=''; saUI.docName=''; saUI.docMsg=''; saUI.summary=null;
+  saForget();
+  // primera vez: el análisis se reparte solo en Entregables, Caja de herramientas, Planeación e Indicadores. Si ya había algo colocado antes, se pregunta (botón «Colocar en el proyecto») para no pisar estatus ni valores.
+  let puesto=false;
+  if(hasTrack()&&canSA()){ const cur=project.data; if(!(cur.deliverables.some(x=>x.sa)||cur.indicators.some(x=>x.sa)||cur.tools.some(x=>x.sa)||cur.goals.some(x=>x.sa))){ try{ await saToTracking(true); puesto=!!saUI.summary; }catch(e){} if(!project||project.slug!==r.slug) return; } }
   renderAll();
-  if(viendo) toast('Análisis listo y guardado en el proyecto');
-  else dxNotice(`<b>El análisis de tu documento está listo</b><br>Ya quedó guardado en el proyecto.${hasTrack()?' Ábrelo para revisarlo y colocarlo en las pestañas.':''}<div><button class="btn small orange" onclick="saGoToPlan()">Ver análisis</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`);
+  if(viendo) toast(puesto?'Análisis listo: ya está repartido en Entregables, Planeación e Indicadores':'Análisis listo y guardado en el proyecto');
+  else dxNotice(`<b>El análisis de tu documento está listo</b><br>Ya quedó guardado en el proyecto${puesto?' y repartido en Entregables, Planeación estratégica e Indicadores.':'.'+(hasTrack()?' Ábrelo para revisarlo y colocarlo en las pestañas.':'')}<div><button class="btn small orange" onclick="saGoToPlan()">Ver análisis</button><button class="btn small" onclick="dxNotice('')">Cerrar</button></div>`);
 }
 function saNormEjes(ejes){
   return saL(ejes).map((e,i)=>{ const id=e.id||('E'+(i+1));
@@ -1745,10 +1765,10 @@ async function saCritica(){
 /* ---- pasar a seguimiento: actividades → entregables y cronograma; indicadores; productos → caja ---- */
 function saAddMonths(iso,n){ const d=parseIso(iso); const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())); return isoOf(d); }
 function saSpan(x,def){ let a=parseInt(x.mes_inicio,10), b=parseInt(x.mes_fin,10); if(!(a>0)){ const m=String(x.periodo||'').match(/(\d+)(?:\D+(\d+))?/); if(m){ a=parseInt(m[1],10); b=parseInt(m[2]||m[1],10); } } if(!(a>0)) return def||null; if(!(b>=a)) b=a; return {a,b}; }
-async function saToTracking(){
+async function saToTracking(auto){
   if(!canSA()||!hasTrack()) return; const cur=project.data, ini=cur.sa.ctx&&cur.sa.ctx.inicio, fin=cur.sa.ctx&&cur.sa.ctx.fin, slug=project.slug;
   const again=cur.deliverables.some(x=>x.sa)||cur.indicators.some(x=>x.sa)||cur.tools.some(x=>x.sa)||cur.goals.some(x=>x.sa);
-  if(!(await askConfirm('Colocar en el proyecto', again?'Se reemplazará lo que llegó antes desde Sintro Activities: se pierden sus estatus, ligas, fechas ajustadas y valores de indicadores. Lo que se agregó a mano se conserva.':'Se crearán la planeación por ejes, los entregables con sus actividades, los indicadores y las herramientas a partir del análisis. Lo que ya tiene el proyecto se conserva.'+(ini?'':' Como no hay fecha de inicio, llegarán sin fechas: se ponen después en el cronograma.'),'Colocar en el proyecto'))) return;
+  if(!auto&&!(await askConfirm('Colocar en el proyecto', again?'Se reemplazará lo que llegó antes desde Sintro Activities: se pierden sus estatus, ligas, fechas ajustadas y valores de indicadores. Lo que se agregó a mano se conserva.':'Se crearán la planeación por ejes, los entregables con sus actividades, los indicadores y las herramientas a partir del análisis. Lo que ya tiene el proyecto se conserva.'+(ini?'':' Como no hay fecha de inicio, llegarán sin fechas: se ponen después en el cronograma.'),'Colocar en el proyecto'))) return;
   const btn=$('saApplyBtn'); if(btn){ btn.disabled=true; btn.textContent='Colocando…'; }
   if(canEdit()) await flushNow();
   const d=JSON.parse(JSON.stringify(project.data)), sm={goals:0,deliv:0,subs:0,ents:0,inds:0,tools:0};
@@ -1896,12 +1916,12 @@ const DX_Q_BASE=[
   ['Qué se espera que cambie','¿Qué se espera que cambie concretamente?','']
 ];
 const DX_Q_EXTRA={
-  arbol:[['Causas que el equipo identifica','¿Qué causas creen que están detrás del problema?','Las que ven de cerca y las de fondo.']],
-  marco:[['Componentes o actividades ya pensados','¿Qué componentes o actividades ya tienen pensados?','']],
-  linea:[['Datos que existen hoy y de cuándo son','¿Qué datos existen hoy y de cuándo son?','Cifras, registros, diagnósticos previos. Si no hay, dilo.']],
-  smart:[['Qué quieren lograr y en cuánto tiempo','¿Qué quieren lograr y en cuánto tiempo?','']],
-  talleres:[['A quién va dirigido, cuántas sesiones y de qué duración','¿A quién va dirigido el taller, cuántas sesiones y de qué duración?','']],
-  propuesta:[['Recursos, equipo y tiempo disponibles','¿Con qué recursos, equipo y tiempo cuentan?','']],
+  arbol:[['Causas que el equipo identifica','¿Qué causas creen que están detrás del problema?','Las que ven de cerca y las de fondo.'],['Efectos que ya se observan','¿Qué consecuencias del problema ya se están viendo?','En las personas, en los hogares, en la comunidad.']],
+  marco:[['Componentes o actividades ya pensados','¿Qué componentes o actividades ya tienen pensados?',''],['Cambio mayor al que contribuye','¿A qué cambio mayor contribuye el proyecto, aunque no dependa solo de él?','El fin: el impacto de largo plazo.']],
+  linea:[['Datos que existen hoy y de cuándo son','¿Qué datos existen hoy y de cuándo son?','Cifras, registros, diagnósticos previos. Si no hay, dilo.'],['Qué necesitan poder demostrar al final','¿Qué necesitan poder demostrar cuando el proyecto termine?','Ante la comunidad, ante quien financia, ante el propio equipo.']],
+  smart:[['Qué quieren lograr y en cuánto tiempo','¿Qué quieren lograr y en cuánto tiempo?',''],['Equipo y recursos con que cuentan','¿Con qué equipo y recursos cuentan para lograrlo?','']],
+  talleres:[['A quién va dirigido, cuántas sesiones y de qué duración','¿A quién va dirigido el taller, cuántas sesiones y de qué duración?',''],['Qué deberían poder hacer al terminar','¿Qué deberían poder hacer las personas al terminar el taller?','Algo que hoy no pueden hacer.']],
+  propuesta:[['Recursos, equipo y tiempo disponibles','¿Con qué recursos, equipo y tiempo cuentan?',''],['Qué se ha intentado antes','¿Qué se ha intentado antes y qué pasó?','Lo que funcionó, lo que no, y por qué creen que fue así.']],
   teoria:[['Cómo creen que ocurrirá el cambio','¿Cómo creen que ocurrirá el cambio?','¿Por qué lo que hacen llevaría a lo que buscan? Cuéntalo paso a paso.'],['Qué tendría que ser cierto para que funcione','¿Qué tendría que ser cierto para que funcione?','Lo que se está dando por hecho: sobre las personas, las instituciones, el contexto.']]
 };
 function dxNew(){ return {herr:'',resp:{},doc:'',docName:'',docMsg:'',err:'',view:null,draft:null,typing:false}; }
@@ -1912,7 +1932,7 @@ function dxLeft(){ if(role==='super') return null; const q=project.saQuota||{}; 
 function dxOpen(h){ saUI.area='dx'; dxUI.view=null; dxUI.typing=false; dxPick(h,true); gotoTab('sintro'); }
 function dxPick(h,keep){
   if(dxUI.herr!==h){ dxUI.herr=h; dxUI.err=''; }
-  if(!keep||!Object.keys(dxUI.resp).length){ const c=(project.data.sa&&project.data.sa.ctx)||{}; const k=DX_Q_BASE[0][0]; if(!dxUI.resp[k]) dxUI.resp[k]=[c.participantes,c.lugar].filter(Boolean).join(' · '); }
+  if(!keep||!Object.keys(dxUI.resp).length){ const c=(project.data.sa&&project.data.sa.ctx)||project.data.saCtx||{}; const k=DX_Q_BASE[0][0]; if(!dxUI.resp[k]) dxUI.resp[k]=[c.participantes,c.lugar].filter(Boolean).join(' · '); }
   dxUI.typing=false; $('saBox').innerHTML=''; renderSintro();
 }
 function dxRender(){
@@ -2032,6 +2052,86 @@ function dxPositivo(c){
   return 'Se reduce: '+dxMin(c);
 }
 
+const DX_CITAS={
+  geertz:'Geertz, C. (1987). La interpretación de las culturas. Gedisa.', berger:'Berger, P. y Luckmann, T. (1968). La construcción social de la realidad. Amorrortu.', morin:'Morin, E. (1994). Introducción al pensamiento complejo. Gedisa.', giddens:'Giddens, A. (1984). La constitución de la sociedad. Amorrortu.',
+  zemelman:'Zemelman, H. (1992). Los horizontes de la razón. Anthropos.', bauman:'Bauman, Z. (2003). Modernidad líquida. Fondo de Cultura Económica.', decerteau:'De Certeau, M. (2000). La invención de lo cotidiano I: artes de hacer. Universidad Iberoamericana.',
+  falsborda:'Fals Borda, O. (1987). Ciencia propia y colonialismo intelectual. Carlos Valencia Editores.', montero:'Montero, M. (2006). Hacer para transformar: el método en la psicología comunitaria. Paidós.', milanese:'Milanese, E. (2013). Tratado de metodología de las redes sociales. CAFAC.',
+  cepal:'CEPAL. (2015). Metodología del marco lógico para la planificación, el seguimiento y la evaluación de proyectos y programas. Naciones Unidas.', senge:'Senge, P. (1992). La quinta disciplina. Granica.', freire:'Freire, P. (2005). Pedagogía del oprimido. Siglo XXI Editores.'
+};
+// Propuesta metodológica de cada herramienta: cómo se construye, nota metodológica y reflexión desde Sintropía Social
+const DX_METODO={
+  arbol:{cita:['cepal'],intro:'Para construir el árbol de problemas con rigor, el análisis sigue estos pasos:',puntos:[
+    'Problema central: formularlo como una situación negativa comprobable, sin asumir la solución. Describe una condición real, no la ausencia de una solución.',
+    'Causas (raíces del árbol): estructurales (históricas y sistémicas, de largo plazo: políticas, cultura, economía); intermedias (institucionales, median entre lo estructural y lo cotidiano); próximas (operativas, visibles en el día a día de la organización o la comunidad).',
+    'Efectos (copa del árbol): directos (lo que ya ocurre como consecuencia del problema); de segundo orden (impactos de mediano plazo en otros sistemas); efecto final (la situación más grave a la que conduce el problema si no se interviene).',
+    'Nota metodológica: cada elemento del árbol debe poder respaldarse con evidencia empírica o testimonial. El árbol no es un ejercicio de opinión: es una hipótesis explicativa que se somete a validación participativa con los actores involucrados (CEPAL, 2015).',
+    'Reflexión desde Sintropía Social: la principal trampa del árbol es confundir síntomas con causas. «El desempleo» no es una causa: es un efecto. La pregunta no es ¿qué está mal?, sino ¿qué hace que lo que está mal siga estando mal?']},
+  marco:{cita:['senge'],intro:'El marco lógico exige coherencia vertical y horizontal entre sus componentes. Se construye a partir del árbol de objetivos (la transformación positiva del árbol de problemas).',puntos:[
+    'Estructura vertical (lógica de intervención): Fin, el impacto social de largo plazo al que contribuye el proyecto sin ser responsable de él; Propósito, el cambio en la población que el proyecto sí garantiza; Componentes, los productos o servicios concretos que entrega; Actividades, las acciones para producir cada componente.',
+    'Estructura horizontal (por cada nivel): indicadores verificables objetivamente (¿cómo sabremos que se logró?); medios de verificación (¿de dónde saldrán los datos?); supuestos (¿qué condiciones externas son necesarias para que la lógica funcione?).',
+    'Nota metodológica: los indicadores deben ser SMART y culturalmente pertinentes. Un indicador que no puede medirse con los recursos disponibles es un indicador ficticio.',
+    'Reflexión desde Sintropía Social: el marco lógico asume que la realidad es predecible y lineal. En contextos complejos conviene complementarlo con metodologías adaptativas que permitan ajustes durante la implementación (Senge, 1992). La clave no es cumplir el plan, sino aprender del proceso.']},
+  linea:{cita:['geertz'],intro:'La línea base es el estado inicial documentado de los indicadores clave antes de cualquier intervención. Sin ella es imposible sostener que los cambios observados se deben a la intervención.',puntos:[
+    'Componentes: indicadores cuantitativos (porcentajes, frecuencias, promedios verificables); cualitativos (percepciones, narrativas, prácticas culturales observables); de proceso (cómo se toman las decisiones, cómo fluye la información); grupo de comparación, si es posible.',
+    'Instrumentos: encuesta de percepción; grupo focal para profundizar en significados y narrativas; observación etnográfica del contexto (Geertz, 1987); revisión de fuentes secundarias (registros, informes, estadísticas disponibles).',
+    'Nota metodológica: la línea base no es una fotografía neutra. Toda medición selecciona lo que considera relevante, y esa selección es una decisión política y teórica que debe explicitarse.',
+    'Reflexión desde Sintropía Social: los datos duros rara vez capturan lo más importante. La confianza, el miedo, la esperanza: esas variables determinan si una intervención funciona. La línea base debe incluirlas aunque no sean cuantificables.']},
+  smart:{cita:[],intro:'Los objetivos SMART ganan potencia cuando se aplican con rigor metodológico y con conciencia de sus límites.',puntos:[
+    'Aplicación en contexto social: Específico (¿qué exactamente va a cambiar, en quién, bajo qué condiciones?); Medible (¿con qué instrumento, quién mide, con qué frecuencia?); Alcanzable (¿es realista con el contexto, los recursos y el tiempo?); Relevante (¿ataca la causa raíz o solo un síntoma?); Temporal (¿en qué fecha?, ¿con qué hitos intermedios?).',
+    'Tres tipos de objetivo: de proceso (lo que se hará), de producto (lo que se entregará) y de impacto (el cambio real que se busca en la población).',
+    'Nota metodológica: un objetivo que no puede fallar no es un objetivo, es una declaración de intenciones. La especificidad sirve para poder evaluar, ajustar y aprender.',
+    'Reflexión desde Sintropía Social: la trampa de SMART es volverse un ejercicio burocrático. Los objetivos surgen del diálogo con los actores, no se imponen desde afuera. Un objetivo que la comunidad no reconoce como propio difícilmente se alcanza, aunque sea técnicamente «correcto».']},
+  talleres:{cita:['freire'],intro:'El diseño de talleres es de las intervenciones más frecuentes y de las más difíciles de hacer bien. Un taller sin anclaje diagnóstico es entretenimiento, no transformación.',puntos:[
+    'Fase 1, encuadre y diagnóstico participativo (20% del tiempo): activación y nivelación de expectativas; diagnóstico rápido (¿qué saben?, ¿qué creen?, ¿qué les preocupa?); contrato pedagógico.',
+    'Fase 2, desarrollo de contenidos (50%): aprendizaje desde la experiencia, no desde la exposición; casos reales del contexto de quienes participan; reflexión individual y colectiva; documentación participativa del aprendizaje.',
+    'Fase 3, síntesis y transferencia (20%): ¿qué aprendimos?, ¿qué cambia en nuestra práctica?; plan de acción individual con tres compromisos y fecha.',
+    'Fase 4, cierre y seguimiento (10%): evaluación del taller (proceso y contenido); mecanismo para acompañar la implementación.',
+    'Reflexión desde Sintropía Social: Freire (2005) recuerda que la educación no es transferencia de conocimiento sino creación colectiva de sentido. Quien facilita no sabe más que quienes participan: sabe diferente.']},
+  propuesta:{cita:[],intro:'La propuesta de intervención traduce el diagnóstico en acción. Su legitimidad depende de la calidad del proceso que la precedió, no solo de su redacción.',puntos:[
+    'Justificación basada en evidencia: descripción del problema con datos verificables; análisis de causas; vacío de intervención (¿qué no está haciendo nadie que necesita hacerse?).',
+    'Objetivos y resultados esperados: objetivo general, objetivos específicos, resultados e indicadores verificables.',
+    'Estrategia metodológica: enfoque participativo, basado en derechos e interseccional; fases con cronograma; actividades por componente; responsables y roles.',
+    'Estrategia de entrada: mapeo de actores y análisis de poder; construcción de confianza (cómo nos presentamos, qué prometemos); gestión de resistencias anticipadas.',
+    'Seguimiento y evaluación: sistema de monitoreo (¿quién, qué, cuándo?); evaluación de proceso y de impacto; retroalimentación con la comunidad.',
+    'Reflexión desde Sintropía Social: una propuesta bien escrita que no surge del diálogo con los actores es literatura, no intervención. La legitimidad se construye en el territorio, en conversaciones difíciles y en la disposición a ajustar el rumbo.']},
+  teoria:{cita:[],intro:'La teoría de cambio explica cómo y por qué se espera que una intervención produzca el cambio que busca. Su valor no está en el diagrama, sino en volver discutibles los supuestos que sostienen cada paso (Weiss, 1995).',puntos:[
+    'Cambio de largo plazo: se parte del final. Un cambio en la vida de las personas, observable y con plazo; no una actividad ni un servicio entregado (Anderson, 2005).',
+    'Ruta hacia atrás: para cada cambio se pregunta qué tendría que haber ocurrido antes. Resultados intermedios (lo que las personas hacen distinto), resultados inmediatos (lo que saben, tienen o pueden hacer) y, hasta el final, las actividades (Taplin y Clark, 2012).',
+    'Supuestos: lo que se da por cierto en cada eslabón, sobre las personas, las instituciones y el contexto. Cada supuesto lleva su evidencia y su forma de verificarse (Mayne, 2015).',
+    'Contexto y actores: quién gana, quién pierde y quién decide. Se distingue lo que el proyecto controla, lo que influye y lo que solo le interesa (Retolaza Eguren, 2010).',
+    'Criterios de calidad: plausible (la lógica se sostiene), factible (hay con qué hacerlo) y comprobable (se puede saber si ocurrió).',
+    'Nota metodológica: una teoría de cambio no es un marco lógico con otro nombre. El marco lógico ordena lo que se entrega; la teoría de cambio explica por qué eso produciría el cambio (Funnell y Rogers, 2011).',
+    'Reflexión desde Sintropía Social: la teoría de cambio es de quien vive el cambio. Escrita solo en el escritorio describe las intenciones de la organización, no la ruta de las personas. Se construye y se revisa con ellas, y se corrige cuando la realidad la contradice (Vogel, 2012).']}
+};
+const dxPick1=a=>a[Math.floor(Math.random()*a.length)];
+// Marco de lectura que abre cada resultado (misma lógica del diagnóstico original): posicionamiento, problema central y su origen, dimensiones estructurales, propuesta metodológica de la herramienta, preguntas abiertas y referencias de lo citado.
+function dxMarco(herr,r){
+  const usadas={milanese:1}, usar=k=>{ usadas[k]=1; return k; }, sec=(titulo,o)=>Object.assign({titulo,parrafos:[],lista:[]},o||{});
+  const org=r.org?dxMin(r.org):'la comunidad con la que trabajan', M=DX_METODO[herr];
+  const ap=dxPick1([
+    ['geertz','Partimos de la premisa de que «el hombre es un animal inserto en tramas de significación que él mismo ha tejido» (Geertz, 1987, p. 20): los problemas que viven '+org+' no pueden leerse únicamente desde sus síntomas visibles, sino desde los sistemas de sentido que los producen y reproducen.'],
+    ['berger','Partimos de que la realidad comunitaria y organizacional no es un dato fijo, sino una construcción social sostenida por hábitos, roles e instituciones que las personas reproducen sin necesariamente cuestionarlas (Berger y Luckmann, 1968). Los problemas que viven '+org+' están tan sostenidos por acuerdos tácitos como por condiciones objetivas.'],
+    ['morin','Partimos de que separar un problema de su contexto, lo que Morin (1994) llama pensamiento disyuntivo, produce diagnósticos incompletos. Los problemas que viven '+org+' no pueden aislarse de la red de relaciones económicas, culturales y humanas en la que están inscritos.'],
+    ['giddens','Partimos de que las prácticas cotidianas de las personas y las estructuras que las condicionan se producen mutuamente, lo que Giddens (1984) llama la dualidad de la estructura. Los problemas que viven '+org+' no son solo resultado de decisiones individuales ni solo de fuerzas impersonales: son ambas cosas a la vez.']]);
+  const ci=dxPick1([
+    ['zemelman','Todo diagnóstico comienza por hacer visible lo que Zemelman (1992) denomina la «conciencia del presente»: reconocer las tensiones activas de una realidad antes de categorizarla.'],
+    ['bauman','Conviene recordar la advertencia de Bauman (2003) sobre la fragilidad de los vínculos y las certezas en la vida contemporánea: un diagnóstico que asume que las condiciones actuales son estables corre el riesgo de proponer soluciones para un problema que ya cambió de forma.'],
+    ['decerteau','Conviene atender lo que De Certeau (2000) llama las «tácticas» cotidianas: las maneras concretas, muchas veces informales, en que las personas ya están respondiendo a la problemática, aun sin una estrategia formal que las reconozca.']]);
+  const es=dxPick1([
+    ['falsborda','En toda comunidad conviven sistemas culturales que organizan la vida cotidiana: relaciones de poder, mitos fundadores, normas no escritas. Una intervención que no lee esas capas corre el riesgo de imponer lógicas externas que generan resistencia o dependencia (Fals Borda, 1987).'],
+    ['montero','Toda intervención comunitaria parte de un desequilibrio de saberes: quien interviene suele llegar con un marco técnico que la comunidad no eligió. Montero (2006) plantea que el papel de quien facilita no es «aplicar» un método sobre la comunidad, sino construirlo junto con ella, para que la transformación sea reconocida como propia.']]);
+  usar(ap[0]); usar(ci[0]); usar(es[0]); M.cita.forEach(usar);
+  const pre=[
+    sec('Lectura contextual y posicionamiento teórico',{parrafos:['El análisis de cualquier problemática social exige situarse antes de proponer soluciones. '+ap[1], ci[1]+' Ello supone resistir la tentación de aplicar soluciones prediseñadas a problemas que aún no se comprenden en su especificidad.']}),
+    sec('Identificación y análisis del problema central',{parrafos:[(r.prob?'El elemento central identificado es: '+r.prob.replace(/\.+$/,'')+'.':'Aún no se nombró un problema central.')+(r.det?' '+r.det:''),'Siguiendo el enfoque del mito fundante (Milanese, 2013), cada problemática comunitaria u organizacional tiene un origen histórico que explica cómo llegó a naturalizarse. Preguntarse por ese origen (quién lo nombró así, en qué momento, con qué intereses) es el primer paso para intervenir con pertinencia y sin reproducir los esquemas que generaron el problema.']}),
+    sec('Dimensiones estructurales y culturales',{parrafos:[es[1]+(r.act?' Los actores mencionados ('+r.act.replace(/\.+$/,'')+') forman parte de esa estructura y se comprenden desde su lugar dentro del sistema, no como destinatarios pasivos.':'')+' La participación genuina no es un método: es un principio ético que reconoce el saber de las comunidades como fuente legítima de conocimiento.']}),
+    sec('Propuesta metodológica: '+dxName(herr),{parrafos:[M.intro],lista:M.puntos})];
+  const incognitas=['¿Qué mecanismos culturales específicos sostienen y reproducen esta problemática?','¿Quiénes tienen interés, consciente o no, en que la situación permanezca como está?','¿Qué fortalezas propias de la comunidad aún no se han movilizado como recursos?'];
+  if(r.cam) incognitas.push('Dado que se busca «'+r.cam.replace(/\.+$/,'')+'», ¿cuál es el nivel mínimo de cambio que ya representaría un avance significativo?');
+  incognitas.push('¿Cómo se medirá el éxito más allá de los indicadores formales y los informes de avance?','¿Qué voces están ausentes en este diagnóstico y qué perspectivas podrían estar quedando fuera?');
+  const refs=Object.keys(usadas).map(k=>DX_CITAS[k]).concat(herr==='teoria'?DX_REFS_TDC:[]).filter((x,i,a)=>x&&a.indexOf(x)===i).sort((a,b)=>a.localeCompare(b,'es'));
+  return {pre,incognitas,post:[sec('Referencias',{lista:refs})]};
+}
 function makeDiag(herr,resp){
   const g=i=>String(resp[DX_Q_BASE[i][0]]||'').trim(), ex=(DX_Q_EXTRA[herr]||[]).map(q=>String(resp[q[0]]||'').trim());
   const quien=g(0), prob=g(1), det=g(2), fase=g(3), act=g(4), cam=g(5), x1=ex[0]||'', x2=ex[1]||'';
@@ -2067,7 +2167,7 @@ function makeDiag(herr,resp){
       sec('Problema central',{parrafos:[P(prob?'Lo que nombran como problema es '+Q(prob)+'.':'Aún no hay un problema central escrito.',solucion?'Tal como está, describe la falta de una solución, no la situación que viven las personas. Propuesta de redacción: «'+dxCap(ql)+' viven [lo que les pasa] porque '+dxMin(prob.replace(/\.+$/,''))+'». Lo que va entre corchetes es el problema.':'Propuesta de control: que describa una sola situación, que la vivan '+ql+' y que se pueda observar.',det?'Cómo se manifiesta, según lo que cuentan: '+det:'Propuesta: describirlo con tres casos concretos.')]}),
       sec('Causas',{tabla:tab(['Nivel','Causa','Cómo se manifiesta','A quiénes afecta distinto'],cz.map(c=>[causas.length?dxPr(dxNivelCausa(c).toLowerCase()):dxPr('clasificar al validarla'),causas.length?dxCap(c):dxPr(c),det||dxPr('describirla con un caso: qué se ve, dónde y cada cuánto'),dxPr('pesa más en quienes tienen menos tiempo propio, ingreso o redes; verificar por sexo, edad y localidad')]))})
     ],[
-      sec('Efectos',{tabla:tab(['Efecto','En quién recae','Plazo'],[[det?dxCap(det):dxPr('lo que ya se ve hoy en la vida diaria'),quien||dxPr('quienes viven la situación'),'Actual'],[dxPr('menos tiempo e ingreso disponibles en los hogares, y más trabajo de cuidado sobre quienes ya lo sostienen'),dxPr('hogares de '+ql),'Mediano plazo'],[dxPr('la situación se vuelve costumbre y se reducen las opciones de la siguiente generación'),dxPr('la comunidad'),'Largo plazo']])}),
+      sec('Efectos',{tabla:tab(['Efecto','En quién recae','Plazo'],dxParts(x2,4).map(e=>[dxCap(e),quien||dxPr('quienes viven la situación'),'Actual']).concat([[det?dxCap(det):dxPr('lo que ya se ve hoy en la vida diaria'),quien||dxPr('quienes viven la situación'),'Actual'],[dxPr('menos tiempo e ingreso disponibles en los hogares, y más trabajo de cuidado sobre quienes ya lo sostienen'),dxPr('hogares de '+ql),'Mediano plazo'],[dxPr('la situación se vuelve costumbre y se reducen las opciones de la siguiente generación'),dxPr('la comunidad'),'Largo plazo']]))}),
       sec('Lectura del árbol',{parrafos:[P('Un árbol sirve si separa lo que el proyecto puede mover de lo que no.',causas.length?'Propuesta de lectura: las causas directas ('+(causas.filter(c=>dxNivelCausa(c)==='Directa').join(', ')||'ninguna identificada')+') son las que el trabajo con '+ql+' puede mover; las estructurales ('+(causas.filter(c=>dxNivelCausa(c)==='Estructural').join(', ')||'ninguna identificada')+') piden alianzas'+(actores.length?' con '+actores.slice(0,3).join(', '):'')+'.':'Con las causas propuestas arriba se puede hacer esa separación en una sesión con el grupo.','Cada flecha entre una causa y el problema es una afirmación que se prueba con un dato o con un testimonio.')]})
     ],[
       sec('Del árbol de problemas al de objetivos',{tabla:tab(['Causa','Medio u objetivo que le corresponde'],cz.map(c=>[causas.length?dxCap(c):dxPr(c),dxPr(causas.length?dxPositivo(c):'escribir en positivo la situación que habría cuando esa causa deje de ocurrir')]))}),
@@ -2080,7 +2180,7 @@ function makeDiag(herr,resp){
     bloques=[[
       sec('Lógica de la intervención',{parrafos:[P('La lógica que se lee en sus respuestas:','si se realizan '+cz.map(dxMin).join(', ')+' con '+ql+',','entonces '+(cam?Q(cam):'[propósito]')+', y con ello se contribuye a reducir '+(prob?Q(prob):'[problema]')+'.','Cada «entonces» es una apuesta: la matriz existe para volverla revisable.')]}),
       sec('Matriz de marco lógico',{tabla:tab(['Nivel','Resumen narrativo','Indicadores','Medios de verificación','Supuestos'],[
-        ['Fin',prob?'Contribuir a reducir: '+prob:dxPr('contribuir a reducir la situación que viven '+ql),dxPr('variación del problema en la zona, según fuente oficial o línea base propia'),dxPr('estadística oficial más reciente o levantamiento propio al inicio y al cierre'),dxPr('el contexto económico, social y de seguridad no empeora de forma drástica')],
+        ['Fin',x2?'Contribuir a: '+dxMin(x2):prob?'Contribuir a reducir: '+prob:dxPr('contribuir a reducir la situación que viven '+ql),dxPr('variación del problema en la zona, según fuente oficial o línea base propia'),dxPr('estadística oficial más reciente o levantamiento propio al inicio y al cierre'),dxPr('el contexto económico, social y de seguridad no empeora de forma drástica')],
         ['Propósito',cam?dxCap(cam):dxPr('un solo cambio en '+ql+': qué hacen o viven distinto al terminar'),dxPr(dxMin(D.indLargo)),dxPr(dxMin(D.medio)),actores.length?'Que '+actores.slice(0,3).join(', ')+' mantengan su participación':dxPr('los actores aliados mantienen su respaldo')]
       ].concat(cz.map((c,i)=>{ const A=dxActiv(c); return ['Componente '+(i+1),comp.length?dxCap(c):dxPr(dxMin(c)),dxPr(dxMin(A.ind)),dxPr(dxMin(A.medio)),dxPr(dxMin(A.sup))]; })).concat([['Actividades',dxPr('por cada componente: convocatoria, realización y seguimiento'),dxPr('actividades realizadas en fecha y presupuesto ejercido'),dxPr('registros administrativos y cronograma'),dxPr('equipo y recursos disponibles a tiempo')]]))})
     ],[
@@ -2104,7 +2204,7 @@ function makeDiag(herr,resp){
       ])})
     ],[
       sec('Cómo levantarla',{lista:['Definir primero las preguntas que la línea base tiene que responder; después, el instrumento.','Levantar con '+ql+' como coinvestigadoras y coinvestigadores, no solo como informantes.','Elegir el momento con el calendario local: no en cosecha, exámenes ni festividades.','Pedir consentimiento informado, explicar para qué se usarán los datos y devolver los resultados a la comunidad.','Registrar a quién no se pudo llegar y por qué: esa ausencia también es un dato.','Guardar instrumento, fecha y forma de selección: la medición final tendrá que repetirlos.']}),
-      sec('Para qué va a servir',{parrafos:['La línea base es lo que permitirá decir, al cierre, qué cambió y para quién. De ella salen las metas (cuánto es razonable mover) y el diseño de la evaluación (con qué se va a comparar). Si se levanta después de empezar, lo que mide ya es el proyecto en marcha.']}),
+      sec('Para qué va a servir',{parrafos:['La línea base es lo que permitirá decir, al cierre, qué cambió y para quién. De ella salen las metas (cuánto es razonable mover) y el diseño de la evaluación (con qué se va a comparar). Si se levanta después de empezar, lo que mide ya es el proyecto en marcha.'+(x2?' Lo que necesitan poder demostrar: '+Q(x2)+'. Propuesta: que al menos un indicador de la tabla lo mida de forma directa.':'')]}),
       (acc.push(['Levantamiento de los cinco indicadores indispensables de la tabla, antes de iniciar actividades','Monitoreo y evaluación','Semanas 1 y 2','Base de datos con fecha de levantamiento']),acciones())
     ]];
   }
@@ -2120,13 +2220,13 @@ function makeDiag(herr,resp){
       sec('Del propósito a las metas',{parrafos:[P(cam?'El cambio que buscan es '+Q(cam)+'.':'Aún no está escrito el cambio que buscan.','Una meta lo vuelve revisable cuando dice qué cambia, en quién, cuánto y para cuándo.',camProp?'Propuesta de redacción del cambio: '+camProp+'.':'',tieneNum?'':'En sus respuestas no hay cantidades; por eso las metas van como tentativas y dependen de la línea base.')]}),
       sec('Metas SMART',{tabla:tab(['Prioridad','Meta SMART','Indicador','Responsable','Horizonte'],metas.map(m=>[m.prioridad,m.meta,inds(m),m.responsable,m.horizonte]))})
     ],[
-      sec('Revisión de cada criterio',{lista:['Específica: '+(cam?'el cambio está nombrado. Propuesta: precisar en quién exactamente (edad, territorio, cuántas personas).':'falta nombrar el cambio.'),'Medible: '+(tieneNum?'hay cantidades; anoten de qué dato salen.':'propuesta: fijar las cantidades en cuanto exista la línea base.'),'Alcanzable: contrastar cada meta con el equipo, el presupuesto y el tiempo reales.','Relevante: preguntar a '+ql+' si ese es el cambio que les importa.','Con tiempo: '+(tienePlazo?'hay un plazo; crúcenlo con el calendario del territorio.':'propuesta: una fecha por meta, ligada al cierre de cada etapa.')]}),
+      sec('Revisión de cada criterio',{lista:['Específica: '+(cam?'el cambio está nombrado. Propuesta: precisar en quién exactamente (edad, territorio, cuántas personas).':'falta nombrar el cambio.'),'Medible: '+(tieneNum?'hay cantidades; anoten de qué dato salen.':'propuesta: fijar las cantidades en cuanto exista la línea base.'),'Alcanzable: '+(x2?'con lo que cuentan ('+dxMin(x2.replace(/\.+$/,''))+'), revisar meta por meta si alcanza.':'contrastar cada meta con el equipo, el presupuesto y el tiempo reales.'),'Relevante: preguntar a '+ql+' si ese es el cambio que les importa.','Con tiempo: '+(tienePlazo?'hay un plazo; crúcenlo con el calendario del territorio.':'propuesta: una fecha por meta, ligada al cierre de cada etapa.')]}),
       (acc.push(['Sustitución de cada «tentativa» por una cantidad, con el dato de partida a la vista','Monitoreo y evaluación','Semana 3','Tabla de metas con su dato de partida']),acciones())
     ]];
   }
   else if(herr==='talleres'){
     resumen='Secuencia de cuatro sesiones, de lo que ya se sabe a la práctica en situación real, con duración y materiales propuestos.';
-    const tema=cam||prob||'el tema del taller', dur=x1||dxPr('2 a 3 horas');
+    const tema=x2||cam||prob||'el tema del taller', dur=x1||dxPr('2 a 3 horas');
     bloques=[[
       sec('Propósito formativo y quiénes participan',{parrafos:[P('El taller se dirige a '+ql+'.',x1?'Lo que definen sobre formato: '+x1+'.':'Propuesta de formato: cuatro sesiones de 2 a 3 horas, una por semana.','Propuesta de propósito: al terminar, quienes participan pueden hacer algo que antes no podían respecto de '+Q(tema)+'. Se parte de lo que ya saben hacer.')]}),
       sec('Secuencia de sesiones',{tabla:tab(['Sesión','Propósito','Actividades','Materiales','Duración','Evidencia de aprendizaje'],[
@@ -2145,9 +2245,9 @@ function makeDiag(herr,resp){
     resumen='Propuesta con justificación, objetivos y plan en cuatro etapas, armada con sus respuestas. Periodos y probabilidades van como propuestas para ajustar.';
     const per=[dxPr('mes 1'),dxPr('mes 2'),dxPr('del mes 3 al penúltimo'),dxPr('último mes')];
     bloques=[[
-      sec('Justificación',{parrafos:[P(prob?'La situación que origina la propuesta es '+Q(prob)+'.':'Propuesta: abrir con la situación que viven '+ql+', dicha con sus palabras.',det?'Así se vive: '+det:'Propuesta: sumar dos o tres casos que muestren cómo se vive.','La justificación se sostiene cuando parte de lo que viven '+ql+' y no de lo que la organización sabe hacer.')]}),
+      sec('Justificación',{parrafos:[P(prob?'La situación que origina la propuesta es '+Q(prob)+'.':'Propuesta: abrir con la situación que viven '+ql+', dicha con sus palabras.',det?'Así se vive: '+det:'Propuesta: sumar dos o tres casos que muestren cómo se vive.','La justificación se sostiene cuando parte de lo que viven '+ql+' y no de lo que la organización sabe hacer.',x2?'Lo que ya se intentó: '+x2.replace(/\.+$/,'')+'. Propuesta: decir aquí qué se hará distinto esta vez y por qué.':'')]}),
       sec('Objetivos',{lista:['General: '+(cam?dxCap(cam):dxPr('el cambio que se busca en '+ql+': qué hacen o viven distinto al terminar')),'Específico 1: conocer el punto de partida con '+ql+'.','Específico 2: desarrollar con el grupo las acciones que atienden las causas a su alcance.','Específico 3: acordar con los actores clave'+(actores.length?' ('+actores.slice(0,3).join(', ')+')':'')+' las condiciones que el proyecto no controla.','Específico 4: dar seguimiento y devolver resultados a la comunidad.']}),
-      sec('Estrategia',{parrafos:[P('La comunidad participa desde el diseño: decide prioridades, horarios y formas de trabajo; la organización acompaña.',x1?'Recursos con que cuentan: '+x1+'.':'Propuesta: anotar aquí equipo, presupuesto y tiempo disponibles, para dimensionar el plan.')]})
+      sec('Estrategia',{parrafos:[P('La comunidad participa desde el diseño: decide prioridades, horarios y formas de trabajo; la organización acompaña.',x1?'Recursos con que cuentan: '+x1.replace(/\.+$/,'')+'.':'Propuesta: anotar aquí equipo, presupuesto y tiempo disponibles, para dimensionar el plan.')]})
     ],[
       sec('Plan de acción',{tabla:tab(['Etapa','Acciones','Quién participa','Periodo','Resultado esperado'],[
         ['1. Punto de partida','Línea base y mapa de actores',quienes+'; equipo',per[0],'Diagnóstico compartido'],
@@ -2193,15 +2293,15 @@ function makeDiag(herr,resp){
         'Propuesta de narrativa, para ajustar con el equipo: si se realizan '+az.map(dxMin).join(', ')+' con '+ql+', entonces '+uniq(A.map(x=>dxMin(x.res))).join('; ')+', porque '+uniq(A.map(x=>x.mec)).join(' y ')+'.',
         'Si además '+dxMin(D.inter)+', entonces '+(cam?'se logra '+dxMin(camSin):'ocurre el cambio que buscan')+', siempre que '+(sup.length?sup.map(dxMin).join(' y '):'tengan tiempo, recursos y respaldo para aplicarlo')+'.'+(notas.length?' El eslabón más débil hoy: '+notas[0]+'.':'')]}),
       sec('Cómo usarla y cuándo revisarla',{lista:['Revisarla con el equipo y con participantes cada vez que haya datos nuevos; como señala Vogel, es proceso y producto a la vez.','Usar la tabla de supuestos como agenda de monitoreo: cada supuesto, una pregunta que se responde con datos.','Ajustarla cuando un supuesto no se cumpla, en lugar de forzar las actividades.']}),
-      (acc.push(['Sesión de dos horas para validar los resultados inmediatos propuestos: por cada actividad, el grupo completa «después de esto, las personas…»','Equipo con dos o tres participantes','Semana 1','Ruta de cambio validada']),acciones()),
-      sec('Referencias',{lista:DX_REFS_TDC})
+      (acc.push(['Sesión de dos horas para validar los resultados inmediatos propuestos: por cada actividad, el grupo completa «después de esto, las personas…»','Equipo con dos o tres participantes','Semana 1','Ruta de cambio validada']),acciones())
     ]];
   }
-  return {titulo,resumen,bloques,incognitas,metas};
+  const MR=dxMarco(herr,{org:quien,prob,det,act,cam});
+  return {titulo,resumen,bloques,incognitas:MR.incognitas,metas,pre:MR.pre,post:MR.post};
 }
 
 /* ---- generar: resultado inmediato + profundización con IA por bloques, en segundo plano ---- */
-function dxFlatten(v){ v.item.secciones=[].concat.apply([],v.blocks.map(b=>b.secciones)); dxSyncMetas(v.item); return v; }
+function dxFlatten(v){ v.item.secciones=[].concat.apply(v.pre||[],v.blocks.map(b=>b.secciones)).concat(v.post||[]); dxSyncMetas(v.item); return v; }
 function dxBlockNames(b){ return b.secciones.map(s=>s.titulo).filter(t=>t&&t!=='Referencias').join(', '); }
 function dxViewing(v){ const p=$('panel-sintro'); return !!(project&&dxUI.view===v&&saUI.area==='dx'&&p&&p.classList.contains('active')&&!$('projectView').classList.contains('hidden')); }
 function dxEditing(){ const a=document.activeElement; return !!(a&&a.closest&&a.closest('#dxRoot [data-p]')); }
@@ -2223,8 +2323,9 @@ async function dxGenerate(){
   const herr=dxUI.herr, base=makeDiag(herr,resp), sa=project.data.sa;
   // un paso = una sección (las referencias acompañan al último paso): llamadas cortas a la IA, una por una
   const pasos=[]; base.bloques.forEach(bl=>bl.forEach(s=>{ if(s.titulo==='Referencias'&&pasos.length) pasos[pasos.length-1].push(s); else pasos.push([s]); }));
-  const view={saved:false, herr, resp, doc:dxUI.doc, run:uid(), ctx:(sa&&sa.ctx)||{proyecto:project.name,organizacion:project.client},
+  const view={saved:false, herr, resp, doc:dxUI.doc, run:uid(), ctx:(sa&&sa.ctx)||project.data.saCtx||{proyecto:project.name,organizacion:project.client},
     item:dxNorm({id:'',herr,herramienta:dxName(herr),createdAt:new Date().toISOString(),titulo:base.titulo,resumen:base.resumen,secciones:[],incognitas:base.incognitas,metas:base.metas}),
+    pre:dxNorm({secciones:base.pre}).secciones, post:dxNorm({secciones:base.post}).secciones,
     blocks:pasos.map(secs=>({estado:'base',secciones:dxNorm({secciones:secs}).secciones}))};
   dxFlatten(view);
   dxUI.err=''; dxUI.typing=false; dxUI.view=view; dxUI.draft=view; dxNotice('');
@@ -2312,7 +2413,7 @@ function dxSyncMetas(it){
 }
 function dxProjRow(v){
   const it=v.item, E=canSA(), run=dxJob&&dxJob.view===v;
-  return `<span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${it.herr==='smart'&&hasTrack()?'<button class="btn small" onclick="gotoTab(\'planeacion\')">Ver metas en Planeación</button>':''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${E&&(v.dirty||(v.blocks&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!run))?`<button class="btn small ${v.dirty?'primary':''}" id="dxAddBtn" onclick="dxAdd()">${v.dirty?'Guardar cambios':'Actualizar en el proyecto'}</button>${v.dirty?'<span style="font-size:12px;color:var(--grey);">Hay correcciones sin guardar.</span>':''}`:''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">Aún no está guardado.${run?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${it.herr==='smart'&&hasTrack()?' Las metas llegan a Planeación estratégica.':''}</span>`:'')}`;
+  return `<span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${v.colocado&&hasTrack()?`<span style="font-size:12px;color:var(--grey);">Colocado: ${v.colocado.entregables} en Entregables, ${v.colocado.metas} en Planeación, ${v.colocado.indicadores} en Indicadores.</span>`:''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${E&&(v.dirty||(v.blocks&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!run))?`<button class="btn small ${v.dirty?'primary':''}" id="dxAddBtn" onclick="dxAdd()">${v.dirty?'Guardar cambios':'Actualizar en el proyecto'}</button>${v.dirty?'<span style="font-size:12px;color:var(--grey);">Hay correcciones sin guardar.</span>':''}`:''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">Aún no está guardado.${run?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${hasTrack()?' Al agregarlo, lo que corresponde llega solo a Entregables, Planeación estratégica e Indicadores.':''}</span>`:'')}`;
 }
 function dxTouch(v){ v.dirty=true; v.updated=false; const r=$('dxProjRow'); if(r) r.innerHTML=dxProjRow(v); }
 function dxEdit(el){
@@ -2411,12 +2512,12 @@ async function dxAdd(){
     const it=project.data.dx.find(x=>x.id===r.id), v=dxUI.view;
     v.item.id=r.id; v.saved=true; v.dirty=false; v.updated=!(dxJob&&dxJob.view===v)&&!!v.blocks&&v.blocks.some(x=>x.estado==='ia'); v.updateErr='';   // se conserva la misma vista: la IA puede seguir completándola
     if(dxUI.draft===v) dxUI.draft=null;
-    renderAll(); toast(it&&it.herr==='smart'&&hasTrack()?'Agregado. Las metas ya están en Planeación estratégica':'Diagnóstico agregado al proyecto');
+    v.colocado=r.colocado||null; renderAll(); const c=r.colocado, partes=c?[[c.entregables,'entregable(s) en Entregables'],[c.metas,'meta(s) en Planeación estratégica'],[c.indicadores,'indicador(es) en Indicadores']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]):[]; toast(partes.length?'Agregado al proyecto: '+partes.join(', '):'Diagnóstico agregado al proyecto');
   }catch(e){ if(!project||project.slug!==slug) return; if(b){ b.disabled=false; b.textContent='Agregar al proyecto'; } toast(e.message||'No se pudo agregar.',true); }
 }
 async function dxRemove(id){
   const it=project.data.dx.find(x=>x.id===id); if(!it) return;
-  if(!(await askConfirm('Quitar diagnóstico','Se quitará "'+it.titulo+'" del proyecto'+(it.herr==='smart'?', junto con las metas que llevó a Planeación estratégica':'')+'. No se puede deshacer.','Quitar',true))) return;
+  if(!(await askConfirm('Quitar diagnóstico','Se quitará "'+it.titulo+'" del proyecto'+(hasTrack()?', junto con lo que llevó a Entregables, Planeación estratégica e Indicadores (con sus estatus y valores)':'')+'. No se puede deshacer.','Quitar',true))) return;
   const slug=project.slug;
   try{ if(canEdit()) await flushNow(); const r=await api('dxDelete',{slug,id}); if(!project||project.slug!==slug) return; project.data=normalizeData(r.project.data); project.rev=r.project.rev; setSync('ok'); renderAll(); toast('Diagnóstico quitado'); }
   catch(e){ toast(e.message||'No se pudo quitar.',true); }
