@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sintropía Track</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%236B21F5%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2246%22%20text-anchor%3D%22middle%22%20font-family%3D%22Montserrat%2CArial%2CHelvetica%2Csans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2240%22%20fill%3D%22%23fff%22%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
@@ -525,6 +526,8 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTpKk8Apjp13v8
    UTILIDADES
 ========================================================= */
 const $ = id => document.getElementById(id);
+// Solo se abren ligas web o de correo: una liga «javascript:» guardada en el proyecto no se ejecuta.
+function safeUrl(u){ u=String(u==null?'':u).trim(); return /^(https?:\/\/|mailto:)/i.test(u)?u:(/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(u)?'https://'+u:'#'); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function pad(n){ return String(n).padStart(2,'0'); }
@@ -579,7 +582,7 @@ function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(
 function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
 
 // Antes de usar la IA se confirma que el Apps Script publicado es el que esta página espera (si no, las llamadas se quedarían esperando).
-const AI_VERSION=12; let aiOk=false, aiBg=false;
+const AI_VERSION=13; let aiOk=false, aiBg=false;
 async function aiReady(){
   if(aiOk) return;
   const viejo={error:'old',message:(session&&session.isSuper)?'El Apps Script publicado es una versión anterior a esta página. En Apps Script: Implementar > Administrar implementaciones > editar (lápiz) > Versión: «Nueva versión» > Implementar. Guardar el archivo no basta.':'La herramienta se está actualizando y la IA aún no está disponible. Avisa a Sintropía Social; mientras tanto queda la versión inmediata.'};
@@ -681,7 +684,10 @@ function showLogin(msg){
     $('loginSetup').innerHTML=`<div class="setup-warn">Falta configurar el ID de cliente de Google en este archivo (GOOGLE_CLIENT_ID). Sigue la guía de configuración y vuelve a publicar la página.</div>`;
   } else { $('loginSetup').innerHTML=''; renderGisButton($('gisBtn')); }
 }
+// Al cerrar sesión no queda en el navegador nada de lo que se estaba llenando (formulario y documento del plan).
+function saWipeLocal(){ try{ Object.keys(localStorage).forEach(k=>{ if(k.indexOf('sa_draft_')===0) localStorage.removeItem(k); }); }catch(e){} }
 function logout(){
+  saWipeLocal();
   const ses=rawSession(), wasPw=authMode==='pw';
   if(wasPw&&ses){ fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'logout',sessionToken:ses.token})}).catch(()=>{}); }
   setSession(null);
@@ -1162,7 +1168,7 @@ function renderDeliverables(){
         ?`<input type="text" class="name-input" value="${esc(a.name)}" onchange="setAct('${d.id}','${a.id}','name',this.value)"><textarea placeholder="Descripción de la actividad" style="margin-top:4px;font-size:12px;" onchange="setAct('${d.id}','${a.id}','desc',this.value)">${esc(a.desc||'')}</textarea><div style="margin-top:6px;">${dateCtl('act',a.id,'date',a.date,d.id)}</div>`
         :`<div class="act-name">${esc(a.name)}</div><div class="act-desc">${esc(a.desc||'')}</div><div class="act-date">${canDates()?dateCtl('act',a.id,'date',a.date,d.id):(a.date?fmt(a.date):'')}</div>`;
       const st=E?statusSelect(a.status,`setAct('${d.id}','${a.id}','status',this.value)`):`<span class="badge ${a.status}">${statusLabel(a.status)}</span>`;
-      const lk=E?`<input type="text" placeholder="Liga de evidencia" style="width:150px;font-size:11.5px;" value="${esc(a.link||'')}" onchange="setAct('${d.id}','${a.id}','link',this.value)">`:(a.link?`<a class="act-link" href="${esc(a.link)}" target="_blank" rel="noopener">Ver evidencia</a>`:`<span class="act-link disabled">Sin evidencia</span>`);
+      const lk=E?`<input type="text" placeholder="Liga de evidencia" style="width:150px;font-size:11.5px;" value="${esc(a.link||'')}" onchange="setAct('${d.id}','${a.id}','link',this.value)">`:(a.link?`<a class="act-link" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver evidencia</a>`:`<span class="act-link disabled">Sin evidencia</span>`);
       row.innerHTML=`<div>${left}</div>${st}${lk}${E?`<button class="remove-x" onclick="removeActivity('${d.id}','${a.id}')">Quitar</button>`:''}`;
       acts.appendChild(row);
     });
@@ -1234,7 +1240,7 @@ function renderTools(){
     const adm=E?`<div class="tool-actions"><input type="text" placeholder="Liga de descarga" style="max-width:220px;" value="${esc(item.link||'')}" onchange="setTool('${item.id}','link',this.value)"><select class="status-edit" onchange="setTool('${item.id}','status',this.value)"><option value="pendiente" ${item.status==='pendiente'?'selected':''}>Pendiente</option><option value="disponible" ${delivered?'selected':''}>Disponible</option></select></div>`:'';
     const ok=delivered&&item.link;
     card.innerHTML=`${head}${notice}${E?'':dueCtl}${E?`<div style="margin-top:10px;font-size:11.5px;color:var(--grey);">Fecha estimada: ${dateCtl('tool',item.id,'due',item.due)}</div>`:''}
-      <div class="tool-actions"><a class="dl-btn ${ok?'':'disabled'}" href="${esc(item.link||'#')}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline ${ok?'':'disabled'}" href="${esc(item.link||'#')}" target="_blank" rel="noopener">Vista previa</a></div>${adm}${subHtml(item)}`;
+      <div class="tool-actions"><a class="dl-btn ${ok?'':'disabled'}" href="${esc(safeUrl(item.link))}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline ${ok?'':'disabled'}" href="${esc(safeUrl(item.link))}" target="_blank" rel="noopener">Vista previa</a></div>${adm}${subHtml(item)}`;
     wrap.appendChild(card);
   });
 }
@@ -1245,7 +1251,7 @@ function subHtml(item){
   const items=item.subitems.map(s=>{
     const del=s.status==='disponible';
     const ctl=E?`<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><input type="text" class="mini-text" placeholder="Nombre" style="width:110px;" value="${esc(s.name)}" onchange="setSub('${item.id}','${s.id}','name',this.value)"><input type="text" class="mini-text" placeholder="Liga" style="width:100px;" value="${esc(s.link||'')}" onchange="setSub('${item.id}','${s.id}','link',this.value)"><select class="status-edit" onchange="setSub('${item.id}','${s.id}','status',this.value)"><option value="pendiente" ${!del?'selected':''}>Pendiente</option><option value="disponible" ${del?'selected':''}>Disponible</option></select><button class="remove-x" onclick="removeSub('${item.id}','${s.id}')">Quitar</button></span>`
-      :`<span style="display:flex;gap:8px;align-items:center;">${del&&s.link?`<a class="dl-btn" style="padding:4px 10px;font-size:11px;" href="${esc(s.link)}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline" style="padding:4px 10px;font-size:11px;" href="${esc(s.link)}" target="_blank" rel="noopener">Vista previa</a>`:''}<span class="badge ${del?'disponible':'pendiente'}">${del?'Disponible':'Pendiente'}</span></span>`;
+      :`<span style="display:flex;gap:8px;align-items:center;">${del&&s.link?`<a class="dl-btn" style="padding:4px 10px;font-size:11px;" href="${esc(safeUrl(s.link))}" target="_blank" rel="noopener">Descargar</a><a class="dl-btn outline" style="padding:4px 10px;font-size:11px;" href="${esc(safeUrl(s.link))}" target="_blank" rel="noopener">Vista previa</a>`:''}<span class="badge ${del?'disponible':'pendiente'}">${del?'Disponible':'Pendiente'}</span></span>`;
     return `<div class="sub-item"><span>${E?'':esc(s.name)}</span>${ctl}</div>`;
   }).join('');
   const open=openBlocks['sub_'+item.id]?' open':'';
