@@ -20,6 +20,7 @@
     --orange:#FF6B1A; --orange-dark:#B84A0C; --orange-light:#FFEFE5;
     --ink:#1F1B2E; --grey:#6B6878; --line:#E7E2F3; --white:#FFFFFF;
     --ok:#1F9D6B; --ok-light:#E6F6EE; --pending:#B7B2C6; --pending-light:#F1F0F4;
+    --blue:#2F6FD6; --blue-light:#E8F0FC; --archived:#6E6A7C; --archived-light:#ECEBEF; --yellow-light:#FCF2E2;
     --wa:#25D366; --red:#D9483D; --red-light:#FBEAE8; --yellow:#E0982A;
   }
   *{box-sizing:border-box;}
@@ -140,6 +141,7 @@
 
   .badge{font-size:11px; font-weight:600; padding:3px 9px; border-radius:14px; white-space:nowrap; display:inline-block;}
   .badge.entregado,.badge.disponible{background:var(--ok-light); color:var(--ok);} .badge.revision{background:var(--orange-light); color:var(--orange-dark);} .badge.pendiente{background:var(--pending-light); color:var(--grey);}
+  .badge.proceso{background:var(--purple-light); color:var(--purple-dark);} .badge.seguimiento{background:var(--blue-light); color:var(--blue);} .badge.pausa{background:var(--yellow-light); color:#8A5A12;} .badge.archivado{background:var(--archived-light); color:var(--archived);}
   .report-box{border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--purple-light); margin-bottom:20px;}
   .report-box .rtitle{font-weight:600; font-size:13.5px;} .report-box .rnote{font-size:11.5px; color:var(--grey);}
   .dl-btn{font-size:12px; font-weight:600; color:var(--white); background:var(--purple); text-decoration:none; padding:8px 16px; border-radius:8px; display:inline-block;}
@@ -213,7 +215,16 @@
   .gantt-label{font-size:12.5px; font-weight:600; cursor:pointer;}
   .gantt-track{position:relative; height:26px; background:var(--pending-light); border-radius:6px;}
   .gantt-bar{position:absolute; top:0; height:100%; border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:10.5px; color:var(--white); font-weight:600; white-space:nowrap; overflow:hidden;}
-  .gantt-bar.pendiente{background:var(--pending);} .gantt-bar.revision{background:var(--orange);} .gantt-bar.entregado{background:var(--ok);}
+  .gantt-bar.pendiente,.gantt-ms.pendiente{background:var(--pending);} .gantt-bar.revision,.gantt-ms.revision{background:var(--orange);} .gantt-bar.entregado,.gantt-ms.entregado{background:var(--ok);}
+  .gantt-bar.proceso,.gantt-ms.proceso{background:var(--purple);} .gantt-bar.seguimiento,.gantt-ms.seguimiento{background:var(--blue);} .gantt-bar.pausa,.gantt-ms.pausa{background:var(--yellow);} .gantt-bar.archivado,.gantt-ms.archivado{background:var(--archived); opacity:.55;}
+  .gantt-row.act{margin-bottom:4px;} .gantt-row.act .gantt-label{font-weight:400; font-size:11.5px; padding-left:14px; color:var(--ink); cursor:default; position:relative;} .gantt-row.act .gantt-label::before{content:''; position:absolute; left:3px; top:50%; width:6px; height:1px; background:var(--pending);}
+  .gantt-row.act .gantt-track{height:16px; background:transparent; border-bottom:1px dashed var(--line); border-radius:0;} .gantt-row.act .gantt-bar{border-radius:4px; font-size:9.5px; padding:0 6px;}
+  .gantt-ms{position:absolute; top:3px; width:10px; height:10px; transform:translateX(-50%) rotate(45deg); border-radius:2px;}
+  .gantt-nodate{font-size:10.5px; color:var(--grey); line-height:16px; padding-left:4px;}
+  .gantt-label .glink{display:block; font-weight:600; font-size:10.5px; color:var(--purple); text-decoration:none; margin-top:2px;}
+  .gantt-dates-row.act{margin:-2px 0 8px 204px; font-size:10.5px;}
+  .deliv-link{margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;} .deliv-link input{width:240px; font-size:11.5px;}
+  .act-dates{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:11px; color:var(--grey); margin-top:6px;}
   .gantt-today{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); opacity:.5;}
   .sub-timeline{display:none; margin:0 0 12px 190px; position:relative; height:20px;} .sub-timeline.show{display:block;}
   .sub-dot{position:absolute; top:2px; width:9px; height:9px; border-radius:50%; transform:translateX(-50%);}
@@ -416,7 +427,7 @@
         </div>
       </div>
       <div id="deliverables"></div>
-      <button class="add-row-btn hidden" id="addDelivBtn" onclick="addDeliverable()">Agregar entregable</button>
+      <div class="toolbar-row"><button class="add-row-btn hidden" id="addDelivBtn" onclick="addDeliverable()">Agregar entregable</button><button class="btn small hidden" id="sortDelivBtn" onclick="sortByDate()">Ordenar por fecha</button></div>
     </section>
 
     <section class="panel" id="panel-bitacora">
@@ -472,8 +483,13 @@
         <div id="ganttRows"></div>
         <div class="legend">
           <span><i class="dot" style="background:var(--pending)"></i> Pendiente</span>
+          <span><i class="dot" style="background:var(--purple)"></i> En proceso</span>
+          <span><i class="dot" style="background:var(--blue)"></i> En seguimiento</span>
           <span><i class="dot" style="background:var(--orange)"></i> En revisión</span>
+          <span><i class="dot" style="background:var(--yellow)"></i> En pausa</span>
           <span><i class="dot" style="background:var(--ok)"></i> Entregado</span>
+          <span><i class="dot" style="background:var(--archived);opacity:.55"></i> Archivado</span>
+          <span><i style="display:inline-block; width:9px; height:9px; transform:rotate(45deg); background:var(--grey); border-radius:2px;"></i> Actividad con una sola fecha</span>
           <span><i style="display:inline-block; width:2px; height:10px; background:var(--ink); opacity:.5;"></i> Hoy</span>
         </div>
       </div>
@@ -538,7 +554,13 @@ function dayOffset(a,b){ return Math.round((parseIso(a)-parseIso(b))/86400000); 
 function addDaysIso(s,n){ const d=parseIso(s); d.setDate(d.getDate()+n); return isoOf(d); }
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 function fmt(s,withYear){ if(!s) return ''; const d=parseIso(s); if(isNaN(d)) return s; return d.getDate()+' '+MESES[d.getMonth()]+(withYear?' '+d.getFullYear():''); }
-function statusLabel(s){ return s==='entregado'?'Entregado':(s==='revision'?'En revisión':'Pendiente'); }
+// Estatus de cronograma. «Archivado» queda fuera del cálculo de avance; solo «Entregado» cuenta como terminado.
+const ST_OPTS=[['pendiente','Pendiente'],['proceso','En proceso'],['seguimiento','En seguimiento'],['revision','En revisión'],['pausa','En pausa'],['entregado','Entregado'],['archivado','Archivado']];
+const ST_LABEL={}; ST_OPTS.forEach(o=>ST_LABEL[o[0]]=o[1]);
+function statusLabel(s){ return ST_LABEL[s]||'Pendiente'; }
+function stClass(s){ return ST_LABEL[s]?s:'pendiente'; }
+// Avance: actividades entregadas entre las que siguen vigentes (las archivadas no cuentan)
+function actProgress(){ let tot=0,done=0; project.data.deliverables.forEach(d=>{ if(d.status==='archivado') return; d.activities.forEach(a=>{ if(a.status==='archivado') return; tot++; if(a.status==='entregado') done++; }); }); return {tot,done,pct:tot?Math.round(done/tot*100):0}; }
 function roleLabel(r){ return r==='super'?'Admin general':(r==='admin'?'Admin de proyecto':'Coordinación'); }
 function slugify(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||'proyecto'; }
 function toast(msg,err){ const t=$('toast'); t.textContent=msg; t.className='show'+(err?' err':''); clearTimeout(toast._t); toast._t=setTimeout(()=>t.className='',3200); }
@@ -1015,7 +1037,7 @@ function renderProject(){
   $('delivDesc').textContent = canEdit() ? 'Cada entregable se abre en sus actividades. Puedes modificar nombres, fechas, estatus y ligas de evidencia.' : (canDates() ? 'Cada entregable se abre en sus actividades. Puedes cambiar las fechas; para otros cambios envía una sugerencia.' : 'Cada entregable se abre en sus actividades.');
   $('logDesc').textContent = canEdit() ? 'Registra, edita o elimina sesiones. Cualquier persona con acceso puede consultarlas y descargarlas.' : 'Consulta y descarga las sesiones registradas.';
   $('ganttDesc').textContent = canDates() ? 'Cambia las fechas de cada entregable y el cronograma se actualiza solo. El color y el avance dependen del estatus de cada entregable.' : 'El color y el avance se calculan a partir del estatus de cada entregable.';
-  ['editModeBtn','reportAdminControls','addDelivBtn','addToolBtn','addGoalBtn','addCompBtn'].forEach(id=>$(id).classList.toggle('hidden',!canEdit()));
+  ['editModeBtn','reportAdminControls','addDelivBtn','sortDelivBtn','addToolBtn','addGoalBtn','addCompBtn'].forEach(id=>$(id).classList.toggle('hidden',!canEdit()));
   if(!canEdit()){ $('logForm').classList.add('hidden'); }
   $('reportAdminControls').style.display=canEdit()?'flex':'none';
   renderAll();
@@ -1087,10 +1109,10 @@ async function changeDate(kind,id,field,val,parentId){
     const d=findD(id); const o={start:d.start,end:d.end}; o[field]=val;
     if(o.start&&o.end&&o.end<o.start){ toast('La fecha de fin no puede ser anterior a la de inicio.',true); renderAll(); return; }
     patch.deliverables=[{id,[field]:val}];
-  } else if(kind==='act'){ patch.activities=[{id,date:val}]; }
+  } else if(kind==='act'){ const a=findA(parentId,id); const o={start:a.start||'',date:a.date||''}; o[field]=val; if(o.start&&o.date&&o.date<o.start){ toast('La fecha de fin no puede ser anterior a la de inicio.',true); renderAll(); return; } patch.activities=[{id,[field]:val}]; }
   else if(kind==='tool'){ patch.tools=[{id,due:val}]; }
   if(canEdit()){
-    if(kind==='deliv') findD(id)[field]=val; else if(kind==='act') findA(parentId,id).date=val; else findT(id).due=val;
+    if(kind==='deliv') findD(id)[field]=val; else if(kind==='act') findA(parentId,id)[field]=val; else findT(id).due=val;
     persist(); renderAll(); return;
   }
   setSync('saving');
@@ -1147,27 +1169,27 @@ function renderReport(){
 }
 function setReportLink(){ const v=$('reportLinkInput').value.trim(); project.data.reportFinal.link=v; project.data.reportFinal.status=v?'entregado':'pendiente'; persist(); renderReport(); }
 function statusSelect(cur,handler){
-  return `<select class="status-edit" onclick="event.stopPropagation()" onchange="${handler}">${[['pendiente','Pendiente'],['revision','En revisión'],['entregado','Entregado']].map(o=>`<option value="${o[0]}" ${cur===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+  return `<select class="status-edit" onclick="event.stopPropagation()" onchange="${handler}">${ST_OPTS.map(o=>`<option value="${o[0]}" ${cur===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
 }
 function renderDeliverables(){
   const wrap=$('deliverables'); wrap.innerHTML='';
   let totalAct=0, doneAct=0; const E=canEdit();
   project.data.deliverables.forEach((d,i)=>{
-    d.activities.forEach(a=>{ totalAct++; if(a.status==='entregado') doneAct++; });
     const block=document.createElement('div'); block.className='deliv-block'+(openBlocks[d.id]?' open':'');
     const head=document.createElement('div'); head.className='deliv-head';
     const nameHtml=E?`<input type="text" class="name-input" value="${esc(d.name)}" onclick="event.stopPropagation()" onchange="setDeliv('${d.id}','name',this.value)">`:`<div class="deliv-name">${esc(d.name)}</div>`;
     const datesHtml=canDates()?`${dateCtl('deliv',d.id,'start',d.start)}<span>a</span>${dateCtl('deliv',d.id,'end',d.end)}`:`<span>${d.start?fmt(d.start):'Sin fecha'}${d.end?' a '+fmt(d.end):''}</span>`;
-    const statusHtml=E?statusSelect(d.status,`setDeliv('${d.id}','status',this.value)`):`<span class="badge ${d.status}">${statusLabel(d.status)}</span>`;
-    head.innerHTML=`<div class="deliv-index">${i+1}</div><div>${nameHtml}<div class="deliv-dates">${datesHtml}</div></div>${statusHtml}${E?`<button class="remove-x" onclick="event.stopPropagation(); removeDeliverable('${d.id}')">Eliminar</button>`:'<span></span>'}<span class="chev"></span>`;
+    const linkHtml=E?`<div class="deliv-link"><input type="text" placeholder="Liga de evidencia del entregable" value="${esc(d.link||'')}" onclick="event.stopPropagation()" onchange="setDeliv('${d.id}','link',this.value.trim())">${d.link?`<a class="act-link" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia</a>`:''}</div>`:(d.link?`<div class="deliv-link"><a class="act-link" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia del entregable</a></div>`:'');
+    const statusHtml=E?statusSelect(d.status,`setDeliv('${d.id}','status',this.value)`):`<span class="badge ${stClass(d.status)}">${statusLabel(d.status)}</span>`;
+    head.innerHTML=`<div class="deliv-index">${i+1}</div><div>${nameHtml}<div class="deliv-dates">${datesHtml}</div>${linkHtml}</div>${statusHtml}${E?`<button class="remove-x" onclick="event.stopPropagation(); removeDeliverable('${d.id}')">Eliminar</button>`:'<span></span>'}<span class="chev"></span>`;
     head.addEventListener('click',ev=>{ if(['SELECT','INPUT','BUTTON'].includes(ev.target.tagName)) return; block.classList.toggle('open'); openBlocks[d.id]=block.classList.contains('open'); });
     const acts=document.createElement('div'); acts.className='activities';
     d.activities.forEach(a=>{
       const row=document.createElement('div'); row.className='activity';
       const left=E
-        ?`<input type="text" class="name-input" value="${esc(a.name)}" onchange="setAct('${d.id}','${a.id}','name',this.value)"><textarea placeholder="Descripción de la actividad" style="margin-top:4px;font-size:12px;" onchange="setAct('${d.id}','${a.id}','desc',this.value)">${esc(a.desc||'')}</textarea><div style="margin-top:6px;">${dateCtl('act',a.id,'date',a.date,d.id)}</div>`
-        :`<div class="act-name">${esc(a.name)}</div><div class="act-desc">${esc(a.desc||'')}</div><div class="act-date">${canDates()?dateCtl('act',a.id,'date',a.date,d.id):(a.date?fmt(a.date):'')}</div>`;
-      const st=E?statusSelect(a.status,`setAct('${d.id}','${a.id}','status',this.value)`):`<span class="badge ${a.status}">${statusLabel(a.status)}</span>`;
+        ?`<input type="text" class="name-input" value="${esc(a.name)}" onchange="setAct('${d.id}','${a.id}','name',this.value)"><textarea placeholder="Descripción de la actividad" style="margin-top:4px;font-size:12px;" onchange="setAct('${d.id}','${a.id}','desc',this.value)">${esc(a.desc||'')}</textarea><div class="act-dates">Inicio ${dateCtl('act',a.id,'start',a.start,d.id)} fin o entrega ${dateCtl('act',a.id,'date',a.date,d.id)}</div>`
+        :`<div class="act-name">${esc(a.name)}</div><div class="act-desc">${esc(a.desc||'')}</div><div class="act-date">${canDates()?`<div class="act-dates">Inicio ${dateCtl('act',a.id,'start',a.start,d.id)} fin o entrega ${dateCtl('act',a.id,'date',a.date,d.id)}</div>`:((a.start?fmt(a.start)+' a ':'')+(a.date?fmt(a.date):''))}</div>`;
+      const st=E?statusSelect(a.status,`setAct('${d.id}','${a.id}','status',this.value)`):`<span class="badge ${stClass(a.status)}">${statusLabel(a.status)}</span>`;
       const lk=E?`<input type="text" placeholder="Liga de evidencia" style="width:150px;font-size:11.5px;" value="${esc(a.link||'')}" onchange="setAct('${d.id}','${a.id}','link',this.value)">`:(a.link?`<a class="act-link" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver evidencia</a>`:`<span class="act-link disabled">Sin evidencia</span>`);
       row.innerHTML=`<div>${left}</div>${st}${lk}${E?`<button class="remove-x" onclick="removeActivity('${d.id}','${a.id}')">Quitar</button>`:''}`;
       acts.appendChild(row);
@@ -1175,13 +1197,20 @@ function renderDeliverables(){
     if(E){ const r=document.createElement('div'); r.style.padding='10px 18px 14px 66px'; r.innerHTML=`<button class="add-row-btn" onclick="addActivity('${d.id}')">Agregar actividad</button>`; acts.appendChild(r); }
     block.appendChild(head); block.appendChild(acts); wrap.appendChild(block);
   });
+  const AP=actProgress(); totalAct=AP.tot; doneAct=AP.done;
   $('statTotal').textContent=project.data.deliverables.length; $('statActivities').textContent=totalAct; $('statDoneAct').textContent=doneAct; $('statSessions').textContent=project.data.logs.length;
 }
 function setDeliv(id,f,v){ const d=findD(id); if(f==='start'||f==='end'){ changeDate('deliv',id,f,v); return; } d[f]=v; persist(); renderAll(); }
 function setAct(did,aid,f,v){ findA(did,aid)[f]=v; persist(); renderAll(); }
-function addDeliverable(){ const d={id:uid(),name:'Nuevo entregable',start:'',end:'',status:'pendiente',activities:[]}; project.data.deliverables.push(d); openBlocks[d.id]=true; persist(); renderAll(); }
+// Orden cronológico: lo que tiene fecha primero (por inicio y luego por fin); lo que no tiene fecha, al final y en su orden actual
+const dStart=d=>d.start||d.end||'', aStart=a=>a.start||a.date||'';
+function byDate(get,getEnd){ return (x,y)=>{ const a=get(x),b=get(y); if(!a&&!b) return 0; if(!a) return 1; if(!b) return -1; return a<b?-1:a>b?1:((getEnd(x)||'')<(getEnd(y)||'')?-1:(getEnd(x)||'')>(getEnd(y)||'')?1:0); }; }
+const sortDelivs=list=>list.map((d,i)=>[d,i]).sort((p,q)=>byDate(x=>dStart(x[0]),x=>x[0].end)(p,q)||p[1]-q[1]).map(p=>p[0]);
+const sortActs=list=>list.map((a,i)=>[a,i]).sort((p,q)=>byDate(x=>aStart(x[0]),x=>x[0].date)(p,q)||p[1]-q[1]).map(p=>p[0]);
+function sortByDate(){ const D=project.data; D.deliverables=sortDelivs(D.deliverables); D.deliverables.forEach(d=>d.activities=sortActs(d.activities)); persist(); renderAll(); toast('Entregables y actividades ordenados por fecha'); }
+function addDeliverable(){ const d={id:uid(),name:'Nuevo entregable',start:'',end:'',status:'pendiente',link:'',activities:[]}; project.data.deliverables.push(d); openBlocks[d.id]=true; persist(); renderAll(); }
 async function removeDeliverable(id){ if(!(await askConfirm('Eliminar entregable','Se eliminará el entregable y todas sus actividades.','Eliminar',true))) return; project.data.deliverables=project.data.deliverables.filter(x=>x.id!==id); delete project.data.ganttObs[id]; persist(); renderAll(); }
-function addActivity(did){ findD(did).activities.push({id:uid(),name:'Nueva actividad',desc:'',date:'',status:'pendiente',link:''}); openBlocks[did]=true; persist(); renderAll(); }
+function addActivity(did){ findD(did).activities.push({id:uid(),name:'Nueva actividad',desc:'',start:'',date:'',status:'pendiente',link:''}); openBlocks[did]=true; persist(); renderAll(); }
 async function removeActivity(did,aid){ if(!(await askConfirm('Eliminar actividad','Se eliminará esta actividad.','Eliminar',true))) return; const d=findD(did); d.activities=d.activities.filter(a=>a.id!==aid); persist(); renderAll(); }
 
 /* =========================================================
@@ -1281,12 +1310,12 @@ function setGoal(id,f,v){ project.data.goals.find(g=>g.id===id)[f]=v; persist();
 function addGoal(){ project.data.goals.push({id:uid(),area:'',meta:'',resp:'',horizonte:''}); persist(); renderGoals(); }
 function removeGoal(id){ project.data.goals=project.data.goals.filter(g=>g.id!==id); persist(); renderGoals(); }
 function ganttRange(){
-  const s=project.data.deliverables.map(d=>d.start).filter(Boolean).sort(), e=project.data.deliverables.map(d=>d.end).filter(Boolean).sort();
+  const s=[], e=[]; project.data.deliverables.forEach(d=>{ if(d.start) s.push(d.start); if(d.end) e.push(d.end); d.activities.forEach(a=>{ if(a.start) s.push(a.start); if(a.date){ e.push(a.date); s.push(a.date); } }); });
+  s.sort(); e.sort();
   if(!s.length||!e.length) return null; const base=s[0], end=e[e.length-1]; return base<end?{base,end}:null;
 }
 function renderProgress(){
-  let tot=0,done=0; project.data.deliverables.forEach(d=>d.activities.forEach(a=>{tot++; if(a.status==='entregado') done++;}));
-  const pct=tot?Math.round(done/tot*100):0; $('progressPct').textContent=pct+'%'; $('progressFill').style.width=pct+'%';
+  const pct=actProgress().pct; $('progressPct').textContent=pct+'%'; $('progressFill').style.width=pct+'%';
   const r=ganttRange(), L=$('semaforoLight'); L.className='light';
   if(!r){ L.classList.add('yellow'); $('semaforoTitle').textContent='Sin fechas suficientes'; $('semaforoDesc').textContent='Agrega fechas de inicio y fin a los entregables.'; return; }
   const total=dayOffset(r.end,r.base), el=Math.min(total,Math.max(0,dayOffset(todayIso(),r.base))), exp=total>0?el/total*100:0;
@@ -1296,22 +1325,24 @@ function renderProgress(){
 }
 function renderGantt(){
   const r=ganttRange(), rows=$('ganttRows'), months=$('ganttMonths'); rows.innerHTML=''; months.innerHTML='';
-  if(!r){ rows.innerHTML='<p class="empty">Agrega fechas de inicio y fin a los entregables para ver el cronograma.</p>'; renderProgress(); return; }
+  if(!r){ rows.innerHTML='<p class="empty">Agrega fechas de inicio y fin a los entregables o a sus actividades para ver el cronograma.</p>'; renderProgress(); return; }
   const total=dayOffset(r.end,r.base); const MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const cur=parseIso(r.base); cur.setDate(1); const endD=parseIso(r.end); let html='';
   while(cur<=endD){ const pct=Math.max(0,dayOffset(isoOf(cur),r.base)/total*100); html+=`<span class="gantt-month-label" style="left:${pct}%">${MN[cur.getMonth()]}</span>`; cur.setMonth(cur.getMonth()+1); }
   months.innerHTML=html;
   const tp=Math.min(100,Math.max(0,dayOffset(todayIso(),r.base)/total*100));
-  project.data.deliverables.forEach(d=>{
-    if(!d.start||!d.end){ const row=document.createElement('div'); row.className='gantt-row'; row.innerHTML=`<div class="gantt-label">${esc(d.name)}</div><div class="gantt-track" style="display:flex;align-items:center;padding:0 10px;font-size:11px;color:var(--grey);">Sin fechas asignadas</div>`; rows.appendChild(row); return; }
+  const P=v=>Math.min(100,Math.max(0,dayOffset(v,r.base)/total*100));
+  sortDelivs(project.data.deliverables).forEach(d=>{
+    const glink=d.link?`<a class="glink" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia</a>`:'';
+    if(!d.start||!d.end){ const row=document.createElement('div'); row.className='gantt-row'; row.innerHTML=`<div class="gantt-label" onclick="toggleGanttSub('${d.id}')">${esc(d.name)}${glink}</div><div class="gantt-track" style="display:flex;align-items:center;padding:0 10px;font-size:11px;color:var(--grey);">Sin fechas asignadas</div>`; rows.appendChild(row);
+      if(canDates()){ const dr=document.createElement('div'); dr.className='gantt-dates-row'; dr.innerHTML=`Fechas: ${dateCtl('deliv',d.id,'start',d.start)} a ${dateCtl('deliv',d.id,'end',d.end)}`; rows.appendChild(dr); }
+      ganttActs(d,rows,P,tp); return; }
     const sp=Math.max(0,dayOffset(d.start,r.base)/total*100), ep=Math.min(100,dayOffset(d.end,r.base)/total*100), wp=Math.max(2,ep-sp);
     const row=document.createElement('div'); row.className='gantt-row';
-    row.innerHTML=`<div class="gantt-label" onclick="toggleGanttSub('${d.id}')">${esc(d.name)}</div><div class="gantt-track"><div class="gantt-bar ${d.status}" style="left:${sp}%;width:${wp}%;">${statusLabel(d.status)}</div><div class="gantt-today" style="left:${tp}%;"></div></div>`;
+    row.innerHTML=`<div class="gantt-label" onclick="toggleGanttSub('${d.id}')" title="Mostrar u ocultar sus actividades">${esc(d.name)}${glink}</div><div class="gantt-track"><div class="gantt-bar ${stClass(d.status)}" style="left:${sp}%;width:${wp}%;">${statusLabel(d.status)}</div><div class="gantt-today" style="left:${tp}%;"></div></div>`;
     rows.appendChild(row);
     if(canDates()){ const dr=document.createElement('div'); dr.className='gantt-dates-row'; dr.innerHTML=`Fechas: ${dateCtl('deliv',d.id,'start',d.start)} a ${dateCtl('deliv',d.id,'end',d.end)}`; rows.appendChild(dr); }
-    const sub=document.createElement('div'); sub.className='sub-timeline'+(openGanttSub[d.id]?' show':'');
-    sub.innerHTML=d.activities.filter(a=>a.date).map(a=>`<div class="sub-dot ${a.status}" style="left:${Math.min(100,Math.max(0,dayOffset(a.date,r.base)/total*100))}%;" title="${esc(a.name)} - ${fmt(a.date)} - ${statusLabel(a.status)}"></div>`).join('');
-    rows.appendChild(sub);
+    ganttActs(d,rows,P,tp);
     const obs=project.data.ganttObs[d.id]||{text:'',required:false}; const orow=document.createElement('div'); orow.className='gantt-obs-row';
     if(canEdit()&&openObs[d.id]){
       orow.innerHTML=`<div style="flex:1;"><textarea id="obsIn_${d.id}" placeholder="Observación para este entregable">${esc(obs.text||'')}</textarea><div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;"><label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin:0;"><input type="checkbox" id="obsReq_${d.id}" ${obs.required?'checked':''} style="width:auto;"> Requiere atención</label><button class="btn small primary" onclick="saveObs('${d.id}')">Guardar</button><button class="btn small" onclick="openObs['${d.id}']=false; renderGantt()">Cerrar</button></div></div>`;
@@ -1322,7 +1353,22 @@ function renderGantt(){
   });
   renderProgress();
 }
-function toggleGanttSub(id){ openGanttSub[id]=!openGanttSub[id]; renderGantt(); }
+// Actividades del entregable, debajo de su barra y en orden de fecha. Con inicio y fin se dibujan como barra; con una sola fecha, como rombo.
+function ganttActs(d,rows,P,tp){
+  if(openGanttSub[d.id]===false||!d.activities.length) return;
+  sortActs(d.activities).forEach(a=>{
+    const s=a.start||'', e=a.date||'', c=stClass(a.status), lab=statusLabel(a.status), tit=esc(a.name)+(s?' · '+fmt(s):'')+(e?' a '+fmt(e):'')+' · '+lab;
+    let mark;
+    if(s&&e&&e>=s){ const sp=P(s), wp=Math.max(1.5,P(e)-sp); mark=`<div class="gantt-bar ${c}" style="left:${sp}%;width:${wp}%;" title="${tit}">${wp>9?lab:''}</div>`; }
+    else if(s||e) mark=`<div class="gantt-ms ${c}" style="left:${P(e||s)}%;" title="${tit}"></div>`;
+    else mark=`<div class="gantt-nodate">Sin fecha</div>`;
+    const row=document.createElement('div'); row.className='gantt-row act';
+    row.innerHTML=`<div class="gantt-label" title="${tit}">${esc(a.name)}${a.link?`<a class="glink" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver evidencia</a>`:''}</div><div class="gantt-track">${mark}<div class="gantt-today" style="left:${tp}%;"></div></div>`;
+    rows.appendChild(row);
+    if(canDates()){ const dr=document.createElement('div'); dr.className='gantt-dates-row act'; dr.innerHTML=`Inicio ${dateCtl('act',a.id,'start',a.start,d.id)} fin o entrega ${dateCtl('act',a.id,'date',a.date,d.id)}`; rows.appendChild(dr); }
+  });
+}
+function toggleGanttSub(id){ openGanttSub[id]=openGanttSub[id]===false?true:false; renderGantt(); }
 function saveObs(id){ project.data.ganttObs[id]={text:$('obsIn_'+id).value.trim(),required:$('obsReq_'+id).checked}; openObs[id]=false; persist(); renderGantt(); }
 
 /* =========================================================
@@ -1346,8 +1392,8 @@ function removeComp(id){ project.data.comps=project.data.comps.filter(c=>c.id!==
    DESCARGAS (todos los roles)
 ========================================================= */
 function model(){
-  const d=project.data; let tot=0,done=0; d.deliverables.forEach(x=>x.activities.forEach(a=>{tot++; if(a.status==='entregado') done++;}));
-  return {name:project.name,client:project.client,vig:fmt(project.expiresAt,true),status:project.status,avance:tot?Math.round(done/tot*100):0,tot,done,d,generated:fmt(todayIso(),true)};
+  const d=project.data, AP=actProgress(), tot=AP.tot, done=AP.done;
+  return {name:project.name,client:project.client,vig:fmt(project.expiresAt,true),status:project.status,avance:AP.pct,tot,done,d,generated:fmt(todayIso(),true)};
 }
 function fileBase(){ return slugify(project.name); }
 function download(blob,name){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); }
@@ -1374,7 +1420,8 @@ function exportProjectPDF(){
     w.title(m.name,(m.client?m.client+'\n':'')+'Vigencia hasta '+m.vig+' - Avance general '+m.avance+'% ('+m.done+' de '+m.tot+' actividades entregadas)\nGenerado el '+m.generated);
     w.h('Entregables y actividades');
     m.d.deliverables.forEach((d,i)=>{ w.p((i+1)+'. '+d.name+'  ['+statusLabel(d.status)+']'+(d.start||d.end?'  '+fmt(d.start,true)+' a '+fmt(d.end,true):''),{bold:true,after:0.5});
-      d.activities.forEach(a=>{ w.p('- '+a.name+' ('+statusLabel(a.status)+(a.date?', '+fmt(a.date,true):'')+')'+(a.desc?': '+a.desc:'')+(a.link?'\n  Evidencia: '+a.link:''),{size:9.5,indent:4,after:0.5}); }); w.p('',{after:1.5}); });
+      if(d.link) w.p('Evidencia del entregable: '+d.link,{size:9.5,indent:4,after:0.5});
+      d.activities.forEach(a=>{ w.p('- '+a.name+' ('+statusLabel(a.status)+(a.start?', '+fmt(a.start,true)+' a':'')+(a.date?(a.start?' ':', ')+fmt(a.date,true):'')+')'+(a.desc?': '+a.desc:'')+(a.link?'\n  Evidencia: '+a.link:''),{size:9.5,indent:4,after:0.5}); }); w.p('',{after:1.5}); });
     if(m.d.reportFinal.link) w.p('Informe final: '+m.d.reportFinal.link,{size:9.5});
     w.h('Bitácora de sesiones'); if(!m.d.logs.length) w.p('Sin sesiones registradas.',{size:9.5});
     [...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).forEach(l=>{ w.p(fmt(l.date,true)+' - '+l.dyn,{bold:true,after:0.5,size:10}); w.p(attendText(l)+(l.notes?'\n'+l.notes:''),{size:9.5,indent:4}); });
@@ -1392,7 +1439,7 @@ function exportLogWord(){
 }
 function exportProjectWord(){
   try{ const m=model(), d=m.d; let b=`<h1>${esc(m.name)}</h1><p class="m">${m.client?esc(m.client)+'<br>':''}Vigencia hasta ${esc(m.vig)} - Avance general ${m.avance}% (${m.done} de ${m.tot} actividades entregadas)<br>Generado el ${esc(m.generated)}</p>`;
-    b+='<h2>Entregables y actividades</h2>'+d.deliverables.map((x,i)=>`<p><b>${i+1}. ${esc(x.name)}</b> - ${statusLabel(x.status)}${x.start||x.end?' - '+esc(fmt(x.start,true))+' a '+esc(fmt(x.end,true)):''}</p><table><tr><th>Actividad</th><th>Descripción</th><th>Fecha</th><th>Estatus</th><th>Evidencia</th></tr>${x.activities.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.desc||'')}</td><td>${esc(fmt(a.date,true))}</td><td>${statusLabel(a.status)}</td><td>${esc(a.link||'')}</td></tr>`).join('')||'<tr><td colspan="5">Sin actividades.</td></tr>'}</table>`).join('')+(d.reportFinal.link?`<p>Informe final: ${esc(d.reportFinal.link)}</p>`:'');
+    b+='<h2>Entregables y actividades</h2>'+d.deliverables.map((x,i)=>`<p><b>${i+1}. ${esc(x.name)}</b> - ${statusLabel(x.status)}${x.start||x.end?' - '+esc(fmt(x.start,true))+' a '+esc(fmt(x.end,true)):''}${x.link?' - Evidencia: '+esc(x.link):''}</p><table><tr><th>Actividad</th><th>Descripción</th><th>Fecha</th><th>Estatus</th><th>Evidencia</th></tr>${x.activities.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.desc||'')}</td><td>${a.start?esc(fmt(a.start,true))+' a ':''}${esc(fmt(a.date,true))}</td><td>${statusLabel(a.status)}</td><td>${esc(a.link||'')}</td></tr>`).join('')||'<tr><td colspan="5">Sin actividades.</td></tr>'}</table>`).join('')+(d.reportFinal.link?`<p>Informe final: ${esc(d.reportFinal.link)}</p>`:'');
     b+='<h2>Bitácora de sesiones</h2><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>'+([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${esc(l.notes||'')}</td></tr>`).join('')||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>')+'</table>';
     b+='<h2>Caja de herramientas</h2><table><tr><th>Herramienta</th><th>Categoría</th><th>Estatus</th><th>Fecha estimada</th><th>Nota</th></tr>'+d.tools.map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.tag)}</td><td>${t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'}</td><td>${esc(fmt(t.due,true))}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>';
     b+='<h2>Planeación estratégica</h2><table><tr><th>Prioridad</th><th>Meta SMART</th><th>Responsable</th><th>Horizonte</th></tr>'+d.goals.map(g=>`<tr><td>${esc(g.area)}</td><td>${esc(g.meta)}</td><td>${esc(g.resp)}</td><td>${esc(g.horizonte)}</td></tr>`).join('')+'</table>';
@@ -1407,7 +1454,7 @@ function exportLogExcel(){
 function exportProjectExcel(){
   try{ const m=model(), d=m.d; const wb=XLSX.utils.book_new(); const add=(rows,name,empty)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[empty]),name);
     add([{Concepto:'Proyecto',Valor:m.name},{Concepto:'Cliente',Valor:m.client||''},{Concepto:'Vigencia hasta',Valor:project.expiresAt},{Concepto:'Estatus del proyecto',Valor:m.status},{Concepto:'Avance general (%)',Valor:m.avance},{Concepto:'Actividades entregadas',Valor:m.done+' de '+m.tot},{Concepto:'Informe final',Valor:d.reportFinal.link||''},{Concepto:'Generado el',Valor:todayIso()}],'Resumen',{});
-    const acts=[]; d.deliverables.forEach((x,i)=>{ if(!x.activities.length) acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,Actividad:'',Descripción:'',Fecha:'',Estatus:'',Evidencia:''}); x.activities.forEach(a=>acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,Actividad:a.name,Descripción:a.desc||'',Fecha:a.date,Estatus:statusLabel(a.status),Evidencia:a.link||''})); });
+    const acts=[]; d.deliverables.forEach((x,i)=>{ if(!x.activities.length) acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,'Evidencia del entregable':x.link||'',Actividad:'',Descripción:'','Inicio actividad':'',Fecha:'',Estatus:'',Evidencia:''}); x.activities.forEach(a=>acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,'Evidencia del entregable':x.link||'',Actividad:a.name,Descripción:a.desc||'','Inicio actividad':a.start||'',Fecha:a.date,Estatus:statusLabel(a.status),Evidencia:a.link||''})); });
     add(acts,'Entregables',{});
     add([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>({Fecha:l.date,Actividad:l.dyn,Asistencia:l.attendCount,Asistentes:l.mode==='detailed'?(l.attendees||[]).map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join('; '):'',Notas:l.notes||''})),'Bitacora',{Fecha:'Sin sesiones'});
     const tools=[]; d.tools.forEach(t=>{ tools.push({Herramienta:t.name,Categoría:t.tag,Material:'',Estatus:t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente','Fecha estimada':t.due,Liga:t.link||'',Nota:t.note||''}); t.subitems.forEach(s=>tools.push({Herramienta:t.name,Categoría:t.tag,Material:s.name,Estatus:s.status==='disponible'?'Disponible':'Pendiente','Fecha estimada':'',Liga:s.link||'',Nota:''})); });
