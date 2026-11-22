@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Repositorio bibliográfico · Sintropía Track</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--purple:#6B21F5;--purple-dark:#5214C4;--purple-light:#F2ECFE;--orange:#FF6B1A;--orange-dark:#B84A0C;--orange-light:#FFEFE5;--ink:#1F1B2E;--grey:#6B6878;--line:#E7E2F3;--ok:#1F9D6B;--ok-light:#E6F6EE;--red:#D9483D;--red-light:#FBEAE8;}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Open Sans',Arial,sans-serif;color:var(--ink);background:#fff;font-size:14px;line-height:1.5}
+h1,h2,h3,h4{font-family:'Montserrat','Open Sans',sans-serif;margin:0 0 6px}
+.wrap{padding:14px 16px 40px;max-width:1100px;margin:0 auto}
+.btn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 13px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--purple)}
+.btn.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.sm{padding:4px 10px;font-size:11.5px}
+.btn.danger{color:var(--red);border-color:#F2C4BF}
+.btn:disabled{opacity:.55;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+input[type=text],input[type=number],input[type=url],input[type=search],select,textarea{width:100%;font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+textarea{min-height:70px;resize:vertical}
+label{font-size:12px;font-weight:600;display:block;margin:8px 0 3px}
+.note{font-size:12px;color:var(--grey)}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;margin-top:10px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--purple-light);color:var(--purple-dark)}
+.chip.or{background:var(--orange-light);color:var(--orange-dark)}
+.chip.ok{background:var(--ok-light);color:var(--ok)}
+.msg{padding:9px 12px;border-radius:8px;font-size:13px;margin:8px 0}
+.msg.err{background:var(--red-light);color:#8E2A22}
+.msg.ok{background:var(--ok-light);color:#11603F}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.modal{position:fixed;inset:0;background:rgba(31,27,46,.45);display:flex;align-items:center;justify-content:center;padding:14px 12px;z-index:50}
+.modal .box{background:#fff;border-radius:14px;max-width:720px;width:100%;padding:18px 20px;max-height:calc(100vh - 28px);overflow:auto}
+.hidden{display:none!important}
+.empty{color:var(--grey);font-size:13px;padding:14px 0}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--purple-light);border-top-color:var(--purple);border-radius:50%;animation:g 0.8s linear infinite;vertical-align:-2px}
+@keyframes g{to{transform:rotate(360deg)}}
+@media (max-width:700px){.grid2,.grid4{grid-template-columns:1fr}}
+
+.cats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
+.cat{font:inherit;font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;cursor:pointer;color:var(--ink)}
+.cat.on{background:var(--purple);border-color:var(--purple);color:#fff}
+.cat .n{opacity:.7;font-weight:400;margin-left:4px}
+.cita{border:1px solid var(--line);border-left:4px solid var(--purple);border-radius:10px;padding:12px 14px;margin-top:10px;background:#fff}
+.cita q{display:block;font-style:italic;font-size:14px;line-height:1.55;quotes:"“" "”"}
+.cita .meta{font-size:12px;color:var(--grey);margin-top:6px}
+.cita .apa{font-size:12px;background:#FAF8FF;border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-top:8px}
+.cita .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+mark{background:rgba(255,107,26,.18);color:var(--orange-dark);border-radius:3px;padding:0 2px}
+.res{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:flex-start}
+.res input[type=checkbox]{margin-top:4px}
+.catrow{display:flex;gap:8px;align-items:center;margin-top:6px}
+.catrow input{flex:1}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="note"><span class="spin"></span> Cargando el repositorio…</p></div>
+
+<div class="modal hidden" id="mCita"><div class="box">
+  <h3 id="mCitaT">Agregar cita</h3>
+  <div class="grid2">
+    <div><label>Categoría</label><select id="fCat"></select></div>
+    <div><label>Indicador o tema</label><input type="text" id="fInd" maxlength="200"></div>
+  </div>
+  <label>Cita textual *</label><textarea id="fCita" maxlength="6000" style="min-height:110px"></textarea>
+  <div class="grid4">
+    <div><label>Autoría</label><input type="text" id="fAut" maxlength="300" placeholder="Apellido, N."></div>
+    <div><label>Año</label><input type="text" id="fAnio" maxlength="12"></div>
+    <div><label>Página</label><input type="text" id="fPag" maxlength="30"></div>
+    <div><label>Población</label><input type="text" id="fPob" maxlength="300"></div>
+  </div>
+  <label>Publicación (título, revista o editorial)</label><input type="text" id="fPub" maxlength="400">
+  <label>Referencia en APA <span class="note">(se arma sola si la dejas vacía)</span></label><input type="text" id="fApa" maxlength="1500">
+  <div class="grid2">
+    <div><label>Liga a la fuente</label><input type="url" id="fLink" maxlength="1500" placeholder="https://"></div>
+    <div><label>Comentarios</label><input type="text" id="fCom" maxlength="2000"></div>
+  </div>
+  <div id="fMsg"></div>
+  <div class="row" style="margin-top:12px"><button class="btn primary" id="fGo">Guardar</button><button class="btn" onclick="cerrar('mCita')">Cancelar</button></div>
+</div></div>
+
+<div class="modal hidden" id="mCats"><div class="box">
+  <h3>Categorías del repositorio</h3>
+  <p class="note">Solo las categorías que definas aparecen en el repositorio de este proyecto. Si quitas una, sus citas pasan a "Sin categoría"; si cambias su nombre, sus citas se renombran.</p>
+  <div id="catList"></div>
+  <div class="row" style="margin-top:8px"><button class="btn sm" onclick="catAdd()">Agregar categoría</button></div>
+  <div id="catMsg"></div>
+  <div class="row" style="margin-top:14px"><button class="btn primary" id="catGo" onclick="catSave()">Guardar categorías</button><button class="btn" onclick="cerrar('mCats')">Cancelar</button></div>
+</div></div>
+
+<div class="modal hidden" id="mPdf"><div class="box" style="max-width:860px">
+  <h3>Buscar citas en un PDF</h3>
+  <p class="note">El PDF se lee aquí, en tu navegador: no se sube a ningún servidor. Busca una palabra o frase, revisa las coincidencias (con la oración anterior y la siguiente) y agrega al repositorio las que sirvan.</p>
+  <input type="file" id="pFile" accept="application/pdf">
+  <div id="pInfo" class="note" style="margin-top:6px"></div>
+  <div id="pBox" class="hidden">
+    <div class="grid2" style="margin-top:6px">
+      <div><label>Autoría (se aplica a todas)</label><input type="text" id="pAut"></div>
+      <div><label>Año</label><input type="text" id="pAnio"></div>
+      <div><label>Publicación</label><input type="text" id="pPub"></div>
+      <div><label>Categoría</label><select id="pCat"></select></div>
+      <div><label>Indicador o tema</label><input type="text" id="pInd"></div>
+      <div><label>Población</label><input type="text" id="pPob"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><input type="search" id="pQ" placeholder="Palabra o frase a buscar" style="flex:1"><button class="btn primary" onclick="pBuscar()">Buscar</button></div>
+    <div id="pRes"></div>
+  </div>
+  <div class="row" style="margin-top:14px"><button class="btn primary hidden" id="pGo" onclick="pAgregar()">Agregar las seleccionadas</button><button class="btn" onclick="cerrar('mPdf')">Cerrar</button></div>
+</div></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const escRx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const safe=u=>/^https:\/\//i.test(String(u||''))?u:'';
+const SIN='Sin categoría';
+const B=(()=>{ try{ return window.parent!==window&&window.parent.TrackBridge&&window.parent.TrackBridge.info()?window.parent.TrackBridge:null; }catch(e){ return null; } })();
+let INFO=null, CATS=[], CITAS=[], F={cat:'',ind:'',aut:'',anio:'',q:''}, editId='', PUEDE=false;
+
+function fuera(){ $('app').innerHTML='<h2>Repositorio bibliográfico</h2><p class="msg err">Esta herramienta se abre desde la Caja de herramientas de Sintropía Track, dentro de un proyecto.</p>'; }
+async function cargar(){
+  if(!B) return fuera();
+  INFO=B.info();
+  try{ const r=await B.api('repoList'); CATS=r.cats; CITAS=r.citas; PUEDE=!!r.puede; pintar(); }
+  catch(e){ $('app').innerHTML='<p class="msg err">'+esc(e.message||'No se pudo abrir el repositorio.')+'</p>'; }
+}
+function aplicar(r){ if(r.cats) CATS=r.cats; if(r.citas) CITAS=r.citas; }
+function catsVisibles(){ const n=CATS.map(c=>c.nombre); if(CITAS.some(c=>c.categoria===SIN)) n.push(SIN); return n; }
+function pasa(c,omit){
+  if(omit!=='cat'&&F.cat&&c.categoria!==F.cat) return false;
+  if(omit!=='ind'&&F.ind&&c.indicador!==F.ind) return false;
+  if(omit!=='aut'&&F.aut&&c.autor!==F.aut) return false;
+  if(omit!=='anio'&&F.anio&&c.anio!==F.anio) return false;
+  if(F.q){ const t=(c.cita+' '+c.autor+' '+c.publicacion+' '+c.indicador+' '+c.comentarios+' '+c.poblacion).toLowerCase(); if(!F.q.toLowerCase().split(/\s+/).every(w=>t.includes(w))) return false; }
+  return true;
+}
+const filtradas=()=>CITAS.filter(c=>pasa(c));
+function opciones(campo,omit,orden){
+  const set=[...new Set(CITAS.filter(c=>pasa(c,omit)).map(c=>c[campo]).filter(Boolean))];
+  return orden==='num'?set.sort((a,b)=>String(b).localeCompare(String(a))):set.sort((a,b)=>a.localeCompare(b,'es'));
+}
+function sel(id,campo,omit,label,orden){
+  const ops=opciones(campo,omit,orden); if(F[omit]&&!ops.includes(F[omit])) ops.unshift(F[omit]);
+  return `<div><label>${label}</label><select id="${id}" onchange="F.${omit}=this.value;pintar()"><option value="">Todos</option>${ops.map(o=>`<option ${F[omit]===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
+}
+function pintar(){
+  const vis=catsVisibles(), lista=filtradas();
+  const cuenta=n=>CITAS.filter(c=>c.categoria===n&&pasa(c,'cat')).length;
+  const hl=t=>{ let h=esc(t); if(F.q) F.q.split(/\s+/).filter(w=>w.length>2).forEach(w=>{ h=h.replace(new RegExp('('+escRx(esc(w))+')','gi'),'<mark>$1</mark>'); }); return h; };
+  $('app').innerHTML=`
+  <div class="row"><div><h2 style="margin:0">Repositorio bibliográfico</h2><div class="note">${esc(INFO.name)} · ${CITAS.length} ${CITAS.length===1?'cita':'citas'} en ${CATS.length} ${CATS.length===1?'categoría':'categorías'}</div></div><span class="sp"></span>
+    ${PUEDE?`<button class="btn primary" onclick="abrirCita()">Agregar cita</button><button class="btn" onclick="abrirPdf()">Buscar citas en un PDF</button><button class="btn" onclick="abrirCats()">Categorías</button>`:''}
+    <button class="btn" onclick="descargar()" ${lista.length?'':'disabled'}>Descargar PDF</button>${PUEDE?`<button class="btn orange" onclick="aReporte()">${B.inReport('repo','repo')?'Actualizar en el reporte':'Agregar al reporte final'}</button>`:''}</div>
+  <div class="cats"><button class="cat ${F.cat?'':'on'}" onclick="F.cat='';pintar()">Todas<span class="n">${CITAS.filter(c=>pasa(c,'cat')).length}</span></button>${vis.map(n=>`<button class="cat ${F.cat===n?'on':''}" onclick="F.cat=${esc(JSON.stringify(n))};pintar()">${esc(n)}<span class="n">${cuenta(n)}</span></button>`).join('')}</div>
+  <div class="grid4" style="margin-top:4px">
+    <div><label>Buscar</label><input type="search" id="q" value="${esc(F.q)}" placeholder="Palabras de la cita, autoría…"></div>
+    ${sel('fI','indicador','ind','Indicador o tema')}${sel('fA','autor','aut','Autoría')}${sel('fY','anio','anio','Año','num')}
+  </div>
+  ${(F.cat||F.ind||F.aut||F.anio||F.q)?`<div class="row" style="margin-top:8px"><span class="note">${lista.length} de ${CITAS.length}</span><button class="btn sm" onclick="F={cat:'',ind:'',aut:'',anio:'',q:''};pintar()">Limpiar filtros</button></div>`:''}
+  <div id="lista">${lista.length?lista.map(c=>`<div class="cita"><div class="row"><span class="chip ${c.categoria===SIN?'or':''}">${esc(c.categoria)}</span>${c.indicador?`<span class="note">${esc(c.indicador)}</span>`:''}</div>
+     <q style="margin-top:6px">${hl(c.cita)}</q>
+     <div class="meta">${esc([c.autor,c.anio,c.publicacion,c.pagina?'p. '+c.pagina:'',c.poblacion?'Población: '+c.poblacion:''].filter(Boolean).join(' · '))}</div>
+     ${c.comentarios?`<div class="meta">${esc(c.comentarios)}</div>`:''}
+     ${c.apa?`<div class="apa">${esc(c.apa)}</div>`:''}
+     <div class="acts">${c.apa?`<button class="btn sm" onclick="copiar(${esc(JSON.stringify(c.apa))},this)">Copiar APA</button>`:''}<button class="btn sm" onclick="copiar(${esc(JSON.stringify('“'+c.cita+'” ('+[c.autor,c.anio,c.pagina?'p. '+c.pagina:''].filter(Boolean).join(', ')+')'))},this)">Copiar cita</button>${safe(c.link)?`<a class="btn sm" href="${esc(c.link)}" target="_blank" rel="noopener">Fuente</a>`:''}${PUEDE?`<button class="btn sm" onclick="abrirCita('${c.id}')">Editar</button><button class="btn sm danger" onclick="quitar('${c.id}')">Quitar</button>`:''}</div></div>`).join('')
+    :`<p class="empty">${CITAS.length?'Ninguna cita coincide con los filtros.':(PUEDE?'Aún no hay citas. Agrega la primera o búscalas en un PDF.':'Aún no hay citas en este repositorio.')}</p>`}</div>`;
+  const q=$('q'); q.oninput=()=>{ clearTimeout(q._t); q._t=setTimeout(()=>{ F.q=q.value.trim(); const pos=q.selectionStart; pintar(); const n=$('q'); n.focus(); try{ n.setSelectionRange(pos,pos); }catch(e){} },250); };
+}
+function copiar(t,b){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ const o=b.textContent; b.textContent='Copiado'; setTimeout(()=>b.textContent=o,1300); },()=>B.toast('No se pudo copiar.',true)); }
+function cerrar(id){ $(id).classList.add('hidden'); }
+function verFrame(){ try{ window.frameElement&&window.frameElement.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} }
+function optsCat(v){ return CATS.map(c=>`<option ${v===c.nombre?'selected':''}>${esc(c.nombre)}</option>`).join('')+`<option ${v===SIN?'selected':''}>${SIN}</option>`; }
+function abrirCita(id){
+  const c=id?CITAS.find(x=>x.id===id):{categoria:F.cat||(CATS[0]?CATS[0].nombre:SIN)}; editId=id||'';
+  $('mCitaT').textContent=id?'Editar cita':'Agregar cita'; $('fCat').innerHTML=optsCat(c.categoria);
+  [['fInd','indicador'],['fCita','cita'],['fAut','autor'],['fAnio','anio'],['fPag','pagina'],['fPob','poblacion'],['fPub','publicacion'],['fApa','apa'],['fLink','link'],['fCom','comentarios']].forEach(([i,k])=>$(i).value=c[k]||'');
+  $('fMsg').innerHTML=''; $('mCita').classList.remove('hidden'); verFrame(); $('fCita').focus();
+}
+$('fGo').onclick=async()=>{
+  const cita={id:editId,categoria:$('fCat').value,indicador:$('fInd').value,cita:$('fCita').value.trim(),autor:$('fAut').value,anio:$('fAnio').value,pagina:$('fPag').value,poblacion:$('fPob').value,publicacion:$('fPub').value,apa:$('fApa').value,link:$('fLink').value.trim(),comentarios:$('fCom').value};
+  if(!cita.cita){ $('fMsg').innerHTML='<div class="msg err">Escribe la cita.</div>'; return; }
+  if(cita.link&&!safe(cita.link)){ $('fMsg').innerHTML='<div class="msg err">La liga debe empezar con https://</div>'; return; }
+  const b=$('fGo'); b.disabled=true;
+  try{ aplicar(await B.api('repoSave',{cita})); cerrar('mCita'); pintar(); B.toast(editId?'Cita actualizada':'Cita agregada'); }
+  catch(e){ $('fMsg').innerHTML='<div class="msg err">'+esc(e.message||'No se pudo guardar.')+'</div>'; }
+  b.disabled=false;
+};
+async function quitar(id){ if(!(await B.confirm('Quitar cita','La cita se quitará del repositorio del proyecto.','Quitar',true))) return; try{ aplicar(await B.api('repoDel',{id})); pintar(); }catch(e){ B.toast(e.message||'No se pudo quitar.',true); } }
+
+/* ---- categorías ---- */
+let catDraft=[];
+function abrirCats(){ catDraft=CATS.map(c=>({id:c.id,nombre:c.nombre})); pintaCats(); $('catMsg').innerHTML=''; $('mCats').classList.remove('hidden'); verFrame(); }
+function pintaCats(){ $('catList').innerHTML=catDraft.map((c,i)=>{ const n=c.id?CITAS.filter(x=>x.categoria===(CATS.find(k=>k.id===c.id)||{}).nombre).length:0; return `<div class="catrow"><input type="text" maxlength="120" value="${esc(c.nombre)}" oninput="catDraft[${i}].nombre=this.value"><span class="note" style="min-width:64px">${n} ${n===1?'cita':'citas'}</span><button class="btn sm danger" onclick="catDraft.splice(${i},1);pintaCats()">Quitar</button></div>`; }).join('')||'<p class="note">Sin categorías: todas las citas quedarán en "Sin categoría".</p>'; }
+function catAdd(){ catDraft.push({id:'',nombre:''}); pintaCats(); const ins=$('catList').querySelectorAll('input'); ins[ins.length-1].focus(); }
+async function catSave(){
+  const lista=catDraft.map(c=>({id:c.id,nombre:c.nombre.trim()})).filter(c=>c.nombre);
+  const quitadas=CATS.filter(c=>!lista.some(l=>l.id===c.id)), mov=CITAS.filter(x=>quitadas.some(q=>q.nombre===x.categoria)).length;
+  if(mov&&!(await B.confirm('Quitar categorías',mov+(mov===1?' cita pasará':' citas pasarán')+' a "Sin categoría". Podrás asignarles otra categoría después.','Guardar',true))) return;
+  const b=$('catGo'); b.disabled=true;
+  try{ aplicar(await B.api('repoCats',{cats:lista})); if(F.cat&&!catsVisibles().includes(F.cat)) F.cat=''; cerrar('mCats'); pintar(); B.toast('Categorías guardadas'); }
+  catch(e){ $('catMsg').innerHTML='<div class="msg err">'+esc(e.message||'No se pudo guardar.')+'</div>'; }
+  b.disabled=false;
+}
+
+/* ---- buscador de citas en PDF (pdf.js) ---- */
+let PDFTXT=[], PRES=[];
+function cargaPdfJs(){ return window.pdfjsLib?Promise.resolve():new Promise((ok,no)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload=ok; s.onerror=()=>no(new Error('No se pudo cargar el lector de PDF.')); document.head.appendChild(s); }); }
+function abrirPdf(){ $('pCat').innerHTML=optsCat(F.cat||(CATS[0]?CATS[0].nombre:SIN)); $('mPdf').classList.remove('hidden'); verFrame(); }
+$('pFile').onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return; $('pBox').classList.add('hidden'); $('pRes').innerHTML=''; $('pGo').classList.add('hidden');
+  $('pInfo').innerHTML='<span class="spin"></span> Leyendo el PDF…';
+  try{
+    await cargaPdfJs(); pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; PDFTXT=[];
+    for(let i=1;i<=pdf.numPages;i++){ const ct=await (await pdf.getPage(i)).getTextContent(); PDFTXT.push(ct.items.map(x=>x.str).join(' ')); }
+    try{ const md=await pdf.getMetadata(), inf=(md&&md.info)||{}, no=['anonymous','anónimo','unknown','untitled','sin título','n/a','none','-'];
+      const t=String(inf.Title||'').trim(), a=String(inf.Author||'').trim();
+      if(t&&!no.includes(t.toLowerCase())&&!$('pPub').value) $('pPub').value=t; if(a&&!no.includes(a.toLowerCase())&&!$('pAut').value) $('pAut').value=a; }catch(e2){}
+    if(!$('pPub').value) $('pPub').value=f.name.replace(/\.pdf$/i,'');
+    $('pInfo').textContent=f.name+' · '+pdf.numPages+' páginas'+(PDFTXT.join('').trim()?'':' · no se encontró texto (puede ser un escaneo)');
+    $('pBox').classList.remove('hidden'); $('pQ').focus();
+  }catch(err){ $('pInfo').innerHTML='<span class="msg err">No se pudo leer el PDF. Verifica que no esté protegido.</span>'; }
+};
+$('pQ').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); pBuscar(); } };
+const parecido=(a,b)=>{ const m=Math.max(a.length,b.length); return m?[...a].filter(c=>b.includes(c)).length/m:0; };
+function pBuscar(){
+  const q=$('pQ').value.trim(); if(!q){ B.toast('Escribe una palabra o frase.',true); return; }
+  const st=q.toLowerCase(), out=[];
+  PDFTXT.forEach((pt,pi)=>{ const ss=pt.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>15);
+    ss.forEach((s,si)=>{ if(!s.toLowerCase().includes(st)) return; let t=s.trim();
+      if(si>0&&ss[si-1].trim().length>10) t=ss[si-1].trim()+' '+t; if(si<ss.length-1&&ss[si+1].trim().length>10) t=t+' '+ss[si+1].trim();
+      if(!out.some(u=>u.page===pi+1&&parecido(u.raw,t)>.82)) out.push({page:pi+1,raw:t.replace(/\s+/g,' ')}); }); });
+  PRES=out;
+  $('pRes').innerHTML=out.length?`<p class="note" style="margin-top:10px"><b>${out.length}</b> ${out.length===1?'coincidencia':'coincidencias'} para “${esc(q)}”. <button class="btn sm" onclick="document.querySelectorAll('#pRes input[type=checkbox]').forEach(c=>c.checked=true)">Seleccionar todas</button></p>`+
+    out.map((r,i)=>`<div class="res"><input type="checkbox" id="pr${i}"><div style="flex:1"><textarea id="pt${i}" style="min-height:64px">${esc(r.raw)}</textarea><div class="note">Página ${r.page}</div></div></div>`).join('')
+    :'<p class="empty">Sin coincidencias. Prueba con otra palabra.</p>';
+  $('pGo').classList.toggle('hidden',!out.length);
+}
+async function pAgregar(){
+  const base={autor:$('pAut').value,anio:$('pAnio').value,publicacion:$('pPub').value,categoria:$('pCat').value,indicador:$('pInd').value,poblacion:$('pPob').value};
+  const citas=PRES.map((r,i)=>$('pr'+i).checked?Object.assign({},base,{cita:$('pt'+i).value.trim(),pagina:String(r.page)}):null).filter(Boolean);
+  if(!citas.length){ B.toast('Marca al menos una coincidencia.',true); return; }
+  const b=$('pGo'); b.disabled=true;
+  try{ const r=await B.api('repoBulk',{citas}); aplicar(r); pintar(); B.toast(r.agregadas+(r.agregadas===1?' cita agregada':' citas agregadas')); PRES.forEach((x,i)=>{ if($('pr'+i)&&$('pr'+i).checked){ $('pr'+i).checked=false; $('pr'+i).disabled=true; } }); }
+  catch(e){ B.toast(e.message||'No se pudieron agregar.',true); }
+  b.disabled=false;
+}
+
+/* ---- PDF y reporte ---- */
+function descargar(){
+  const lista=filtradas(); if(!lista.length) return;
+  const {jsPDF}=window.jspdf, doc=new jsPDF(); const X=16,W=178; let y=20;
+  const safeT=s=>String(s||'').replace(/[^\x20-\xFF–—‘’“”•…\n]/g,'?');
+  const linea=(t,o)=>{ o=o||{}; doc.setFont('helvetica',o.b?'bold':(o.i?'italic':'normal')); doc.setFontSize(o.s||10); doc.setTextColor(...(o.c||[31,27,46])); doc.splitTextToSize(safeT(t),W-(o.ind||0)).forEach(l=>{ if(y>280){ doc.addPage(); y=20; } doc.text(l,X+(o.ind||0),y); y+=(o.s||10)*0.45+1; }); y+=o.after==null?1.5:o.after; };
+  linea('Repositorio bibliográfico',{b:true,s:17,c:[107,33,245],after:1}); linea(INFO.name+' · '+lista.length+' citas · '+new Date().toLocaleDateString('es-MX'),{s:9.5,c:[107,104,120],after:5});
+  catsVisibles().forEach(cat=>{ const cs=lista.filter(c=>c.categoria===cat); if(!cs.length) return;
+    y+=2; linea(cat+' ('+cs.length+')',{b:true,s:12.5,after:2});
+    cs.forEach(c=>{ linea('“'+c.cita+'”',{i:true,s:10,ind:3,after:0.8}); linea([c.autor,c.anio,c.pagina?'p. '+c.pagina:'',c.indicador].filter(Boolean).join(' · '),{s:8.5,c:[107,104,120],ind:3,after:0.5}); if(c.apa) linea(c.apa,{s:8.5,ind:3,after:3}); else y+=2; }); });
+  const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150); doc.text('Sintropía Track - Repositorio bibliográfico',X,290); doc.text(i+' / '+n,X+W,290,{align:'right'}); }
+  doc.save('repositorio_'+INFO.slug+'.pdf');
+}
+function aReporte(){
+  const lista=filtradas(), filtro=!!(F.cat||F.ind||F.aut||F.anio||F.q);
+  const porCat=catsVisibles().map(n=>[n,CITAS.filter(c=>c.categoria===n).length]).filter(x=>x[1]);
+  const refs=[...new Set((filtro?lista:CITAS).map(c=>c.apa).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).slice(0,60);
+  B.addToReport({tool:'repo',ref:'repo',titulo:'Repositorio bibliográfico del proyecto',
+    resumen:CITAS.length+' citas en '+CATS.length+' categorías'+(filtro?' · referencias de la selección filtrada ('+lista.length+' citas)':''),
+    lineas:porCat.map(x=>x[0]+': '+x[1]+(x[1]===1?' cita':' citas')).concat(refs.length?['Referencias:']:[]).concat(refs)}).then(()=>pintar());
+}
+cargar();
+</script>
+</body>
+</html>

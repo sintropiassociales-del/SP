@@ -341,6 +341,42 @@
   .ai-out{font-size:13px; line-height:1.7; margin-top:12px;} .ai-out b{font-weight:700;} .ai-out code{font-size:12px; background:var(--purple-light,#F1ECFE); padding:1px 5px; border-radius:4px; word-break:break-all;}
   @media (max-width:860px){ .dx-grid{grid-template-columns:1fr;} .dx-notice{left:12px; right:12px; max-width:none;} }
   @media (max-width:860px){ .sa-two{grid-template-columns:1fr;} .sa-ficha{grid-template-columns:1fr;} .user-row.v3{grid-template-columns:1fr;} }
+
+  /* ---- Herramientas de trabajo ---- */
+  .herr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:4px 0 10px;}
+  .herr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:14px;}
+  .herr-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,box-shadow .15s;}
+  .herr-card:hover,.herr-card.on{border-color:var(--purple);box-shadow:0 2px 10px rgba(107,33,245,.10);}
+  .herr-card .hk{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange);}
+  .herr-card .hn{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;margin:4px 0 3px;}
+  .herr-card .hd{font-size:12px;color:var(--grey);line-height:1.45;}
+  .herr-card .hc{margin-top:8px;font-size:11.5px;font-weight:600;color:var(--purple);}
+  .herr-work{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:18px;background:#FCFBFF;}
+  .herr-work-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .herr-work-top h3{margin:0;font-size:17px;}
+  .herr-frame{width:100%;height:78vh;min-height:560px;border:1px solid var(--line);border-radius:10px;background:#fff;}
+  .herr-embed{width:100%;height:72vh;min-height:480px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-top:10px;}
+  .herr-list{display:grid;gap:10px;margin-top:10px;}
+  .herr-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff;}
+  .herr-item .ht{font-weight:700;font-size:14px;}
+  .herr-item .hm{font-size:11.5px;color:var(--grey);margin-top:2px;}
+  .herr-item .ha{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .herr-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--purple-light);color:var(--purple-dark);margin-left:6px;vertical-align:middle;}
+  .herr-badge.or{background:var(--orange-light);color:var(--orange-dark);}
+  .herr-badge.ok{background:var(--ok-light);color:var(--ok);}
+  .herr-form{display:grid;gap:8px;border:1px dashed #C9B2FA;border-radius:10px;padding:12px 14px;background:#fff;margin-top:10px;}
+  .herr-form label{font-size:12px;font-weight:600;color:var(--ink);}
+  .herr-form input[type=text],.herr-form input[type=number],.herr-form input[type=url],.herr-form select,.herr-form textarea{width:100%;font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;}
+  .herr-form textarea{min-height:60px;}
+  .herr-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .herr-note{font-size:11.5px;color:var(--grey);line-height:1.45;}
+  .herr-rep{border-top:1px solid var(--line);margin-top:6px;padding-top:12px;}
+  .herr-rep h4{margin:0 0 6px;font-size:13.5px;}
+  .herr-rep li{font-size:12.5px;margin:3px 0;}
+  .herr-team{display:inline-flex;align-items:center;gap:6px;font-size:12px;margin:3px 10px 3px 0;}
+  .herr-sw{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .herr-sub{font-family:'Montserrat',sans-serif;font-size:15px;margin:22px 0 4px;}
+  @media (max-width:700px){ .herr-row2{grid-template-columns:1fr;} .herr-frame{height:85vh;} }
 </style>
 </head>
 <body>
@@ -461,6 +497,12 @@
 
     <section class="panel" id="panel-caja">
       <h2 class="panel-title" style="margin-top:0;">Caja de herramientas</h2>
+      <div class="herr-head"><div><h3 class="herr-sub" style="margin-top:0;">Herramientas de trabajo</h3>
+        <p class="panel-desc" style="margin:2px 0 0;">Instrumentos en Drive, repositorio bibliográfico, territorio, transcripción y trabajo en equipos. Cada resultado se puede agregar al reporte final.</p></div></div>
+      <div class="herr-grid" id="herrGrid"></div>
+      <div class="herr-work hidden" id="herrWork"></div>
+      <div id="herrRep"></div>
+      <h3 class="herr-sub">Materiales del proyecto</h3>
       <p class="panel-desc">Guías y materiales del proyecto. El aviso de fecha desaparece cuando el material se marca como disponible.</p>
       <div class="tool-grid" id="toolGrid"></div>
       <button class="add-row-btn hidden" id="addToolBtn" onclick="addTool()">Agregar herramienta</button>
@@ -604,7 +646,7 @@ function setSession(s){ window.__ses=s||null; try{ if(s) sessionStorage.setItem(
 function linkSlug(){ return new URLSearchParams(location.search).get('p')||''; }
 
 // Antes de usar la IA se confirma que el Apps Script publicado es el que esta página espera (si no, las llamadas se quedarían esperando).
-const AI_VERSION=13; let aiOk=false, aiBg=false;
+const AI_VERSION=14; let aiOk=false, aiBg=false;
 async function aiReady(){
   if(aiOk) return;
   const viejo={error:'old',message:(session&&session.isSuper)?'El Apps Script publicado es una versión anterior a esta página. En Apps Script: Implementar > Administrar implementaciones > editar (lápiz) > Versión: «Nueva versión» > Implementar. Guardar el archivo no basta.':'La herramienta se está actualizando y la IA aún no está disponible. Avisa a Sintropía Social; mientras tanto queda la versión inmediata.'};
@@ -1001,6 +1043,7 @@ async function openProject(slug){
   $('homeView').classList.add('hidden');
   try{
     const r=await api('getProject',{slug});
+    herrUI={open:'',folders:null,embed:'',form:'',tlPanel:null,terSel:''}; if($('herrWork')){ $('herrWork').classList.add('hidden'); $('herrWork').innerHTML=''; }
     project=r.project; role=r.role; project.data=normalizeData(project.data); project.modules=project.modules||'both'; project.saQuota=r.sa||{limit:0,used:0,dxLimit:0,dxUsed:0};
   }catch(e){
     history.replaceState(null,'',location.pathname);
@@ -1042,7 +1085,7 @@ function renderProject(){
   $('reportAdminControls').style.display=canEdit()?'flex':'none';
   renderAll();
 }
-function renderAll(){ renderTabs(); renderReport(); renderDeliverables(); renderLogs(); renderTools(); renderGoals(); renderGantt(); renderComps(); renderIndicators(); renderSintro(); }
+function renderAll(){ renderTabs(); renderReport(); renderDeliverables(); renderLogs(); renderTools(); renderHerr(); renderGoals(); renderGantt(); renderComps(); renderIndicators(); renderSintro(); }
 
 /* ---- pestañas: secuencia numerada, según las herramientas del proyecto y el rol ---- */
 const TAB_DEFS=[['sintro','Sintro Activities'],['entregables','Entregables'],['bitacora','Bitácora de sesiones'],['caja','Caja de herramientas'],['planeacion','Planeación estratégica'],['evaluacion','Evaluación de competencias'],['indicadores','Indicadores']];
@@ -1294,6 +1337,221 @@ function setSub(tid,sid,f,v){ findT(tid).subitems.find(s=>s.id===sid)[f]=v; pers
 function addSub(tid){ const t=findT(tid); t.subitems.push({id:uid(),name:'Material '+(t.subitems.length+1),status:'pendiente',link:''}); openBlocks['sub_'+tid]=true; persist(); renderTools(); }
 function removeSub(tid,sid){ const t=findT(tid); t.subitems=t.subitems.filter(s=>s.id!==sid); persist(); renderTools(); }
 
+
+/* =========================================================
+   HERRAMIENTAS DE TRABAJO (Caja de herramientas)
+   Instrumentos en Drive, repositorio bibliográfico, territorio, Voces y Task live.
+   Se guardan con sus propias acciones del servidor (no con el guardado general),
+   así el Admin de proyecto también puede trabajar en ellas. project.data.herr
+   es una copia que devuelve el servidor después de cada cambio.
+========================================================= */
+const HERR_DEFS=[
+  ['instr','Drive','Instrumentos','Sube el instrumento, elige su carpeta y trabájalo aquí mismo con el equipo.'],
+  ['repo','Consulta','Repositorio bibliográfico','Citas del proyecto con sus propias categorías, filtros, PDF y buscador de citas.'],
+  ['ter','Campo','Territorio','Ubica el territorio, mapea actores clave y responde diez reactivos.'],
+  ['vox','Audio','Voces','Transcripción con protocolo académico, traducción y memoria de lenguas.'],
+  ['tl','Sesiones','Task live','Trabajo en equipos sobre copias de un documento durante una videollamada.']
+];
+const HERR_TOOL_NAME={instr:'Instrumento',repo:'Repositorio bibliográfico',ter:'Territorio',vox:'Voces',tl:'Task live'};
+let herrUI={open:'',folders:null,embed:'',form:'',tlPanel:null,busy:false};
+function herr(){ const h=project.data.herr; if(!h||typeof h!=='object') project.data.herr={}; const x=project.data.herr; ['instr','ter','vox','tl','rep'].forEach(k=>{ if(!Array.isArray(x[k])) x[k]=[]; }); if(!x.repo) x.repo={cats:[]}; return x; }
+const canHerr=()=>(role==='super'||role==='admin')&&(role==='super'||project.status==='activo');
+function herrSet(h){ if(h) project.data.herr=h; renderHerr(); }
+async function herrCall(action,body,okMsg,ms){
+  try{ const r=await api(action,Object.assign({slug:project.slug},body||{}),false,ms); if(r.herr) herrSet(r.herr); if(okMsg) toast(okMsg); (r.avisos||[]).forEach((a,i)=>setTimeout(()=>toast(a,true),600+i*3400)); return r; }
+  catch(e){ toast(herrErr(e),true); return null; }
+}
+function herrErr(e){ return e&&e.error==='bad_request'?'El servidor todavía no tiene las Herramientas de trabajo: publica Code.gs, Herramientas.gs y Voces.gs como nueva versión.':((e&&e.message)||'No se pudo completar.'); }
+function herrCount(k){ const h=herr(); return {instr:h.instr.length,ter:h.ter.length,vox:h.vox.length,tl:h.tl.length,repo:null}[k]; }
+function renderHerr(){
+  const g=$('herrGrid'); if(!g||!project) return; const h=herr();
+  g.innerHTML=HERR_DEFS.map(d=>{ const n=herrCount(d[0]); const c=n==null?'Abrir':(n?n+' '+({instr:n===1?'instrumento':'instrumentos',ter:n===1?'mapa':'mapas',vox:n===1?'documento':'documentos',tl:n===1?'sala':'salas'}[d[0]]):'Abrir');
+    return `<button class="herr-card ${herrUI.open===d[0]?'on':''}" onclick="openHerr('${d[0]}')"><div class="hk">${d[1]}</div><div class="hn">${d[2]}</div><div class="hd">${d[3]}</div><div class="hc">${c} →</div></button>`; }).join('');
+  renderHerrRep();
+  if(herrUI.open) renderHerrWork(false);
+}
+function renderHerrRep(){
+  const w=$('herrRep'); if(!w) return; const rep=herr().rep, E=canHerr();
+  if(!rep.length){ w.innerHTML=''; return; }
+  w.innerHTML=`<div class="herr-rep"><h4>En el reporte final (${rep.length})</h4><ul>${rep.map(x=>`<li><b>${esc(HERR_TOOL_NAME[x.tool]||'')}</b> · ${esc(x.titulo)} <span class="herr-note">${esc(fmt(x.fecha,true))}</span>${E?` <button class="remove-x" onclick="herrRepDel('${x.id}')">Quitar</button>`:''}</li>`).join('')}</ul><p class="herr-note">Aparecen en la sección "Herramientas de trabajo" de las descargas del proyecto (PDF, Word y Excel).</p></div>`;
+}
+async function herrRepDel(id){ await herrCall('repDel',{id},'Se quitó del reporte final'); }
+function herrInReport(tool,ref){ return herr().rep.some(x=>x.tool===tool&&x.ref===ref); }
+async function herrAddReport(item){ return herrCall('repAdd',{item},herrInReport(item.tool,item.ref)?'Se actualizó en el reporte final':'Agregado al reporte final'); }
+function openHerr(k){
+  if(herrUI.open===k&&$('herrWork').innerHTML){ herrUI.open=''; herrUI.embed=''; $('herrWork').classList.add('hidden'); $('herrWork').innerHTML=''; renderHerr(); return; }
+  herrUI.open=k; herrUI.embed=''; herrUI.form=''; herrUI.tlPanel=null; herrUI.terSel='';
+  renderHerr(); renderHerrWork(true);
+  setTimeout(()=>{ const el=$('herrWork'); if(el) window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-12,behavior:'smooth'}); },60);
+  if(k==='instr'&&!herrUI.folders&&canHerr()) loadHerrFolders();
+}
+function closeHerr(){ herrUI.open=''; herrUI.embed=''; $('herrWork').classList.add('hidden'); $('herrWork').innerHTML=''; renderHerr(); }
+function herrFrame(page,qs){ return `<iframe class="herr-frame" src="herramientas/${page}.html?p=${encodeURIComponent(project.slug)}${qs||''}" title="${page}" allow="clipboard-write"></iframe>`; }
+function renderHerrWork(force){
+  const w=$('herrWork'), k=herrUI.open; if(!k){ w.classList.add('hidden'); return; }
+  // las herramientas en página propia no se recargan al volver a pintar (se perdería lo que se está haciendo)
+  if(!force&&(k==='repo'||k==='vox'||(k==='ter'&&herrUI.terSel))&&w.querySelector('iframe.herr-frame')){ if(k==='vox') renderVoxList(); return; }
+  const d=HERR_DEFS.find(x=>x[0]===k);
+  let body='';
+  if(k==='instr') body=instrHtml();
+  else if(k==='repo') body=herrFrame('repositorio');
+  else if(k==='ter') body=terHtml();
+  else if(k==='vox') body=herrFrame('voces')+'<div id="voxList"></div>';
+  else if(k==='tl') body=tlHtml();
+  w.innerHTML=`<div class="herr-work-top"><h3>${d[2]}</h3><button class="btn small" onclick="closeHerr()">Cerrar</button></div>${body}`;
+  w.classList.remove('hidden');
+  if(k==='vox') renderVoxList();
+}
+
+/* ---- Instrumentos ---- */
+const INSTR_TIPO={doc:'Documento de Google',sheet:'Hoja de Google',slides:'Presentación de Google',form:'Formulario de Google',pdf:'PDF',archivo:'Archivo',liga:'Liga',google:'Archivo de Google'};
+async function loadHerrFolders(){ try{ const r=await api('drvFolders',{slug:project.slug}); herrUI.folders=r; if(herrUI.open==='instr'&&herrUI.form) renderHerrWork(true); }catch(e){ toast(e.message||'No se pudo leer la carpeta de Drive.',true); } }
+function folderOpts(sel){ const f=herrUI.folders; if(!f) return '<option value="">Carpeta del proyecto</option>'; return `<option value="">Carpeta del proyecto</option>`+f.carpetas.map(c=>`<option value="${esc(c.id)}" ${sel===c.id?'selected':''}>${'— '.repeat(c.nivel-1)}${esc(c.nombre)}</option>`).join(''); }
+function instrHtml(){
+  const h=herr(), E=canHerr();
+  const top=E?`<div class="toolbar-row" style="margin:0 0 6px;"><button class="btn primary small" onclick="instrForm('subir')">Subir instrumento</button><button class="btn small" onclick="instrForm('liga')">Agregar liga</button><button class="btn small" onclick="instrForm('carpeta')">Nueva carpeta</button>${herrUI.folders&&herrUI.folders.raiz.url?`<a class="btn small" href="${esc(safeUrl(herrUI.folders.raiz.url))}" target="_blank" rel="noopener">Abrir la carpeta en Drive</a>`:''}</div>`:'';
+  let form='';
+  if(E&&herrUI.form==='subir') form=`<div class="herr-form"><label>Archivo (Word, Excel, PowerPoint, PDF, CSV… hasta 15 MB)</label><input type="file" id="inFile" accept=".docx,.doc,.odt,.rtf,.txt,.xlsx,.xls,.csv,.ods,.pptx,.ppt,.pdf,.png,.jpg,.jpeg">
+      <div class="herr-row2"><div><label>Nombre</label><input type="text" id="inName" maxlength="150" placeholder="Se toma del archivo si lo dejas vacío"></div><div><label>Carpeta donde se guarda</label><select id="inFolder">${folderOpts('')}</select></div></div>
+      <label>Nota para el equipo (opcional)</label><textarea id="inNota" maxlength="600"></textarea>
+      <label style="font-weight:400;"><input type="checkbox" id="inConv" checked> Convertir a formato de Google (Docs, Sheets o Slides) para trabajarlo dentro de la plataforma</label>
+      <label>Quién puede abrirlo</label><select id="inAcc"><option value="proyecto">Personas del proyecto (con su cuenta de Google; Coordinación solo consulta)</option><option value="liga">Cualquier persona con la liga puede editar</option></select>
+      <p class="herr-note">Se guarda en el Drive de Sintropía, en la carpeta de este proyecto. Si alguien del equipo no usa cuenta de Google con su correo, elige "Cualquier persona con la liga".</p>
+      <div><button class="btn primary small" id="inGo" onclick="instrUpload()">Subir</button> <button class="btn small" onclick="instrForm('')">Cancelar</button></div></div>`;
+  if(E&&herrUI.form==='liga') form=`<div class="herr-form"><label>Liga del instrumento (Drive, Docs, Sheets, Slides, Forms u otra página)</label><input type="url" id="inUrl" placeholder="https://docs.google.com/…">
+      <div class="herr-row2"><div><label>Nombre</label><input type="text" id="inName" maxlength="150"></div><div><label>Mover a la carpeta (si es de la cuenta de Sintropía)</label><select id="inFolder">${folderOpts('')}</select></div></div>
+      <label>Nota (opcional)</label><textarea id="inNota" maxlength="600"></textarea>
+      <div><button class="btn primary small" onclick="instrLink()">Agregar</button> <button class="btn small" onclick="instrForm('')">Cancelar</button></div></div>`;
+  if(E&&herrUI.form==='carpeta') form=`<div class="herr-form"><div class="herr-row2"><div><label>Nombre de la carpeta</label><input type="text" id="fdName" maxlength="80" placeholder="Ej. Instrumentos de campo"></div><div><label>Dentro de</label><select id="fdParent">${folderOpts('')}</select></div></div>
+      <div><button class="btn primary small" onclick="instrMkdir()">Crear carpeta</button> <button class="btn small" onclick="instrForm('')">Cancelar</button></div></div>`;
+  const items=h.instr;
+  const list=items.length?`<div class="herr-list">${items.map(it=>{
+      const g=/^(doc|sheet|slides|form|google)$/.test(it.tipo), inRep=herrInReport('instr',it.id);
+      return `<div class="herr-item"><div class="ht">${esc(it.nombre)}<span class="herr-badge">${esc(INSTR_TIPO[it.tipo]||'Archivo')}</span>${it.acceso==='liga'?'<span class="herr-badge or">Liga abierta</span>':''}${inRep?'<span class="herr-badge ok">En el reporte</span>':''}</div>
+        <div class="hm">${it.carpeta?esc(it.carpeta)+' · ':''}${esc(fmt(it.fecha,true))}${it.nota?' · '+esc(it.nota):''}</div>
+        <div class="ha"><button class="btn primary small" onclick="instrOpen('${it.id}')">${herrUI.embed===it.id?'Ocultar':(g?'Trabajar aquí':'Ver aquí')}</button><a class="btn small" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">Abrir en pestaña nueva</a>
+        ${E?`${it.fileId&&it.origen==='subido'?`<button class="btn small" onclick="instrAccess('${it.id}','${it.acceso==='liga'?'proyecto':'liga'}')">${it.acceso==='liga'?'Solo personas del proyecto':'Abrir a cualquiera con la liga'}</button>`:''}<button class="btn small" onclick="instrReport('${it.id}')">${inRep?'Actualizar en el reporte':'Agregar al reporte final'}</button><button class="remove-x" onclick="instrDel('${it.id}')">Quitar</button>`:''}</div>
+        ${herrUI.embed===it.id?`<iframe class="herr-embed" src="${esc(safeUrl(it.embed||it.url))}" allow="clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe><p class="herr-note">Los cambios se guardan solos en Drive. Si Google pide iniciar sesión o no muestra el archivo, usa "Abrir en pestaña nueva" (tu cuenta de Google necesita acceso).</p>`:''}</div>`; }).join('')}</div>`
+    :`<p class="empty">Aún no hay instrumentos.${E?' Sube el primero: se guarda en la carpeta del proyecto en Drive.':''}</p>`;
+  return top+form+list;
+}
+function instrForm(k){ herrUI.form=herrUI.form===k?'':k; if(k&&!herrUI.folders) loadHerrFolders(); renderHerrWork(true); }
+function instrOpen(id){ herrUI.embed=herrUI.embed===id?'':id; renderHerrWork(true); }
+function fileToB64(file){ return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]||''); r.onerror=()=>no(r.error); r.readAsDataURL(file); }); }
+async function instrUpload(){
+  const f=$('inFile').files[0]; if(!f){ toast('Elige un archivo.',true); return; }
+  if(f.size>15*1024*1024){ toast('El archivo pasa de 15 MB. Súbelo directo a Drive y agrega su liga.',true); return; }
+  const b=$('inGo'); b.disabled=true; b.textContent='Subiendo… puede tardar un minuto';
+  try{
+    const datos=await fileToB64(f);
+    const nombreArchivo=f.name, nombre=$('inName').value.trim();
+    const ext=(nombreArchivo.match(/\.[a-z0-9]{2,5}$/i)||[''])[0];
+    const r=await herrCall('drvUpload',{nombre:nombre?(nombre.replace(/\.[a-z0-9]{2,5}$/i,'')+ext):nombreArchivo,mime:f.type,datos,carpeta:$('inFolder').value,nota:$('inNota').value,convertir:$('inConv').checked,acceso:$('inAcc').value},'Instrumento guardado en Drive',300000);
+    if(r){ herrUI.form=''; herrUI.embed=r.item.id; renderHerrWork(true); }
+  }catch(e){ toast('No se pudo leer el archivo.',true); }
+  if(b.isConnected){ b.disabled=false; b.textContent='Subir'; }
+}
+async function instrLink(){ const r=await herrCall('drvLink',{url:$('inUrl').value.trim(),nombre:$('inName').value.trim(),nota:$('inNota').value,carpeta:$('inFolder').value,mover:!!$('inFolder').value},'Instrumento agregado'); if(r){ herrUI.form=''; renderHerrWork(true); } }
+async function instrMkdir(){ const n=$('fdName').value.trim(); if(!n){ toast('Escribe el nombre de la carpeta.',true); return; } const r=await herrCall('drvMkdir',{nombre:n,padre:$('fdParent').value},'Carpeta creada'); if(r){ herrUI.folders.carpetas=r.carpetas; herrUI.form=''; renderHerrWork(true); } }
+async function instrAccess(id,acceso){ if(acceso==='liga'&&!(await askConfirm('Abrir a cualquiera con la liga','Cualquier persona que tenga la liga podrá ver y editar este archivo. Úsalo cuando el equipo no tenga cuenta de Google.','Abrir',false))) return; await herrCall('drvAccess',{id,acceso},'Acceso actualizado'); }
+async function instrDel(id){ const it=herr().instr.find(x=>x.id===id); if(!it) return; const sub=it.origen==='subido';
+  if(!(await askConfirm('Quitar instrumento',sub?'Se quitará de la plataforma y el archivo se mandará a la papelera de Drive (se puede recuperar durante 30 días).':'Se quitará la liga de la plataforma; el archivo original no se toca.','Quitar',true))) return;
+  if(herrUI.embed===id) herrUI.embed=''; await herrCall('instrDel',{id,papelera:sub},'Instrumento quitado'); }
+function instrReport(id){ const it=herr().instr.find(x=>x.id===id); if(!it) return; herrAddReport({tool:'instr',ref:it.id,titulo:'Instrumento: '+it.nombre,resumen:it.nota||'',url:it.url,lineas:[(INSTR_TIPO[it.tipo]||'Archivo')+(it.carpeta?' · Carpeta: '+it.carpeta:''),'Agregado el '+fmt(it.fecha,true)]}); }
+
+/* ---- Territorio (lista; el trabajo se hace en herramientas/territorio.html) ---- */
+function terHtml(){
+  const h=herr(), E=canHerr();
+  if(herrUI.terSel) return `<div class="toolbar-row" style="margin:0 0 8px;"><button class="btn small" onclick="terBack()">← Volver a los mapas</button></div>`+herrFrame('territorio',herrUI.terSel==='nuevo'?'':'&id='+encodeURIComponent(herrUI.terSel));
+  const top=E?`<div class="toolbar-row" style="margin:0 0 6px;"><button class="btn primary small" onclick="terOpen('nuevo')">Nuevo mapa territorial</button></div>`:'';
+  const list=h.ter.length?`<div class="herr-list">${h.ter.map(t=>{ const r=t.resultado||{}, d=t.datos||{}, inRep=herrInReport('ter',t.id);
+      return `<div class="herr-item"><div class="ht">${esc(t.titulo)}${r.banda?`<span class="herr-badge ${r.banda.clave==='verde'?'ok':(r.banda.clave==='rojo'?'or':'')}">${esc(r.banda.etiqueta)} · ${esc(r.puntajeTotal)}/30</span>`:''}${inRep?'<span class="herr-badge ok">En el reporte</span>':''}</div>
+        <div class="hm">${esc([d.municipio,d.estado].filter(Boolean).join(', '))}${(r.actores||[]).length?' · '+r.actores.length+' actores':''} · ${esc(fmt(t.actualizado,true))}</div>
+        <div class="ha"><button class="btn primary small" onclick="terOpen('${t.id}')">${E?'Abrir y editar':'Ver'}</button>${E?`<button class="remove-x" onclick="terDel('${t.id}')">Quitar</button>`:''}</div></div>`; }).join('')}</div>`
+    :`<p class="empty">Aún no hay mapas territoriales.${E?' Crea el primero: ubicas el territorio, cargas a los actores clave y respondes diez reactivos.':''}</p>`;
+  return top+list;
+}
+function terOpen(id){ herrUI.terSel=id; renderHerrWork(true); }
+function terBack(){ herrUI.terSel=''; renderHerrWork(true); }
+async function terDel(id){ if(!(await askConfirm('Quitar mapa territorial','Se quitará este mapa y, si estaba en el reporte final, también de ahí.','Quitar',true))) return; await herrCall('terDel',{id},'Mapa quitado'); }
+
+/* ---- Voces (documentos exportados) ---- */
+function renderVoxList(){
+  const w=$('voxList'); if(!w) return; const h=herr(), E=canHerr();
+  w.innerHTML=h.vox.length?`<h4 style="margin:16px 0 4px;">Documentos de Voces en este proyecto</h4><div class="herr-list">${h.vox.map(v=>{ const inRep=herrInReport('vox',v.id); return `<div class="herr-item"><div class="ht">${esc(v.titulo)}<span class="herr-badge">${v.tipo==='sheet'?'Hoja de Google':'Documento de Google'}</span>${inRep?'<span class="herr-badge ok">En el reporte</span>':''}</div>
+      <div class="hm">${esc(v.lengua||'')}${v.turnos?' · '+v.turnos+' turnos':''} · ${esc(fmt(v.fecha,true))}</div>
+      <div class="ha"><a class="btn small" href="${esc(safeUrl(v.url))}" target="_blank" rel="noopener">Abrir</a>${E?`<button class="btn small" onclick="voxReport('${v.id}')">${inRep?'Actualizar en el reporte':'Agregar al reporte final'}</button><button class="remove-x" onclick="voxDel('${v.id}')">Quitar de la lista</button>`:''}</div></div>`; }).join('')}</div>`
+    :'<p class="herr-note" style="margin-top:10px;">Cuando exportes una transcripción a Google Docs o Sheets, se guarda en la carpeta del proyecto (subcarpeta "Voces") y aparece aquí.</p>';
+}
+function voxReport(id){ const v=herr().vox.find(x=>x.id===id); if(!v) return; herrAddReport({tool:'vox',ref:v.id,titulo:'Transcripción: '+v.titulo,resumen:[v.lengua,v.turnos?v.turnos+' turnos':''].filter(Boolean).join(' · '),url:v.url,lineas:['Borrador automático: lo revisa una persona hablante de la lengua antes de usarse o citarse.']}); }
+async function voxDel(id){ if(!(await askConfirm('Quitar de la lista','El documento sigue en Drive; solo se quita de esta lista y del reporte.','Quitar',true))) return; await herrCall('voReg',{quitar:id},'Quitado de la lista'); }
+
+/* ---- Task live ---- */
+const TL_PAGE=new URL('herramientas/tasklive.html',location.href).href;
+function tlHtml(){
+  const h=herr(), E=canHerr();
+  const gInstr=h.instr.filter(i=>/^(doc|sheet|slides)$/.test(i.tipo)&&i.fileId);
+  const top=E?`<div class="toolbar-row" style="margin:0 0 6px;"><button class="btn primary small" onclick="tlForm()">Nueva sala</button></div>`:'';
+  let form='';
+  if(E&&herrUI.form==='tl') form=`<div class="herr-form"><div class="herr-row2"><div><label>Nombre de la sala</label><input type="text" id="tlName" maxlength="80" placeholder="Ej. Taller de diagnóstico, sesión 2"></div><div><label>Número de equipos</label><input type="number" id="tlN" min="1" max="12" value="3" oninput="tlNames()"></div></div>
+      <label>Documento de trabajo</label><select id="tlSrc" onchange="$('tlUrlBox').classList.toggle('hidden',this.value!=='url')">${gInstr.map(i=>`<option value="${i.id}">${esc(i.nombre)} (${esc(INSTR_TIPO[i.tipo])})</option>`).join('')}<option value="url">Pegar la liga de un documento de Google…</option></select>
+      <div id="tlUrlBox" class="${gInstr.length?'hidden':''}"><input type="url" id="tlUrl" placeholder="https://docs.google.com/document/d/…"><p class="herr-note">La cuenta de Sintropía necesita acceso de edición a ese documento. Lo más sencillo: súbelo antes en "Instrumentos".</p></div>
+      <label>Nombres de los equipos (opcional)</label><div id="tlTeams" class="herr-row2"></div>
+      <div class="herr-row2"><div><label>Indicaciones para los equipos</label><textarea id="tlNote" maxlength="600" placeholder="Qué deben hacer. Se muestra en la sala."></textarea></div><div><label>Tiempo sugerido (minutos)</label><input type="number" id="tlMin" min="0" max="600" placeholder="Ej. 30"></div></div>
+      <p class="herr-note">Se crea una copia del documento para cada equipo en la carpeta del proyecto (Task live). Las personas participantes entran con la liga, sin cuenta; su nombre, correo y organización se piden solo al finalizar.</p>
+      <div><button class="btn primary small" id="tlGo" onclick="tlCreate()">Crear sala</button> <button class="btn small" onclick="tlForm()">Cancelar</button></div></div>`;
+  const list=h.tl.length?`<div class="herr-list">${h.tl.map(r=>{ const inRep=herrInReport('tl',r.rid), open=herrUI.tlPanel&&herrUI.tlPanel.room.rid===r.rid;
+      return `<div class="herr-item"><div class="ht">${esc(r.nombre)}<span class="herr-badge ${r.estado==='cerrada'?'':'ok'}">${r.estado==='cerrada'?'Cerrada':'Activa'}</span>${inRep?'<span class="herr-badge ok">En el reporte</span>':''}</div>
+        <div class="hm">${r.equipos} ${r.equipos===1?'equipo':'equipos'} · ${esc(fmt(r.fecha,true))}</div>
+        ${r.estado!=='cerrada'?`<div class="hm" style="margin-top:6px;">Liga para participantes: <code style="font-size:11px;">${esc(r.liga)}</code> <button class="btn small" onclick="copyTxt('${esc(r.liga)}')">Copiar</button></div>`:''}
+        <div class="ha"><button class="btn primary small" onclick="tlPanel('${r.rid}')">${open?'Ocultar equipos':'Ver equipos y participantes'}</button><a class="btn small" href="${esc(safeUrl(r.resultadoUrl))}" target="_blank" rel="noopener">Documento de resultados</a>
+        ${E?`<button class="btn small" onclick="tlReport('${r.rid}')">${inRep?'Actualizar en el reporte':'Agregar al reporte final'}</button>${r.estado!=='cerrada'?`<a class="btn small" href="${esc(safeUrl(r.panel))}" target="_blank" rel="noopener">Panel de facilitación</a><button class="remove-x" onclick="tlClose('${r.rid}')">Cerrar sala</button>`:''}`:''}</div>
+        ${open?tlPanelHtml(herrUI.tlPanel):''}</div>`; }).join('')}</div>`
+    :`<p class="empty">Aún no hay salas.${E?' Crea una para trabajar en equipos durante una videollamada.':''}</p>`;
+  return top+form+list;
+}
+function tlPanelHtml(d){
+  const est={activo:'En trabajo',procesando:'Procesando',finalizado:'Finalizado'};
+  return `<div style="margin-top:10px;">${d.teams.map(t=>`<span class="herr-team"><span class="herr-sw" style="background:${esc(t.color.texto)}"></span><b>${esc(t.nombre)}</b> · ${est[t.estado]||t.estado} · ${t.personas} ${t.personas===1?'persona':'personas'}${t.copyUrl?` · <a href="${esc(safeUrl(t.copyUrl))}" target="_blank" rel="noopener">copia</a>`:''}</span>`).join('')}
+    ${d.people.length?`<div class="sa-scroll" style="margin-top:8px;"><table class="smart"><thead><tr><th>Equipo</th><th>Nombre</th>${d.people.some(p=>p.email)?'<th>Correo</th>':''}<th>Organización</th></tr></thead><tbody>${d.people.map(p=>`<tr><td>${esc(p.equipoNombre)}</td><td>${esc(p.nombre)}</td>${d.people.some(x=>x.email)?`<td>${esc(p.email)}</td>`:''}<td>${esc(p.org)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="herr-note">Nadie ha finalizado todavía.</p>'}</div>`;
+}
+function copyTxt(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Liga copiada'),()=>toast('Copia la liga manualmente.',true)); }
+function tlForm(){ herrUI.form=herrUI.form==='tl'?'':'tl'; renderHerrWork(true); if(herrUI.form) tlNames(); }
+function tlNames(){ const n=Math.max(1,Math.min(12,+($('tlN').value)||1)), box=$('tlTeams'), old=[...box.querySelectorAll('input')].map(i=>i.value); box.innerHTML=Array.from({length:n},(_,i)=>`<input type="text" maxlength="40" placeholder="Equipo ${i+1}" value="${esc(old[i]||'')}">`).join(''); }
+async function tlCreate(){
+  const src=$('tlSrc').value, body={nombre:$('tlName').value.trim(),equipos:+$('tlN').value||1,nombres:[...$('tlTeams').querySelectorAll('input')].map(i=>i.value.trim()),instrucciones:$('tlNote').value.trim(),minutos:+$('tlMin').value||0};
+  if(!body.nombre){ toast('Escribe el nombre de la sala.',true); return; }
+  if(src==='url') body.url=$('tlUrl').value.trim(); else body.instr=src;
+  const b=$('tlGo'); b.disabled=true; b.textContent='Creando copias… puede tardar un minuto';
+  const r=await herrCall('tlCreate',body,'Sala creada: comparte la liga con las personas participantes',300000);
+  if(r){ herrUI.form=''; renderHerrWork(true); } else if(b.isConnected){ b.disabled=false; b.textContent='Crear sala'; }
+}
+async function tlPanel(rid){ if(herrUI.tlPanel&&herrUI.tlPanel.room.rid===rid){ herrUI.tlPanel=null; renderHerrWork(true); return; } try{ herrUI.tlPanel=await api('tlPanelIn',{slug:project.slug,rid}); renderHerrWork(true); }catch(e){ toast(e.message||'No se pudo abrir la sala.',true); } }
+async function tlClose(rid){ if(!(await askConfirm('Cerrar sala','Las copias de los equipos se mandan a la papelera de Drive. El documento de resultados y el registro de participantes se conservan.','Cerrar sala',true))) return; herrUI.tlPanel=null; await herrCall('tlClose',{rid},'Sala cerrada'); }
+async function tlReport(rid){
+  const r=herr().tl.find(x=>x.rid===rid); if(!r) return;
+  let d=null; try{ d=await api('tlPanelIn',{slug:project.slug,rid}); }catch(e){}
+  const fin=d?d.teams.filter(t=>t.estado==='finalizado').length:0;
+  herrAddReport({tool:'tl',ref:rid,titulo:'Task live: '+r.nombre,url:r.resultadoUrl,
+    resumen:d?`${d.teams.length} equipos · ${fin} finalizados · ${d.people.length} personas registradas al finalizar`:`${r.equipos} equipos`,
+    lineas:d?d.teams.map(t=>`${t.nombre}: ${({activo:'en trabajo',procesando:'procesando',finalizado:'finalizado'})[t.estado]||t.estado}, ${t.personas} ${t.personas===1?'persona':'personas'}`).concat(d.people.length?['Organizaciones: '+[...new Set(d.people.map(p=>p.org))].join(', ')]:[]):[]});
+}
+
+/* ---- Puente para las páginas de herramientas (mismo sitio, dentro de un iframe) ---- */
+window.TrackBridge={
+  info(){ if(!project) return null; return {slug:project.slug,name:project.name,client:project.client||'',role,canWrite:canHerr(),email:(session&&session.user&&session.user.email)||'',userName:(session&&session.user&&session.user.name)||'',herr:JSON.parse(JSON.stringify(herr()))}; },
+  api(action,body,ms){ return api(action,Object.assign({},body||{},{slug:project.slug}),false,ms).then(r=>{ if(r&&r.herr) herrSet(r.herr); return r; }); },
+  addToReport(item){ return herrAddReport(item); },
+  inReport(tool,ref){ return herrInReport(tool,ref); },
+  toast(m,err){ toast(m,err); },
+  confirm(t,x,ok,danger){ return askConfirm(t,x,ok,danger); },
+  terSaved(id){ herrUI.terSel=id; },
+  close(){ if(herrUI.open==='ter'&&herrUI.terSel) terBack(); else closeHerr(); },
+  // credenciales para Voces (la página no guarda ninguna contraseña ni código)
+  cred(){ const ses=rawSession(); return authMode==='pw'?{sessionToken:ses?ses.token:''}:{idToken:getToken()}; },
+  apiUrl(){ return APPS_SCRIPT_URL; }
+};
+
 /* =========================================================
    PLANEACIÓN + GANTT
 ========================================================= */
@@ -1396,6 +1654,7 @@ function model(){
   return {name:project.name,client:project.client,vig:fmt(project.expiresAt,true),status:project.status,avance:AP.pct,tot,done,d,generated:fmt(todayIso(),true)};
 }
 function fileBase(){ return slugify(project.name); }
+function repHerr(){ const o=['instr','repo','ter','vox','tl']; return ((project.data.herr||{}).rep||[]).slice().sort((a,b)=>o.indexOf(a.tool)-o.indexOf(b.tool)); }
 function download(blob,name){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); }
 function pdfSafe(s){ return String(s==null?'':s).replace(/[^ -ÿ–—‘’“”•…\n]/g,'?'); }
 function makePdf(){
@@ -1430,6 +1689,7 @@ function exportProjectPDF(){
     const ob=m.d.deliverables.filter(d=>m.d.ganttObs[d.id]&&m.d.ganttObs[d.id].text); if(ob.length){ w.p('Observaciones del cronograma',{bold:true,after:0.5}); ob.forEach(d=>{ const o=m.d.ganttObs[d.id]; w.p('- '+d.name+(o.required?' [Requiere atención]':'')+': '+o.text,{size:9.5,after:0.5}); }); }
     w.h('Evaluación de competencias'); m.d.comps.forEach(c=>w.p('- '+c.name+': '+c.pre+'% antes, '+c.post+'% después',{size:9.5,after:0.5}));
     if(m.d.indicators.length){ w.h('Indicadores'); m.d.indicators.forEach(x=>w.p('- '+x.nombre+' | Línea base: '+(x.linea_base||'-')+' | Meta: '+(x.meta||'-')+' | Valor actual: '+(x.valor||'-')+(x.obs?' | '+x.obs:''),{size:9.5,after:0.8})); }
+    const hr=repHerr(); if(hr.length){ w.h('Herramientas de trabajo'); hr.forEach(x=>{ w.p((HERR_TOOL_NAME[x.tool]||'')+' - '+x.titulo,{bold:true,after:0.5}); if(x.resumen) w.p(x.resumen,{size:9.5,indent:4,after:0.5}); (x.lineas||[]).forEach(l=>w.p('- '+l,{size:9.5,indent:4,after:0.3})); if(x.url) w.p('Liga: '+x.url,{size:9,indent:4,color:[107,104,120]}); w.p('',{after:1.5}); }); }
     w.save(fileBase()+'_proyecto.pdf'); }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
 }
 function wordDoc(title,body){ return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1F1B2E} h1{color:#6B21F5;font-size:20pt;margin-bottom:2pt} h2{color:#1F1B2E;font-size:14pt;border-bottom:1px solid #E7E2F3;padding-bottom:2pt;margin-top:18pt} th{background:#6B21F5;color:#fff;text-align:left} td,th{padding:4pt 6pt;border:1px solid #D8D2EA;vertical-align:top} table{border-collapse:collapse;width:100%} .m{color:#6B6878;font-size:10pt}</style></head><body>${body}</body></html>`; }
@@ -1445,6 +1705,7 @@ function exportProjectWord(){
     b+='<h2>Planeación estratégica</h2><table><tr><th>Prioridad</th><th>Meta SMART</th><th>Responsable</th><th>Horizonte</th></tr>'+d.goals.map(g=>`<tr><td>${esc(g.area)}</td><td>${esc(g.meta)}</td><td>${esc(g.resp)}</td><td>${esc(g.horizonte)}</td></tr>`).join('')+'</table>';
     b+='<h2>Evaluación de competencias</h2><table><tr><th>Competencia</th><th>Antes</th><th>Después</th></tr>'+d.comps.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.pre}%</td><td>${c.post}%</td></tr>`).join('')+'</table>';
     if(d.indicators.length) b+='<h2>Indicadores</h2><table><tr><th>Actividad</th><th>Indicador</th><th>Línea base</th><th>Meta</th><th>Valor actual</th><th>Observación</th></tr>'+d.indicators.map(x=>`<tr><td>${esc(x.actividad)}</td><td>${esc(x.nombre)}</td><td>${esc(x.linea_base)}</td><td>${esc(x.meta)}</td><td>${esc(x.valor)}</td><td>${esc(x.obs)}</td></tr>`).join('')+'</table>';
+    const hr=repHerr(); if(hr.length) b+='<h2>Herramientas de trabajo</h2>'+hr.map(x=>`<p><b>${esc(HERR_TOOL_NAME[x.tool]||'')} — ${esc(x.titulo)}</b>${x.resumen?'<br>'+esc(x.resumen):''}</p>${(x.lineas||[]).length?'<ul>'+x.lineas.map(l=>`<li>${esc(l)}</li>`).join('')+'</ul>':''}${x.url?`<p class="m">Liga: ${esc(x.url)}</p>`:''}`).join('');
     download(new Blob(['﻿',wordDoc(m.name,b)],{type:'application/msword'}),fileBase()+'_proyecto.doc'); }catch(e){ console.error(e); toast('No se pudo generar el documento Word.',true); }
 }
 function exportLogExcel(){
@@ -1462,6 +1723,7 @@ function exportProjectExcel(){
     add(d.goals.map(g=>({Prioridad:g.area,'Meta SMART':g.meta,Responsable:g.resp,Horizonte:g.horizonte})),'Planeacion',{});
     add(d.comps.map(c=>({Competencia:c.name,'Antes (%)':c.pre,'Después (%)':c.post})),'Competencias',{});
     if(d.indicators.length) add(d.indicators.map(x=>({Actividad:x.actividad,Indicador:x.nombre,Tipo:x.tipo,'Línea base':x.linea_base,Meta:x.meta,Frecuencia:x.frecuencia,'Medio de verificación':x.medio,'Valor actual':x.valor,Observación:x.obs})),'Indicadores',{});
+    const hr=repHerr(); if(hr.length) add(hr.map(x=>({Herramienta:HERR_TOOL_NAME[x.tool]||x.tool,'Título':x.titulo,Resumen:x.resumen||'',Detalle:(x.lineas||[]).join('\n'),Liga:x.url||'',Fecha:x.fecha||''})),'Herramientas de trabajo',{});
     XLSX.writeFile(wb,fileBase()+'_proyecto.xlsx'); }catch(e){ console.error(e); toast('No se pudo generar el archivo Excel.',true); }
 }
 
