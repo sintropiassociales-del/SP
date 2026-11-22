@@ -503,7 +503,7 @@
     <section class="overview" id="pOverview">
       <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Entregables</div></div>
       <div class="stat"><div class="stat-num" id="statActivities">0</div><div class="stat-label">Actividades totales</div></div>
-      <div class="stat"><div class="stat-num" id="statDoneAct">0</div><div class="stat-label">Actividades entregadas</div></div>
+      <div class="stat"><div class="stat-num" id="statDoneAct">0</div><div class="stat-label" id="statDoneLbl">Entregados o aprobados</div></div>
       <div class="stat"><div class="stat-num" id="statSessions">0</div><div class="stat-label">Sesiones registradas</div></div>
     </section>
 
@@ -1345,7 +1345,7 @@ function renderDeliverables(){
     block.appendChild(head); block.appendChild(acts); wrap.appendChild(block);
   });
   const AP=actProgress(); totalAct=AP.tot; doneAct=AP.done;
-  $('statTotal').textContent=project.data.deliverables.length; $('statActivities').textContent=totalAct; $('statDoneAct').textContent=doneAct; $('statSessions').textContent=project.data.logs.length;
+  $('statTotal').textContent=project.data.deliverables.length; $('statActivities').textContent=totalAct; const AV=avanceProyecto(); $('statDoneAct').textContent=AV.done+' de '+AV.tot; $('statDoneLbl').textContent='Entregados o aprobados'; $('statDoneLbl').title='Cuenta cada actividad y cada entregable sin actividades que está en Entregado o Aprobado ('+AV.pct+'% de avance).'; $('statSessions').textContent=project.data.logsCount!=null?project.data.logsCount:project.data.logs.length;
 }
 function setDeliv(id,f,v){ const d=findD(id); if(f==='start'||f==='end'){ changeDate('deliv',id,f,v); return; } d[f]=v; sello(d,'edit'); persist(); renderAll(); }
 function setAct(did,aid,f,v){ const a=findA(did,aid); a[f]=v; sello(a,'edit'); persist(); renderAll(); }
