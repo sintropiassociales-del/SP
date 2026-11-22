@@ -64,6 +64,7 @@
   .role-chip.super{background:var(--purple); color:var(--white);}
   .role-chip.admin{background:var(--orange); color:var(--white);}
   .role-chip.coordinacion{background:var(--purple-light); color:var(--purple);}
+  .role-chip.seguimiento{background:var(--blue-light); color:var(--blue);}
 
   .btn{font-family:'Montserrat','Open Sans',sans-serif; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:8px; cursor:pointer; border:1px solid var(--line); background:var(--white); color:var(--ink);}
   .btn:hover{border-color:var(--purple); color:var(--purple);}
@@ -216,6 +217,7 @@
   .gantt-track{position:relative; height:26px; background:var(--pending-light); border-radius:6px;}
   .gantt-bar{position:absolute; top:0; height:100%; border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:10.5px; color:var(--white); font-weight:600; white-space:nowrap; overflow:hidden;}
   .gantt-bar.pendiente,.gantt-ms.pendiente{background:var(--pending);} .gantt-bar.revision,.gantt-ms.revision{background:var(--orange);} .gantt-bar.entregado,.gantt-ms.entregado{background:var(--ok);}
+  .gantt-bar.modificacion,.gantt-ms.modificacion{background:#C2185B;} .gantt-bar.aprobado,.gantt-ms.aprobado{background:#0B6E47;} .badge.modificacion{background:#FCE4EF;color:#AD1457;} .badge.aprobado{background:#D7F0E3;color:#0B6E47;}
   .gantt-bar.proceso,.gantt-ms.proceso{background:var(--purple);} .gantt-bar.seguimiento,.gantt-ms.seguimiento{background:var(--blue);} .gantt-bar.pausa,.gantt-ms.pausa{background:var(--yellow);} .gantt-bar.archivado,.gantt-ms.archivado{background:var(--archived); opacity:.55;}
   .gantt-row.act{margin-bottom:4px;} .gantt-row.act .gantt-label{font-weight:400; font-size:11.5px; padding-left:14px; color:var(--ink); cursor:default; position:relative;} .gantt-row.act .gantt-label::before{content:''; position:absolute; left:3px; top:50%; width:6px; height:1px; background:var(--pending);}
   .gantt-row.act .gantt-track{height:16px; background:transparent; border-bottom:1px dashed var(--line); border-radius:0;} .gantt-row.act .gantt-bar{border-radius:4px; font-size:9.5px; padding:0 6px;}
@@ -378,6 +380,61 @@
   .herr-sub{font-family:'Montserrat',sans-serif;font-size:15px;margin:22px 0 4px;}
   @media (max-width:700px){ .herr-row2{grid-template-columns:1fr;} .herr-frame{height:85vh;} }
   .lk-box{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;} .lk-val{font-size:11.5px;color:var(--purple);word-break:break-all;} .lk-meta{font-size:10.5px;color:var(--grey);}
+  /* ---- cronograma por tarjetas (v17) ---- */
+  .progress-det{font-size:11.5px; color:var(--grey); margin-top:7px;}
+  .view-switch{display:inline-flex; border:1px solid var(--line); border-radius:9px; padding:3px; margin:4px 0 14px; background:var(--white);}
+  .view-switch .vs{font:inherit; font-size:12.5px; font-weight:600; border:0; background:none; padding:7px 14px; border-radius:7px; cursor:pointer; color:var(--grey);}
+  .view-switch .vs.on{background:var(--purple); color:var(--white);}
+  .gantt{padding:16px 18px;}
+  .gantt-months{margin:0 15px 8px; height:18px;}
+  .gc{border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; background:var(--white);}
+  .gc-head{display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:start;}
+  .gc-n{width:26px; height:26px; border-radius:50%; background:var(--purple-light); color:var(--purple); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center;}
+  .gc-name{font-weight:700; font-size:14px; line-height:1.35; word-break:break-word;}
+  .gc-meta{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px; font-size:11.5px; color:var(--grey);}
+  .gc-meta .date-ctl input{font-size:11.5px;}
+  .gc-right{display:flex; gap:8px; align-items:center;}
+  .gc-track{position:relative; height:22px; background:var(--pending-light); border-radius:6px; margin:12px 0 4px;}
+  .gc-track .gantt-bar{font-size:10.5px;}
+  .gc-acts{margin-top:10px; border-top:1px solid var(--line);}
+  .ga{display:grid; grid-template-columns:minmax(180px,1.6fr) minmax(220px,1.1fr) 150px minmax(170px,1.2fr); gap:10px; align-items:center; padding:9px 0; border-bottom:1px dashed var(--line);}
+  .ga:last-child{border-bottom:0;}
+  .ga-name{font-size:12.5px; line-height:1.4; word-break:break-word;}
+  .ga-dates{font-size:11.5px; color:var(--grey); display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .ga-track{grid-column:1 / -1; position:relative; height:10px; border-radius:5px; background:var(--pending-light); margin-top:-2px;}
+  .ga-track .gantt-bar{border-radius:5px; padding:0; font-size:0;}
+  .ga-track .gantt-ms{top:0;}
+  .ga-ev{font-size:11.5px; min-width:0;}
+  .ga-dl{display:flex; align-items:center; gap:6px;} .ga-dl b{font-weight:600; width:38px; font-size:11px;}
+  .ga-dates{flex-direction:column; align-items:flex-start; gap:4px;}
+  .ga-ev .lk-box{flex-wrap:nowrap; width:100%;} .ga-ev .lk-box input{flex:1; min-width:0 !important;}
+  .gc-dates{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .bempty{font-size:12px; color:var(--grey); padding:6px 4px;}
+
+  .gc-toggle{font:inherit; font-size:11.5px; font-weight:600; color:var(--purple); background:none; border:0; cursor:pointer; padding:0;}
+  .gc select.status-edit{font-size:12px;}
+  .gc .obs-row{display:flex; gap:10px; align-items:flex-start; margin-top:10px; flex-wrap:wrap;}
+  /* ---- tablero por estatus (tipo Notion) ---- */
+  .board-tools{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; font-size:12.5px;}
+  .board-tools select{width:auto; font-size:12.5px;}
+  .board{display:flex; gap:14px; overflow-x:auto; padding-bottom:10px; align-items:flex-start;}
+  .bcol{flex:0 0 270px; background:#FAF8FF; border:1px solid var(--line); border-radius:12px; padding:10px;}
+  .bcol.closed{flex-basis:auto;}
+  .bcol-head{display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; cursor:pointer; user-select:none; padding:4px 4px 8px; border:0; background:none; font-family:inherit; width:100%; text-align:left; color:var(--ink);}
+  .bcol-head .n{color:var(--grey); font-weight:600;}
+  .bcol-head .car{margin-left:auto; color:var(--grey); font-size:11px;}
+  .bdot{width:9px; height:9px; border-radius:50%; flex:none;}
+  .bcard{background:var(--white); border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-top:8px; box-shadow:0 1px 2px rgba(31,27,46,.04);}
+  .bcard .bt{font-weight:700; font-size:13px; line-height:1.35; word-break:break-word;}
+  .bcard .bd{font-size:11.5px; color:var(--purple); font-weight:600; margin-top:3px;}
+  .bcard .bm{font-size:11.5px; color:var(--grey); margin-top:5px;}
+  .bcard .bk{font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--orange);}
+  .bchip{display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; border:0; margin-top:8px;}
+  .bchip.edit{cursor:pointer;} .bchip.edit::after{content:'▾'; font-size:9px;}
+  .bmenu{position:absolute; z-index:600; background:var(--white); border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 30px rgba(31,27,46,.18); padding:6px; min-width:190px;}
+  .bmenu button{display:flex; align-items:center; gap:8px; width:100%; font:inherit; font-size:12.5px; text-align:left; background:none; border:0; padding:7px 9px; border-radius:7px; cursor:pointer;}
+  .bmenu button:hover,.bmenu button.on{background:var(--purple-light);}
+  @media (max-width:820px){ .ga{grid-template-columns:1fr;} .gc-head{grid-template-columns:28px 1fr;} .gc-right{grid-column:2;} }
 </style>
 </head>
 <body>
@@ -515,10 +572,12 @@
       <h2 class="panel-title">Cronograma general</h2>
       <p class="panel-desc" id="ganttDesc"></p>
       <div class="gantt-top">
-        <div class="progress-card"><div class="progress-head"><span>Avance general del proyecto</span><span id="progressPct">0%</span></div><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div></div>
+        <div class="progress-card"><div class="progress-head"><span>Avance general del proyecto</span><span id="progressPct">0%</span></div><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div><div class="progress-det" id="progressDet"></div></div>
         <div class="semaforo-card"><div class="light" id="semaforoLight"></div><div class="semaforo-text"><b id="semaforoTitle"></b><span id="semaforoDesc"></span></div></div>
       </div>
-      <div class="gantt">
+      <div class="view-switch" id="viewSwitch"><button class="vs on" data-v="crono" onclick="setPlanView('crono')">Cronograma</button><button class="vs" data-v="tablero" onclick="setPlanView('tablero')">Tablero por estatus</button></div>
+      <div id="boardWrap" class="hidden"></div>
+      <div class="gantt" id="ganttWrap">
         <div class="gantt-months" id="ganttMonths"></div>
         <div id="ganttRows"></div>
         <div class="legend">
@@ -526,11 +585,13 @@
           <span><i class="dot" style="background:var(--purple)"></i> En proceso</span>
           <span><i class="dot" style="background:var(--blue)"></i> En seguimiento</span>
           <span><i class="dot" style="background:var(--orange)"></i> En revisión</span>
+          <span><i class="dot" style="background:#C2185B"></i> En modificación</span>
           <span><i class="dot" style="background:var(--yellow)"></i> En pausa</span>
           <span><i class="dot" style="background:var(--ok)"></i> Entregado</span>
           <span><i class="dot" style="background:var(--archived);opacity:.55"></i> Archivado</span>
           <span><i style="display:inline-block; width:9px; height:9px; transform:rotate(45deg); background:var(--grey); border-radius:2px;"></i> Actividad con una sola fecha</span>
           <span><i style="display:inline-block; width:2px; height:10px; background:var(--ink); opacity:.5;"></i> Hoy</span>
+          <span><i class="dot" style="background:#0B6E47"></i> Aprobado</span>
         </div>
       </div>
     </section>
@@ -595,13 +656,18 @@ function addDaysIso(s,n){ const d=parseIso(s); d.setDate(d.getDate()+n); return 
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 function fmt(s,withYear){ if(!s) return ''; const d=parseIso(s); if(isNaN(d)) return s; return d.getDate()+' '+MESES[d.getMonth()]+(withYear?' '+d.getFullYear():''); }
 // Estatus de cronograma. «Archivado» queda fuera del cálculo de avance; solo «Entregado» cuenta como terminado.
-const ST_OPTS=[['pendiente','Pendiente'],['proceso','En proceso'],['seguimiento','En seguimiento'],['revision','En revisión'],['pausa','En pausa'],['entregado','Entregado'],['archivado','Archivado']];
+const ST_OPTS=[['pendiente','Pendiente'],['proceso','En proceso'],['revision','En revisión'],['modificacion','En modificación'],['seguimiento','En seguimiento'],['pausa','En pausa'],['entregado','Entregado'],['aprobado','Aprobado'],['archivado','Archivado']];
+const ST_DONE=s=>s==='entregado'||s==='aprobado';
 const ST_LABEL={}; ST_OPTS.forEach(o=>ST_LABEL[o[0]]=o[1]);
 function statusLabel(s){ return ST_LABEL[s]||'Pendiente'; }
 function stClass(s){ return ST_LABEL[s]?s:'pendiente'; }
 // Avance: actividades entregadas entre las que siguen vigentes (las archivadas no cuentan)
-function actProgress(){ let tot=0,done=0; project.data.deliverables.forEach(d=>{ if(d.status==='archivado') return; d.activities.forEach(a=>{ if(a.status==='archivado') return; tot++; if(a.status==='entregado') done++; }); }); return {tot,done,pct:tot?Math.round(done/tot*100):0}; }
-function roleLabel(r){ return r==='super'?'Admin general':(r==='admin'?'Admin de proyecto':'Coordinación'); }
+function actProgress(){ let tot=0,done=0; project.data.deliverables.forEach(d=>{ if(d.status==='archivado') return; d.activities.forEach(a=>{ if(a.status==='archivado') return; tot++; if(ST_DONE(a.status)) done++; }); }); return {tot,done,pct:tot?Math.round(done/tot*100):0}; }
+// Avance del proyecto: cuenta cada actividad y, si un entregable no tiene actividades, cuenta el entregable mismo.
+function avanceProyecto(){ let tot=0,done=0,rev=0,proc=0; const u=s=>{ tot++; if(ST_DONE(s)) done++; else if(s==='revision'||s==='modificacion') rev++; else if(s==='proceso'||s==='seguimiento') proc++; };
+  project.data.deliverables.forEach(d=>{ if(d.status==='archivado') return; const acts=d.activities.filter(a=>a.status!=='archivado'); if(acts.length) acts.forEach(a=>u(a.status)); else u(d.status); });
+  return {tot,done,rev,proc,pct:tot?Math.round(done/tot*100):0}; }
+function roleLabel(r){ return r==='super'?'Admin general':(r==='admin'?'Admin de proyecto':(r==='seguimiento'?'Responsable de seguimiento':'Coordinación')); }
 function slugify(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||'proyecto'; }
 function toast(msg,err){ const t=$('toast'); t.textContent=msg; t.className='show'+(err?' err':''); clearTimeout(toast._t); toast._t=setTimeout(()=>t.className='',3200); }
 function copyText(text){
@@ -909,7 +975,7 @@ async function manageProject(slug){
 }
 function renderManage(){
   const p=mg.project;
-  const users=mg.users.map((u,i)=>`<div class="user-row v3"><input type="text" value="${esc(u.name)}" placeholder="Nombre" onchange="mg.users[${i}].name=this.value.trim()"><input type="email" value="${esc(u.email)}" placeholder="correo@ejemplo.com" onchange="mg.users[${i}].email=this.value.trim().toLowerCase()"><div class="pw-cell"><input type="text" value="${esc(u.password)}" placeholder="${u.hasPassword?'Guardada. Escribe para cambiarla':'Contraseña (mín. 8)'}" autocomplete="off" oninput="mg.users[${i}].password=this.value"><button class="btn small" title="Generar una contraseña" onclick="mg.users[${i}].password=genPw(); renderManage()">Generar</button></div><select onchange="mg.users[${i}].role=this.value"><option value="admin" ${u.role==='admin'?'selected':''}>Admin de proyecto</option><option value="coordinacion" ${u.role==='coordinacion'?'selected':''}>Coordinación</option></select><button class="btn small danger" onclick="mg.users.splice(${i},1); renderManage()">Quitar</button></div>`).join('');
+  const users=mg.users.map((u,i)=>`<div class="user-row v3"><input type="text" value="${esc(u.name)}" placeholder="Nombre" onchange="mg.users[${i}].name=this.value.trim()"><input type="email" value="${esc(u.email)}" placeholder="correo@ejemplo.com" onchange="mg.users[${i}].email=this.value.trim().toLowerCase()"><div class="pw-cell"><input type="text" value="${esc(u.password)}" placeholder="${u.hasPassword?'Guardada. Escribe para cambiarla':'Contraseña (mín. 8)'}" autocomplete="off" oninput="mg.users[${i}].password=this.value"><button class="btn small" title="Generar una contraseña" onclick="mg.users[${i}].password=genPw(); renderManage()">Generar</button></div><select onchange="mg.users[${i}].role=this.value"><option value="admin" ${u.role==='admin'?'selected':''}>Admin de proyecto</option><option value="coordinacion" ${u.role==='coordinacion'?'selected':''}>Coordinación</option><option value="seguimiento" ${u.role==='seguimiento'?'selected':''}>Responsable de seguimiento</option></select><button class="btn small danger" onclick="mg.users.splice(${i},1); renderManage()">Quitar</button></div>`).join('');
   const creds=mg.creds.length?`<div class="creds"><b>Accesos listos para compartir.</b> Las contraseñas solo se muestran ahora: después quedan cifradas y no se pueden consultar, solo cambiar.${mg.creds.map((c,i)=>`<div><span>${esc(c.email)} · <code>${esc(c.password)}</code></span><button class="btn small" onclick="copyText(credText(${i}))">Copiar acceso</button></div>`).join('')}</div>`:'';
   openModal(`
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><div class="modal-title">Gestionar proyecto</div><div class="modal-sub" style="margin-bottom:0;">${esc(p.name)}</div></div>${statusChip(p.status)}</div>
@@ -925,7 +991,7 @@ function renderManage(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><input type="date" id="mgExp" value="${esc(p.expiresAt)}" style="width:170px;"><button class="btn small primary" onclick="saveMgExp()">Guardar vigencia</button><button class="btn small" onclick="extendMg(30)">Ampliar 30 días</button><button class="btn small" onclick="extendMg(90)">Ampliar 90 días</button></div>
       <div style="margin-top:12px;">${p.closed?`<button class="btn small orange" onclick="toggleCloseMg(false)">Reabrir proyecto</button>`:`<button class="btn small danger" onclick="toggleCloseMg(true)">Cerrar proyecto ahora</button>`}</div></div>
     <div class="section-sep"><h4>Usuarios y roles</h4>
-      <div class="modal-sub" style="margin-bottom:10px;">Asigna a cada persona su correo, su contraseña y su rol para esta liga. <b>Admin de proyecto:</b> ve y descarga todo, cambia fechas, usa Sintro Activities y envía sugerencias que te llegan como ticket. <b>Coordinación:</b> solo ve y descarga.</div>
+      <div class="modal-sub" style="margin-bottom:10px;">Asigna a cada persona su correo, su contraseña y su rol para esta liga. <b>Admin de proyecto:</b> ve y descarga todo, cambia fechas, usa Sintro Activities y envía sugerencias que te llegan como ticket. <b>Coordinación:</b> solo ve y descarga. <b>Responsable de seguimiento:</b> revisa entregables, fechas, estatus, avance, ligas y los documentos ya sistematizados, sin modificar nada; puede enviar preguntas y observaciones.</div>
       ${users||'<p class="empty">Sin usuarios todavía.</p>'}
       <div style="display:flex;gap:8px;margin-top:6px;"><button class="btn small" onclick="mg.users.push({email:'',role:'coordinacion',name:'',hasPassword:false,password:''}); renderManage()">Agregar usuario</button><button class="btn small primary" onclick="saveMgUsers()">Guardar usuarios</button></div>${creds}</div>
     <div class="section-sep"><h4>Liga del proyecto</h4>
@@ -1001,7 +1067,8 @@ let openBlocks={}, openGanttSub={}, openObs={};
 let editModeOn=false, attendeesDraft=[], editingLogId=null;
 const canEdit=()=>role==='super';
 const canDates=()=>role==='super'||role==='admin';
-const canSuggest=()=>role==='admin';
+const canSuggest=()=>role==='admin'||role==='seguimiento';
+const esSeg=()=>role==='seguimiento';
 
 function defaultProjectData(){
   return {
@@ -1069,16 +1136,18 @@ function renderProject(){
   if(role==='super' && p.status!=='activo') b+=`<div class="banner warn">${p.status==='cerrado'?'Este proyecto está cerrado.':'La vigencia de este proyecto terminó.'} Solo tú, como Admin general, puedes verlo. Ajusta la vigencia o reábrelo desde Gestionar.</div>`;
   if(role==='admin') b+=`<div class="banner info">Tu rol es Admin de proyecto: ${project.modules==='activities'?'puedes usar Sintro Activities, descargar sus resultados y enviar sugerencias al Admin general.':(project.modules==='track'?'puedes cambiar fechas, descargar la información y enviar sugerencias al Admin general.':'puedes usar Sintro Activities y pasar su resultado al seguimiento, cambiar fechas, descargar la información y enviar sugerencias al Admin general.')}</div>`;
   if(role==='coordinacion') b+=`<div class="banner info">Tu rol es Coordinación: puedes consultar el proyecto y descargar la información.</div>`;
+  if(role==='seguimiento') b+=`<div class="banner info">Tu rol es Responsable de seguimiento: puedes revisar entregables, fechas, estatus, avance y ligas, sin modificarlos. Para preguntas u observaciones usa el botón «Preguntas y observaciones» o escríbenos por WhatsApp.</div>`;
   $('projBanners').innerHTML=b;
   let tb=hasTrack()?`<button class="btn primary" onclick="exportProjectPDF()">Descargar proyecto en PDF</button><button class="btn" onclick="exportProjectWord()">Descargar en Word</button><button class="btn" onclick="exportProjectExcel()">Descargar en Excel</button>`:'';
   $('pOverview').classList.toggle('hidden',!hasTrack());
-  if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">Sugerir un cambio</button>`;
+  if(esSeg()) tb='';
+  if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">${esSeg()?'Preguntas y observaciones':'Sugerir un cambio'}</button>`;
   if(role==='super') tb+=`<button class="btn" onclick="manageProject('${esc(p.slug)}')">Gestionar proyecto</button>`;
   if(role==='super'||role==='admin') tb+=`<button class="btn" onclick="openHistorial()">Historial de cambios</button>`;
   $('pToolbar').innerHTML=tb;
   $('delivDesc').textContent = canEdit() ? 'Cada entregable se abre en sus actividades. Puedes modificar nombres, fechas, estatus y ligas de evidencia.' : (canDates() ? 'Cada entregable se abre en sus actividades. Puedes cambiar las fechas; para otros cambios envía una sugerencia.' : 'Cada entregable se abre en sus actividades.');
   $('logDesc').textContent = canEdit() ? 'Registra, edita o elimina sesiones. Cualquier persona con acceso puede consultarlas y descargarlas.' : 'Consulta y descarga las sesiones registradas.';
-  $('ganttDesc').textContent = canDates() ? 'Cambia las fechas de cada entregable y el cronograma se actualiza solo. El color y el avance dependen del estatus de cada entregable.' : 'El color y el avance se calculan a partir del estatus de cada entregable.';
+  $('ganttDesc').textContent = canEdit() ? 'Cambia fechas, estatus y la liga del comprobable de cada entregable y actividad; el cronograma y el avance se actualizan solos. Usa «Tablero por estatus» para verlo por columnas.' : (canDates() ? 'Cambia las fechas de cada entregable y actividad; el cronograma se actualiza solo. El color y el avance dependen del estatus.' : 'Consulta el avance, las fechas, los estatus y las ligas de los comprobables. Usa «Tablero por estatus» para verlo por columnas.');
   ['editModeBtn','reportAdminControls','addDelivBtn','sortDelivBtn','addToolBtn','addGoalBtn','addCompBtn'].forEach(id=>$(id).classList.toggle('hidden',!canEdit()));
   if(!canEdit()){ $('logForm').classList.add('hidden'); }
   $('reportAdminControls').style.display=canEdit()?'flex':'none';
@@ -1089,9 +1158,10 @@ function renderAll(){ renderTabs(); renderReport(); renderDeliverables(); render
 /* ---- pestañas: secuencia numerada, según las herramientas del proyecto y el rol ---- */
 const TAB_DEFS=[['sintro','Sintro Activities'],['entregables','Entregables'],['bitacora','Bitácora de sesiones'],['caja','Caja de herramientas'],['planeacion','Planeación estratégica'],['evaluacion','Evaluación de competencias'],['indicadores','Indicadores']];
 const hasTrack=()=>project.modules!=='activities';
+const segCaja=()=>(project.data.tools||[]).length>0||((project.data.herr||{}).rep||[]).length>0;
 const hasSA=()=>project.modules!=='track';
 const canSA=()=>(role==='super'||role==='admin')&&hasSA();
-function tabVisible(k){ if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
+function tabVisible(k){ if(esSeg()) return hasTrack()&&(k==='entregables'||k==='planeacion'||(k==='caja'&&segCaja())); if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
 function renderTabs(){
   const nav=$('projTabs'), vis=TAB_DEFS.filter(t=>tabVisible(t[0]));
   const act=nav.querySelector('.tab.active'); let cur=act?act.dataset.tab:'';
@@ -1171,11 +1241,13 @@ function dateCtl(kind,id,field,val,parentId,mini){
 
 /* ---- sugerencias (Admin de proyecto) ---- */
 async function openSuggest(){
-  openModal(`<div class="modal-title">Sugerir un cambio</div><div class="modal-sub">Tu sugerencia llega como ticket al Admin general de Sintropía Social. Te avisaremos por correo cuando se atienda.</div>
-    <label>Sección</label><select id="sgSection"><option>Entregables</option><option>Bitácora</option><option>Caja de herramientas</option><option>Planeación</option><option>Evaluación</option><option>Indicadores</option><option>Otro</option></select>
-    <label style="margin-top:12px;">¿Qué cambio propones?</label><textarea id="sgMsg" rows="4" placeholder="Describe el cambio con el mayor detalle posible"></textarea>
-    <div class="modal-actions"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn orange" onclick="sendSuggest()">Enviar sugerencia</button></div>
-    <div class="section-sep"><h4>Tus sugerencias en este proyecto</h4><div id="myTickets"><p class="empty">Cargando…</p></div></div>`);
+  const S=esSeg();
+  openModal(`<div class="modal-title">${S?'Preguntas y observaciones':'Sugerir un cambio'}</div><div class="modal-sub">${S?'Tu pregunta u observación llega al correo de contacto de Sintropía Social. Te avisaremos por correo cuando se atienda.':'Tu sugerencia llega como ticket al Admin general de Sintropía Social. Te avisaremos por correo cuando se atienda.'}</div>
+    <label>Sección</label><select id="sgSection">${(S?['Entregables','Planeación y avance','Caja de herramientas','Otro']:['Entregables','Bitácora','Caja de herramientas','Planeación','Evaluación','Indicadores','Otro']).map(o=>`<option>${o}</option>`).join('')}</select>
+    ${S?'<label style="margin-top:12px;">Tipo</label><select id="sgTipo"><option>Pregunta</option><option>Observación</option></select>':''}
+    <label style="margin-top:12px;">${S?'Escribe tu pregunta u observación':'¿Qué cambio propones?'}</label><textarea id="sgMsg" rows="4" placeholder="${S?'Con el mayor detalle posible: a qué entregable o actividad te refieres':'Describe el cambio con el mayor detalle posible'}"></textarea>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn orange" onclick="sendSuggest()">${S?'Enviar':'Enviar sugerencia'}</button></div>
+    <div class="section-sep"><h4>${S?'Tus preguntas y observaciones':'Tus sugerencias en este proyecto'}</h4><div id="myTickets"><p class="empty">Cargando…</p></div></div>`);
   loadMyTickets();
 }
 async function loadMyTickets(){
@@ -1185,9 +1257,9 @@ async function loadMyTickets(){
   }catch(e){ if($('myTickets')) $('myTickets').innerHTML=`<p class="empty">${esc(e.message||'No se pudieron cargar.')}</p>`; }
 }
 async function sendSuggest(){
-  const message=$('sgMsg').value.trim(), section=$('sgSection').value;
-  if(message.length<5){ toast('Escribe tu sugerencia.',true); return; }
-  try{ await api('createTicket',{slug:project.slug,section,message}); toast('Sugerencia enviada al Admin general'); $('sgMsg').value=''; loadMyTickets(); }
+  const tipo=$('sgTipo')?$('sgTipo').value:'', message=$('sgMsg').value.trim(), section=(tipo?tipo+' · ':'')+$('sgSection').value;
+  if(message.length<5){ toast(esSeg()?'Escribe tu pregunta u observación.':'Escribe tu sugerencia.',true); return; }
+  try{ await api('createTicket',{slug:project.slug,section,message}); toast(esSeg()?'Enviado a Sintropía Social':'Sugerencia enviada al Admin general'); $('sgMsg').value=''; loadMyTickets(); }
   catch(e){ toast(e.message||'No se pudo enviar.',true); }
 }
 
@@ -1224,15 +1296,16 @@ function sello(o,campo){ o[campo+'By']=quien(); o[campo+'At']=new Date().toISOSt
 function selloTxt(o,campo){ const by=o&&o[campo+'By'], at=o&&o[campo+'At']; if(!by&&!at) return ''; return `<span class="lk-meta">Guardado${by?' por '+esc(by):''}${at?' · '+esc(fmtHora(at)):''}</span>`; }
 function fmtHora(iso){ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
 function lkTarget(key){ if(key==='rep') return project.data.reportFinal; const p=key.split(':'); if(p[0]==='d') return findD(p[1]); if(p[0]==='a') return findA(p[1],p[2]); return null; }
-function lockedLink(key,o,ph,w){
-  const v=(o&&o.link)||'', id='lk_'+key.replace(/[^a-z0-9]/gi,'_');
-  if(v&&!linkEdit[key]) return `<span class="lk-box" onclick="event.stopPropagation()"><a class="lk-val" href="${esc(safeUrl(v))}" target="_blank" rel="noopener" title="${esc(v)}">${esc(v.length>46?v.slice(0,44)+'…':v)}</a><button class="btn small" onclick="event.stopPropagation();lkEdit('${key}')">Editar</button>${selloTxt(o,'link')}</span>`;
-  return `<span class="lk-box" onclick="event.stopPropagation()"><input type="text" id="${id}" placeholder="${esc(ph)}" value="${esc(v)}" style="width:${w||220}px;font-size:11.5px;" onkeydown="if(event.key==='Enter'){event.preventDefault();lkSave('${key}')}"><button class="btn primary small" onclick="event.stopPropagation();lkSave('${key}')">Guardar</button>${v?`<button class="btn small" onclick="event.stopPropagation();lkCancel('${key}')">Cancelar</button>`:''}</span>`;
+function lkId(key,sc){ return 'lk_'+(sc?sc+'_':'')+key.replace(/[^a-z0-9]/gi,'_'); }
+function lockedLink(key,o,ph,w,sc){
+  sc=sc||''; const v=(o&&o.link)||'', id=lkId(key,sc);
+  if(v&&!linkEdit[key]) return `<span class="lk-box" onclick="event.stopPropagation()"><a class="lk-val" href="${esc(safeUrl(v))}" target="_blank" rel="noopener" title="${esc(v)}">${esc(v.length>46?v.slice(0,44)+'…':v)}</a><button class="btn small" onclick="event.stopPropagation();lkEdit('${key}','${sc}')">Editar</button>${selloTxt(o,'link')}</span>`;
+  return `<span class="lk-box" onclick="event.stopPropagation()"><input type="text" id="${id}" placeholder="${esc(ph)}" value="${esc(v)}" style="width:${w||220}px;font-size:11.5px;" onkeydown="if(event.key==='Enter'){event.preventDefault();lkSave('${key}','${sc}')}"><button class="btn primary small" onclick="event.stopPropagation();lkSave('${key}','${sc}')">Guardar</button>${v?`<button class="btn small" onclick="event.stopPropagation();lkCancel('${key}')">Cancelar</button>`:''}</span>`;
 }
-function lkEdit(key){ linkEdit[key]=true; renderAll(); const i=$('lk_'+key.replace(/[^a-z0-9]/gi,'_')); if(i){ i.focus(); i.select(); } }
+function lkEdit(key,sc){ linkEdit[key]=true; renderAll(); const i=$(lkId(key,sc)); if(i){ i.focus(); i.select(); } }
 function lkCancel(key){ delete linkEdit[key]; renderAll(); }
-function lkSave(key){
-  const o=lkTarget(key), i=$('lk_'+key.replace(/[^a-z0-9]/gi,'_')); if(!o||!i) return;
+function lkSave(key,sc){
+  const o=lkTarget(key), i=$(lkId(key,sc)); if(!o||!i) return;
   const v=i.value.trim();
   if(v&&!/^https?:\/\//i.test(v)){ toast('La liga debe empezar con https://',true); i.focus(); return; }
   if(v===(o.link||'')){ delete linkEdit[key]; renderAll(); return; }
@@ -1396,6 +1469,10 @@ function herrErr(e){ return e&&e.error==='bad_request'?'El servidor todavía no 
 function herrCount(k){ const h=herr(); return {instr:h.instr.length,ter:h.ter.length,vox:h.vox.length,tl:h.tl.length,repo:null}[k]; }
 function renderHerr(){
   const g=$('herrGrid'); if(!g||!project) return; const h=herr();
+  const hd=document.querySelector('#panel-caja .herr-head'); if(hd) hd.classList.toggle('hidden',esSeg());
+  if(esSeg()){ g.innerHTML=''; $('herrWork').classList.add('hidden'); const w=$('herrRep');
+    w.innerHTML=h.rep.length?`<h3 class="herr-sub" style="margin-top:0;">Documentos sistematizados</h3><div class="herr-list">${repHerr().map(x=>`<div class="herr-item"><div class="ht">${esc(x.titulo)}<span class="herr-badge">${esc(HERR_TOOL_NAME[x.tool]||'')}</span></div><div class="hm">${esc(fmt(x.fecha,true))}${x.resumen?' · '+esc(x.resumen):''}</div>${(x.lineas||[]).length?`<ul style="margin:6px 0 0 18px;font-size:12px;">${x.lineas.slice(0,12).map(l=>`<li>${esc(l)}</li>`).join('')}${x.lineas.length>12?`<li>… y ${x.lineas.length-12} más</li>`:''}</ul>`:''}${x.url?`<div class="ha"><a class="btn small" href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener">Abrir documento</a></div>`:''}</div>`).join('')}</div>`:'';
+    return; }
   g.innerHTML=HERR_DEFS.map(d=>{ const n=herrCount(d[0]); const c=n==null?'Abrir':(n?n+' '+({instr:n===1?'instrumento':'instrumentos',ter:n===1?'mapa':'mapas',vox:n===1?'documento':'documentos',tl:n===1?'sala':'salas'}[d[0]]):'Abrir');
     return `<button class="herr-card ${herrUI.open===d[0]?'on':''}" onclick="openHerr('${d[0]}')"><div class="hk">${d[1]}</div><div class="hn">${d[2]}</div><div class="hd">${d[3]}</div><div class="hc">${c} →</div></button>`; }).join('');
   renderHerrRep();
@@ -1604,7 +1681,8 @@ function ganttRange(){
   if(!s.length||!e.length) return null; const base=s[0], end=e[e.length-1]; return base<end?{base,end}:null;
 }
 function renderProgress(){
-  const pct=actProgress().pct; $('progressPct').textContent=pct+'%'; $('progressFill').style.width=pct+'%';
+  const AV=avanceProyecto(), pct=AV.pct; $('progressPct').textContent=pct+'%'; $('progressFill').style.width=pct+'%';
+  $('progressDet').textContent=AV.tot?`${AV.done} de ${AV.tot} ${AV.tot===1?'entregable o actividad entregado':'entregables y actividades entregados o aprobados'}${AV.rev?' · '+AV.rev+' en revisión o modificación':''}${AV.proc?' · '+AV.proc+' en proceso':''}`:'Agrega entregables o actividades para medir el avance.';
   const r=ganttRange(), L=$('semaforoLight'); L.className='light';
   if(!r){ L.classList.add('yellow'); $('semaforoTitle').textContent='Sin fechas suficientes'; $('semaforoDesc').textContent='Agrega fechas de inicio y fin a los entregables.'; return; }
   const total=dayOffset(r.end,r.base), el=Math.min(total,Math.max(0,dayOffset(todayIso(),r.base))), exp=total>0?el/total*100:0;
@@ -1612,51 +1690,104 @@ function renderProgress(){
   else if(pct>=exp-15){ L.classList.add('yellow'); $('semaforoTitle').textContent='Atención'; $('semaforoDesc').textContent='El avance va ligeramente por debajo de lo esperado.'; }
   else { L.classList.add('red'); $('semaforoTitle').textContent='Riesgo de retraso'; $('semaforoDesc').textContent='El avance está notablemente por debajo de lo esperado.'; }
 }
+/* ---- Cronograma por tarjetas: cada entregable en su tarjeta, con nombre completo, fechas, estatus,
+   liga de evidencia (comprobable) y sus actividades en filas legibles. ---- */
+const ST_COLOR={pendiente:'var(--pending)',proceso:'var(--purple)',revision:'var(--orange)',modificacion:'#C2185B',seguimiento:'var(--blue)',pausa:'var(--yellow)',entregado:'var(--ok)',aprobado:'#0B6E47',archivado:'var(--archived,#9A97A6)'};
+let planView='crono';
+function setPlanView(v){ planView=v; document.querySelectorAll('#viewSwitch .vs').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); $('ganttWrap').classList.toggle('hidden',v!=='crono'); $('boardWrap').classList.toggle('hidden',v!=='tablero'); renderGantt(); }
+function stChip(s){ return `<span class="badge ${stClass(s)}">${statusLabel(s)}</span>`; }
+function rangoTxt(a,b){ return a||b?((a?fmt(a):'—')+' a '+(b?fmt(b):'—')):'Sin fechas'; }
 function renderGantt(){
+  if(planView==='tablero'){ renderBoard(); renderProgress(); return; }
   const r=ganttRange(), rows=$('ganttRows'), months=$('ganttMonths'); rows.innerHTML=''; months.innerHTML='';
-  if(!r){ rows.innerHTML='<p class="empty">Agrega fechas de inicio y fin a los entregables o a sus actividades para ver el cronograma.</p>'; renderProgress(); return; }
-  const total=dayOffset(r.end,r.base); const MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const cur=parseIso(r.base); cur.setDate(1); const endD=parseIso(r.end); let html='';
-  while(cur<=endD){ const pct=Math.max(0,dayOffset(isoOf(cur),r.base)/total*100); html+=`<span class="gantt-month-label" style="left:${pct}%">${MN[cur.getMonth()]}</span>`; cur.setMonth(cur.getMonth()+1); }
-  months.innerHTML=html;
-  const tp=Math.min(100,Math.max(0,dayOffset(todayIso(),r.base)/total*100));
-  const P=v=>Math.min(100,Math.max(0,dayOffset(v,r.base)/total*100));
-  sortDelivs(project.data.deliverables).forEach(d=>{
-    const glink=d.link?`<a class="glink" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia</a>`:'';
-    if(!d.start||!d.end){ const row=document.createElement('div'); row.className='gantt-row'; row.innerHTML=`<div class="gantt-label" onclick="toggleGanttSub('${d.id}')">${esc(d.name)}${glink}</div><div class="gantt-track" style="display:flex;align-items:center;padding:0 10px;font-size:11px;color:var(--grey);">Sin fechas asignadas</div>`; rows.appendChild(row);
-      if(canDates()){ const dr=document.createElement('div'); dr.className='gantt-dates-row'; dr.innerHTML=`Fechas: ${dateCtl('deliv',d.id,'start',d.start)} a ${dateCtl('deliv',d.id,'end',d.end)}`; rows.appendChild(dr); }
-      ganttActs(d,rows,P,tp); return; }
-    const sp=Math.max(0,dayOffset(d.start,r.base)/total*100), ep=Math.min(100,dayOffset(d.end,r.base)/total*100), wp=Math.max(2,ep-sp);
-    const row=document.createElement('div'); row.className='gantt-row';
-    row.innerHTML=`<div class="gantt-label" onclick="toggleGanttSub('${d.id}')" title="Mostrar u ocultar sus actividades">${esc(d.name)}${glink}</div><div class="gantt-track"><div class="gantt-bar ${stClass(d.status)}" style="left:${sp}%;width:${wp}%;">${statusLabel(d.status)}</div><div class="gantt-today" style="left:${tp}%;"></div></div>`;
-    rows.appendChild(row);
-    if(canDates()){ const dr=document.createElement('div'); dr.className='gantt-dates-row'; dr.innerHTML=`Fechas: ${dateCtl('deliv',d.id,'start',d.start)} a ${dateCtl('deliv',d.id,'end',d.end)}`; rows.appendChild(dr); }
-    ganttActs(d,rows,P,tp);
-    const obs=project.data.ganttObs[d.id]||{text:'',required:false}; const orow=document.createElement('div'); orow.className='gantt-obs-row';
-    if(canEdit()&&openObs[d.id]){
-      orow.innerHTML=`<div style="flex:1;"><textarea id="obsIn_${d.id}" placeholder="Observación para este entregable">${esc(obs.text||'')}</textarea><div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;"><label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin:0;"><input type="checkbox" id="obsReq_${d.id}" ${obs.required?'checked':''} style="width:auto;"> Requiere atención</label><button class="btn small primary" onclick="saveObs('${d.id}')">Guardar</button><button class="btn small" onclick="openObs['${d.id}']=false; renderGantt()">Cerrar</button></div></div>`;
-    } else {
-      orow.innerHTML=`${canEdit()?`<button class="btn small" onclick="openObs['${d.id}']=true; renderGantt()">${obs.text?'Editar observación':'Agregar observación'}</button>`:''}${obs.text?`<div class="obs-box">${obs.required?'<span class="obs-required">Requiere atención</span>':''}${esc(obs.text)}</div>`:''}`;
+  const E=canEdit(), DT=canDates();
+  let P=null, tp=null;
+  if(r){
+    const total=dayOffset(r.end,r.base); const MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const cur=parseIso(r.base); cur.setDate(1); const endD=parseIso(r.end); let html='';
+    while(cur<=endD){ const pct=Math.max(0,dayOffset(isoOf(cur),r.base)/total*100); if(pct<96) html+=`<span class="gantt-month-label" style="left:${pct}%">${MN[cur.getMonth()]}</span>`; cur.setMonth(cur.getMonth()+1); }
+    months.innerHTML=html;
+    tp=Math.min(100,Math.max(0,dayOffset(todayIso(),r.base)/total*100));
+    P=v=>Math.min(100,Math.max(0,dayOffset(v,r.base)/total*100));
+  }
+  if(!project.data.deliverables.length){ rows.innerHTML='<p class="empty">Agrega entregables para ver el cronograma.</p>'; renderProgress(); return; }
+  if(!r) rows.insertAdjacentHTML('beforeend','<p class="empty" style="padding-top:0;">Agrega fechas de inicio y fin para ver las barras del cronograma.</p>');
+  sortDelivs(project.data.deliverables).forEach((d,i)=>{
+    const card=document.createElement('div'); card.className='gc';
+    const fechas=DT?`${dateCtl('deliv',d.id,'start',d.start)}<span>a</span>${dateCtl('deliv',d.id,'end',d.end)}`:`<span>${rangoTxt(d.start,d.end)}</span>`;
+    const ev=E?lockedLink('d:'+d.id,d,'Liga del comprobable (si lo tienes)',230,'g'):(d.link?`<a class="act-link" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener">Ver comprobable</a>${selloTxt(d,'link')}`:'<span>Sin comprobable</span>');
+    const st=E?statusSelect(d.status,`setDeliv('${d.id}','status',this.value)`):stChip(d.status);
+    let bar='';
+    if(P&&d.start&&d.end){ const sp=P(d.start), wp=Math.max(1.5,P(d.end)-sp); bar=`<div class="gantt-bar ${stClass(d.status)}" style="left:${sp}%;width:${wp}%;" title="${esc(d.name)} · ${rangoTxt(d.start,d.end)}">${wp>12?statusLabel(d.status):''}</div>`; }
+    else if(P&&(d.start||d.end)) bar=`<div class="gantt-ms ${stClass(d.status)}" style="left:${P(d.end||d.start)}%;top:6px;"></div>`;
+    const acts=sortActs(d.activities), abierto=openGanttSub[d.id]!==false;
+    card.innerHTML=`<div class="gc-head"><div class="gc-n">${i+1}</div><div><div class="gc-name">${esc(d.name)}</div>
+        <div class="gc-meta"><span class="gc-dates">${fechas}</span><span class="ga-ev">${ev}</span></div></div><div class="gc-right">${st}</div></div>
+      ${P?`<div class="gc-track">${bar}<div class="gantt-today" style="left:${tp}%;" title="Hoy"></div></div>`:''}
+      ${acts.length?`<button class="gc-toggle" onclick="toggleGanttSub('${d.id}')">${abierto?'Ocultar':'Ver'} ${acts.length} ${acts.length===1?'actividad':'actividades'} · ${acts.filter(a=>ST_DONE(a.status)).length} entregadas</button>`:''}`;
+    if(acts.length&&abierto){
+      const box=document.createElement('div'); box.className='gc-acts';
+      acts.forEach(a=>{
+        const f=DT?`<span class="ga-dl"><b>Inicio</b>${dateCtl('act',a.id,'start',a.start,d.id)}</span><span class="ga-dl"><b>Fin</b>${dateCtl('act',a.id,'date',a.date,d.id)}</span>`:rangoTxt(a.start,a.date);
+        const s2=E?statusSelect(a.status,`setAct('${d.id}','${a.id}','status',this.value)`):stChip(a.status);
+        const e2=E?lockedLink('a:'+d.id+':'+a.id,a,'Liga del comprobable',160,'g'):(a.link?`<a class="act-link" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver comprobable</a>`:'<span class="lk-meta">Sin comprobable</span>');
+        let mk='';
+        if(P){ const s=a.start||'', e=a.date||''; if(s&&e&&e>=s){ const sp=P(s), wp=Math.max(1.2,P(e)-sp); mk=`<div class="gantt-bar ${stClass(a.status)}" style="left:${sp}%;width:${wp}%;"></div>`; } else if(s||e) mk=`<div class="gantt-ms ${stClass(a.status)}" style="left:${P(e||s)}%;"></div>`; }
+        const row=document.createElement('div'); row.className='ga';
+        row.innerHTML=`<div class="ga-name">${esc(a.name)}</div><div class="ga-dates">${f}</div><div>${s2}</div><div class="ga-ev">${e2}</div>${P?`<div class="ga-track">${mk}<div class="gantt-today" style="left:${tp}%;top:-2px;bottom:-2px;"></div></div>`:''}`;
+        box.appendChild(row);
+      });
+      card.appendChild(box);
     }
-    rows.appendChild(orow);
+    const obs=project.data.ganttObs[d.id]||{text:'',required:false}; const orow=document.createElement('div'); orow.className='obs-row';
+    if(E&&openObs[d.id]){
+      orow.innerHTML=`<div style="flex:1;"><textarea id="obsIn_${d.id}" placeholder="Observación para este entregable">${esc(obs.text||'')}</textarea><div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;"><label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin:0;"><input type="checkbox" id="obsReq_${d.id}" ${obs.required?'checked':''} style="width:auto;"> Requiere atención</label><button class="btn small primary" onclick="saveObs('${d.id}')">Guardar observación</button><button class="btn small" onclick="openObs['${d.id}']=false; renderGantt()">Cancelar</button></div></div>`;
+    } else {
+      orow.innerHTML=`${E?`<button class="btn small" onclick="openObs['${d.id}']=true; renderGantt()">${obs.text?'Editar observación':'Agregar observación'}</button>`:''}${obs.text?`<div class="obs-box">${obs.required?'<span class="obs-required">Requiere atención</span>':''}${linkify(obs.text)}</div>`:''}`;
+    }
+    if(orow.innerHTML.trim()) card.appendChild(orow);
+    rows.appendChild(card);
   });
   renderProgress();
 }
-// Actividades del entregable, debajo de su barra y en orden de fecha. Con inicio y fin se dibujan como barra; con una sola fecha, como rombo.
-function ganttActs(d,rows,P,tp){
-  if(openGanttSub[d.id]===false||!d.activities.length) return;
-  sortActs(d.activities).forEach(a=>{
-    const s=a.start||'', e=a.date||'', c=stClass(a.status), lab=statusLabel(a.status), tit=esc(a.name)+(s?' · '+fmt(s):'')+(e?' a '+fmt(e):'')+' · '+lab;
-    let mark;
-    if(s&&e&&e>=s){ const sp=P(s), wp=Math.max(1.5,P(e)-sp); mark=`<div class="gantt-bar ${c}" style="left:${sp}%;width:${wp}%;" title="${tit}">${wp>9?lab:''}</div>`; }
-    else if(s||e) mark=`<div class="gantt-ms ${c}" style="left:${P(e||s)}%;" title="${tit}"></div>`;
-    else mark=`<div class="gantt-nodate">Sin fecha</div>`;
-    const row=document.createElement('div'); row.className='gantt-row act';
-    row.innerHTML=`<div class="gantt-label" title="${tit}">${esc(a.name)}${a.link?`<a class="glink" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver evidencia</a>`:''}</div><div class="gantt-track">${mark}<div class="gantt-today" style="left:${tp}%;"></div></div>`;
-    rows.appendChild(row);
-    if(canDates()){ const dr=document.createElement('div'); dr.className='gantt-dates-row act'; dr.innerHTML=`Inicio ${dateCtl('act',a.id,'start',a.start,d.id)} fin o entrega ${dateCtl('act',a.id,'date',a.date,d.id)}`; rows.appendChild(dr); }
+// Las ligas escritas en una observación se vuelven clicables.
+function linkify(t){ return esc(t).replace(/https?:\/\/[^\s<>"']+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u.length>60?u.slice(0,58)+'…':u}</a>`); }
+
+/* ---- Tablero por estatus (tipo Notion): columnas por estatus, se despliegan o pliegan al dar clic en el estatus;
+   en cada tarjeta, el estatus abre un menú para cambiarlo (solo quien puede editar). ---- */
+let boardOpts={ver:'actividades',cerradas:{archivado:true}};
+function boardItems(){
+  const out=[];
+  project.data.deliverables.forEach((d,i)=>{
+    const acts=d.activities||[];
+    if(boardOpts.ver==='entregables'||!acts.length) out.push({k:'d',d,o:d,name:d.name,sub:acts.length?acts.length+(acts.length===1?' actividad':' actividades'):'Entregable',start:d.start,end:d.end});
+    if(boardOpts.ver!=='entregables') acts.forEach(a=>out.push({k:'a',d,o:a,name:a.name,sub:d.name,start:a.start,end:a.date}));
   });
+  return out;
 }
+function renderBoard(){
+  const w=$('boardWrap'), E=canEdit(), it=boardItems();
+  const cols=ST_OPTS.map(o=>({k:o[0],l:o[1],items:it.filter(x=>stClass(x.o.status)===o[0])})).filter(c=>c.items.length||['pendiente','proceso','revision','modificacion','entregado'].includes(c.k));
+  w.innerHTML=`<div class="board-tools"><label style="margin:0;display:flex;gap:8px;align-items:center;">Ver <select onchange="boardOpts.ver=this.value; renderBoard()"><option value="actividades" ${boardOpts.ver==='actividades'?'selected':''}>Actividades (y entregables sin actividades)</option><option value="entregables" ${boardOpts.ver==='entregables'?'selected':''}>Entregables</option></select></label><span class="lk-meta">Da clic en un estatus para desplegar u ocultar su columna${E?'; en cada tarjeta, da clic en su estatus para cambiarlo':''}.</span></div>
+  <div class="board">${cols.map(c=>{ const cerr=!!boardOpts.cerradas[c.k];
+    return `<div class="bcol ${cerr?'closed':''}"><button class="bcol-head" onclick="boardOpts.cerradas['${c.k}']=!boardOpts.cerradas['${c.k}']; renderBoard()" aria-expanded="${!cerr}"><span class="bdot" style="background:${ST_COLOR[c.k]}"></span>${c.l}<span class="n">${c.items.length}</span><span class="car">${cerr?'▸':'▾'}</span></button>
+      ${cerr?'':c.items.map(x=>{ const id=x.k==='d'?`d:${x.d.id}`:`a:${x.d.id}:${x.o.id}`;
+        return `<div class="bcard"><div class="bk">${x.k==='d'?'Entregable':'Actividad'}</div><div class="bt">${esc(x.name)}</div>${x.k==='a'?`<div class="bd">${esc(x.sub)}</div>`:`<div class="bm">${esc(x.sub)}</div>`}
+          <div class="bm">${rangoTxt(x.start,x.end)}</div>${x.o.link?`<div class="bm"><a class="act-link" href="${esc(safeUrl(x.o.link))}" target="_blank" rel="noopener">Ver comprobable</a></div>`:''}
+          <button class="bchip badge ${stClass(x.o.status)} ${E?'edit':''}" ${E?`onclick="boardMenu(event,'${id}')"`:'tabindex="-1"'}>${statusLabel(x.o.status)}</button></div>`; }).join('')||'<div class="bempty">Sin elementos</div>'}
+    </div>`; }).join('')}</div>`;
+}
+function boardMenu(ev,id){
+  ev.stopPropagation(); boardMenuClose();
+  const o=lkTarget(id); if(!o) return;
+  const m=document.createElement('div'); m.className='bmenu'; m.id='bmenu';
+  m.innerHTML=ST_OPTS.map(s=>`<button class="${stClass(o.status)===s[0]?'on':''}" onclick="boardSet('${id}','${s[0]}')"><span class="bdot" style="background:${ST_COLOR[s[0]]}"></span>${s[1]}</button>`).join('');
+  document.body.appendChild(m);
+  const r=ev.currentTarget.getBoundingClientRect(); m.style.left=Math.min(window.scrollX+r.left,window.scrollX+document.documentElement.clientWidth-210)+'px'; m.style.top=(window.scrollY+r.bottom+4)+'px';
+  setTimeout(()=>document.addEventListener('click',boardMenuClose,{once:true}),0);
+}
+function boardMenuClose(){ const m=$('bmenu'); if(m) m.remove(); }
+function boardSet(id,st){ boardMenuClose(); const p=id.split(':'); if(p[0]==='d') setDeliv(p[1],'status',st); else setAct(p[1],p[2],'status',st); toast('Estatus: '+statusLabel(st)); }
 function toggleGanttSub(id){ openGanttSub[id]=openGanttSub[id]===false?true:false; renderGantt(); }
 function saveObs(id){ project.data.ganttObs[id]={text:$('obsIn_'+id).value.trim(),required:$('obsReq_'+id).checked}; openObs[id]=false; persist(); renderGantt(); }
 
