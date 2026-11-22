@@ -443,6 +443,8 @@
   table.goals-t td{font-size:13px; line-height:1.5;}
   .imp-box{display:inline-flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
   .ind-cards{display:grid; gap:12px;}
+  table.ind-t{min-width:1000px; margin:0;} table.ind-t td{font-size:12.5px; line-height:1.45; vertical-align:top; white-space:pre-wrap;} table.ind-t td.ind-tn{font-weight:700;}
+  table.ind-t th:nth-child(2){width:11%;} table.ind-t th:nth-child(3){width:15%;} table.ind-t th:nth-child(4){width:8%;} table.ind-t th:nth-child(5){width:8%;} table.ind-t th:nth-child(6){width:12%;} table.ind-t th:nth-child(7){width:10%;} table.ind-t th:nth-child(8){width:13%;} table.ind-t th:nth-child(9){width:8%;}
   .ind-card{border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--white);}
   .ind-top{display:flex; gap:10px; align-items:flex-start;}
   .ind-n{width:26px; height:26px; flex:none; border-radius:50%; background:var(--purple-light); color:var(--purple); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; margin-top:3px;}
@@ -631,7 +633,7 @@
       <h2 class="panel-title" style="margin-top:0;">Indicadores</h2>
       <p class="panel-desc" id="indDesc"></p>
       <div id="indList"></div>
-      <div class="toolbar-row" style="margin-top:6px;"><button class="add-row-btn hidden" id="addIndBtn" onclick="addInd()">Agregar indicador</button><span id="indImport" class="imp-box hidden"><button class="btn small" onclick="importTabla('ind')">Subir Excel o CSV</button><button class="btn small" onclick="plantillaTabla('ind')">Descargar plantilla</button></span></div>
+      <div class="toolbar-row" style="margin-top:6px;"><button class="btn primary small hidden" id="indSaveBtn" onclick="saveInd()">Guardar</button><button class="btn small hidden" id="indEditBtn" onclick="editInd()">Editar indicadores</button><button class="add-row-btn hidden" id="addIndBtn" onclick="addInd()">Agregar indicador</button><span id="indImport" class="imp-box hidden"><button class="btn small" onclick="importTabla('ind')">Subir Excel o CSV</button><button class="btn small" onclick="plantillaTabla('ind')">Descargar plantilla</button></span></div>
     </section>
 
     <section class="panel" id="panel-sintro">
@@ -1131,7 +1133,7 @@ async function openProject(slug){
   $('homeView').classList.add('hidden');
   try{
     const r=await api('getProject',{slug});
-    herrUI={open:'',folders:null,embed:'',form:'',tlPanel:null,terSel:''}; if($('herrWork')){ $('herrWork').classList.add('hidden'); $('herrWork').innerHTML=''; }
+    indEdit=false; herrUI={open:'',folders:null,embed:'',form:'',tlPanel:null,terSel:''}; if($('herrWork')){ $('herrWork').classList.add('hidden'); $('herrWork').innerHTML=''; }
     project=r.project; role=r.role; project.data=normalizeData(project.data); project.modules=project.modules||'both'; project.saQuota=r.sa||{limit:0,used:0,dxLimit:0,dxUsed:0};
   }catch(e){
     history.replaceState(null,'',location.pathname);
@@ -1925,10 +1927,15 @@ function exportProjectExcel(){
 ========================================================= */
 const IND_COLS=[['actividad','Actividad'],['nombre','Indicador'],['tipo','Tipo'],['linea_base','Línea base'],['meta','Meta'],['frecuencia','Frecuencia'],['medio','Medio de verificación'],['valor','Valor actual'],['obs','Observación']];
 function renderIndicators(){
-  const w=$('indList'); if(!w) return; const E=canEdit(), list=project.data.indicators;
+  const w=$('indList'); if(!w) return; const E=canEdit(), list=project.data.indicators, ED=E&&indEdit;
   $('addIndBtn').classList.toggle('hidden',!E); $('indImport').classList.toggle('hidden',!E);
+  $('indSaveBtn').classList.toggle('hidden',!ED); $('indEditBtn').classList.toggle('hidden',!E||ED||!list.length);
   $('indDesc').textContent=E?'Registra el valor actual de cada indicador conforme se mide. Línea base y meta se ajustan cuando se levante la línea base. También puedes subirlos desde un Excel o CSV.':'Avance de los indicadores del proyecto.';
   if(!list.length){ w.innerHTML=`<p class="empty">Aún no hay indicadores.${E?' Llegan solos al colocar en el proyecto un análisis de Sintro Activities; también puedes agregarlos a mano o subir un Excel o CSV.':''}</p>`; return; }
+  if(!ED){ // vista de tabla para leer y comparar
+    w.innerHTML=`<div class="sa-scroll"><table class="smart ind-t"><thead><tr><th style="width:4%">#</th>${IND_COLS.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${list.map((x,i)=>`<tr><td>${i+1}</td>${IND_COLS.map(c=>`<td class="${c[0]==='nombre'?'ind-tn':''}">${esc(x[c[0]]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    return;
+  }
   const campo=(x,k,l)=>E?`<label class="ind-f"><span>${l}</span><textarea class="ag" rows="1" oninput="autoGrow(this)" onchange="setInd('${x.id}','${k}',this.value)">${esc(x[k]||'')}</textarea></label>`
     :`<div class="ind-f"><span>${l}</span><div class="ind-v">${esc(x[k]||'—')}</div></div>`;
   w.innerHTML=`<div class="ind-cards">${list.map((x,i)=>`<div class="ind-card">
@@ -1994,12 +2001,15 @@ async function aplicarTabla(){
     if(modo==='actualizar'&&o[T.clave]){ const x=lista.find(y=>normH(y[T.clave])===normH(o[T.clave])); if(x){ Object.keys(o).forEach(key=>{ if(o[key]) x[key]=o[key]; }); act++; return; } }
     lista.push(T.nuevo(o)); nuevos++;
   });
-  impPend=null; closeModal(); persist(); T.pintar();
+  impPend=null; closeModal(); if(k==='ind') indEdit=true; persist(); T.pintar();
   toast((nuevos?nuevos+(nuevos===1?' fila agregada':' filas agregadas'):'')+(nuevos&&act?' · ':'')+(act?act+(act===1?' actualizada':' actualizadas'):''));
 }
 
+let indEdit=false;
+function editInd(){ indEdit=true; renderIndicators(); }
+function saveInd(){ document.activeElement&&document.activeElement.blur(); indEdit=false; persist(); clearTimeout(saveTimer); flush(); renderIndicators(); toast('Indicadores guardados'); }
 function setInd(id,f,v){ const x=project.data.indicators.find(i=>i.id===id); if(!x) return; x[f]=v; persist(); }
-function addInd(){ project.data.indicators.push({id:uid(),actividad:'',nombre:'Nuevo indicador',tipo:'',linea_base:'',meta:'',frecuencia:'',medio:'',valor:'',obs:''}); persist(); renderIndicators(); }
+function addInd(){ indEdit=true; project.data.indicators.push({id:uid(),actividad:'',nombre:'Nuevo indicador',tipo:'',linea_base:'',meta:'',frecuencia:'',medio:'',valor:'',obs:''}); persist(); renderIndicators(); }
 async function removeInd(id){ if(!(await askConfirm('Quitar indicador','Se eliminará este indicador y su avance.','Quitar',true))) return; project.data.indicators=project.data.indicators.filter(i=>i.id!==id); persist(); renderIndicators(); }
 
 /* =========================================================
