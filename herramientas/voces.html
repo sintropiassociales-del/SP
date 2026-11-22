@@ -109,6 +109,15 @@ footer{border-top:1px solid var(--linea);padding:18px 0 30px;color:var(--gris);f
 /* Dentro de Sintropía Track: la conexión la da la sesión del proyecto; no hay configuración ni código. */
 nav.tabs button[data-tab=cfg],#tab-cfg,#con,#demo,#sinCodigo{display:none!important}
 .trk{font-size:12px;color:#6B6878;margin:6px 0 0}
+.rv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.rv-grid input,.rv-grid select{width:100%}
+.rv-lista{margin-top:12px;display:grid;gap:8px}
+.rv-it{display:flex;gap:10px;border:1px solid #E7E2F3;border-radius:10px;padding:10px 12px;background:#fff}
+.rv-it textarea{width:100%;min-height:64px;margin-top:6px;font:inherit;font-size:13px;padding:8px;border:1px solid #E7E2F3;border-radius:8px}
+.rv-it.rv-ok{opacity:.75}
+.rv-chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#FDE7E7;color:#8E2A22}
+.rv-chip.ok{background:#E6F6EE;color:#11603F}
+@media (max-width:700px){.rv-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -21071,7 +21080,7 @@ function pintaCabecera() {
   $('#pend').textContent = n ? n + (n === 1 ? ' marca en rojo por verificar' : ' marcas en rojo por verificar') : '';
   $('#btnSig').hidden = !n;
   $('#btnTrPend').hidden = $('#btnTrTodo').hidden = !P.cols.length || !CFG.api;
-  pintaRevision('audio'); pintaExport('audio');
+  pintaRevision('audio'); pintaExport('audio'); pintaRepoVoces();
 }
 function filaHtml(r, i, P) {
   return `<tr data-i="${i}"><td class="t"><button type="button" title="Ir a este punto del audio">${hms(r.t)}</button></td>
@@ -21400,6 +21409,97 @@ $('#btnDemo').onclick = () => {
     ]
   });
 };
+
+/* ================================================================== Voces → Repositorio bibliográfico (dentro de Track) */
+/* Busca en la transcripción las citas textuales que hablan de cada indicador del proyecto y las guarda en el
+   repositorio con sus datos (entrevista, lugar, proyecto, día, hora, minuto e indicador). Todo se revisa antes de guardar. */
+let RV_CORRIENDO = false, RV_CATS = null;
+function rvFecha(v) { if (!v) return ''; const d = new Date(v + 'T12:00:00'); return isNaN(d) ? v : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }); }
+async function rvCats() {
+  if (RV_CATS) return RV_CATS;
+  try { const r = await window.TRK.api('repoList', {}); RV_CATS = r.cats.map(c => c.nombre); } catch (e) { RV_CATS = []; }
+  return RV_CATS;
+}
+function pintaRepoVoces() {
+  if (!window.TRK || !PROJ || PROJ.kind !== 'audio') return;
+  let el = $('#repoVoces');
+  if (!el) { const ex = $('[data-export="audio"]'); if (!ex) return; ex.insertAdjacentHTML('afterend', '<div id="repoVoces" style="margin-top:14px"></div>'); el = $('#repoVoces'); }
+  if (el.contains(document.activeElement)) return;
+  const P = PROJ, R = P.repo || (P.repo = { meta: {}, props: [] }), info = window.TRK.info(), inds = info.indicadores || [];
+  const m = R.meta = Object.assign({ entrevista: P.title || '', lugar: '', proyecto: info.name, dia: '', hora: '', categoria: '' }, R.meta || {});
+  const listo = P.rows.length && !(P.total && P.hecho < P.total && !P.cancelado), puede = info.canWrite;
+  const prop = R.props || [], pend = prop.filter(x => !x.guardada), sel = pend.filter(x => x.sel).length;
+  el.innerHTML = `<div class="card suave"><h3>Clasificar en el repositorio bibliográfico</h3>
+    <p class="nota">Busca en esta transcripción las citas textuales que hablan de cada indicador del proyecto y las guarda en el repositorio con los datos de la entrevista. Revisa cada cita antes de guardarla: la búsqueda la hace la IA y puede equivocarse.</p>
+    ${inds.length ? `<p class="nota" style="margin-top:6px"><b>Indicadores del proyecto:</b> ${inds.map(esc).join(' · ')}</p>` : '<p class="nota mal" style="margin-top:6px">Este proyecto todavía no tiene indicadores. Agrégalos en la pestaña Indicadores de Track y vuelve aquí.</p>'}
+    <div class="rv-grid">
+      <div><label class="campo">Entrevista</label><input type="text" data-m="entrevista" maxlength="200" placeholder="Ej. Entrevista con Juana" value="${esc(m.entrevista)}"></div>
+      <div><label class="campo">Lugar</label><input type="text" data-m="lugar" maxlength="200" placeholder="Ej. San Cristóbal de las Casas, Chiapas" value="${esc(m.lugar)}"></div>
+      <div><label class="campo">Proyecto</label><input type="text" data-m="proyecto" maxlength="200" value="${esc(m.proyecto)}"></div>
+      <div><label class="campo">Día de la entrevista</label><input type="date" data-m="dia" value="${esc(m.dia)}"></div>
+      <div><label class="campo">Hora</label><input type="time" data-m="hora" value="${esc(m.hora)}"></div>
+      <div><label class="campo">Categoría del repositorio</label><select data-m="categoria"><option value="">Sin categoría</option></select></div>
+    </div>
+    <div class="fila" style="margin-top:12px"><button class="btn pri" data-rv="buscar" ${!puede || !inds.length || !listo || RV_CORRIENDO ? 'disabled' : ''}>${prop.length ? 'Volver a buscar citas' : 'Buscar citas por indicador'}</button><span class="nota rv-est" aria-live="polite">${!listo && P.rows.length ? 'Espera a que termine la transcripción.' : ''}</span></div>
+    ${prop.length ? `<div class="rv-lista">${prop.map((x, i) => `<div class="rv-it${x.guardada ? ' rv-ok' : ''}">
+        <label class="rv-ck"><input type="checkbox" data-sel="${i}" ${x.sel && !x.guardada ? 'checked' : ''} ${x.guardada || !puede ? 'disabled' : ''}></label>
+        <div style="flex:1">
+          <div class="fila" style="gap:8px"><select data-ind="${i}" ${x.guardada || !puede ? 'disabled' : ''}>${inds.map(n => `<option ${n === x.indicador ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
+            <span class="nota">${x.t != null ? 'minuto ' + hms(x.t) : ''}${x.speaker ? ' · ' + esc(x.speaker) : ''}</span>${x.guardada ? '<span class="rv-chip ok">Guardada en el repositorio</span>' : ''}${x.textual === false ? '<span class="rv-chip mal">Revisa: no coincide palabra por palabra con la transcripción</span>' : ''}</div>
+          <textarea data-cita="${i}" ${x.guardada || !puede ? 'disabled' : ''}>${esc(x.cita)}</textarea>
+          ${x.motivo ? `<div class="nota">${esc(x.motivo)}</div>` : ''}
+        </div></div>`).join('')}</div>
+      <div class="fila" style="margin-top:10px"><button class="btn pri" data-rv="guardar" ${!sel || !puede ? 'disabled' : ''}>Guardar ${sel} ${sel === 1 ? 'cita seleccionada' : 'citas seleccionadas'} en el repositorio</button>
+        ${pend.length ? `<button class="btn" data-rv="todas">${sel === pend.length ? 'Quitar selección' : 'Seleccionar todas'}</button>` : ''}<span class="nota rv-res" aria-live="polite"></span></div>` : ''}
+  </div>`;
+  rvCats().then(cs => { const s = $('[data-m="categoria"]', el); if (!s) return; s.innerHTML = '<option value="">Sin categoría</option>' + cs.map(c => `<option ${c === m.categoria ? 'selected' : ''}>${esc(c)}</option>`).join(''); });
+  $$('[data-m]', el).forEach(i => i.oninput = i.onchange = () => { R.meta[i.dataset.m] = i.value; autosave(); });
+  $$('[data-sel]', el).forEach(i => i.onchange = () => { prop[i.dataset.sel].sel = i.checked; autosave(); rvBoton(); });
+  $$('[data-ind]', el).forEach(i => i.onchange = () => { prop[i.dataset.ind].indicador = i.value; autosave(); });
+  $$('[data-cita]', el).forEach(i => i.oninput = () => { prop[i.dataset.cita].cita = i.value; autosave(); });
+  el.onclick = e => { const a = e.target.dataset.rv; if (a === 'buscar') rvBuscar(); else if (a === 'guardar') rvGuardar(); else if (a === 'todas') { const todas = pend.every(x => x.sel); pend.forEach(x => x.sel = !todas); autosave(); document.activeElement && document.activeElement.blur(); pintaRepoVoces(); } };
+}
+function rvBoton() { const el = $('#repoVoces'), b = el && $('[data-rv="guardar"]', el); if (!b) return; const n = (PROJ.repo.props || []).filter(x => x.sel && !x.guardada).length; b.disabled = !n; b.textContent = `Guardar ${n} ${n === 1 ? 'cita seleccionada' : 'citas seleccionadas'} en el repositorio`; }
+async function rvBuscar() {
+  const P = PROJ, R = P.repo, est = () => $('#repoVoces .rv-est');
+  if ((R.props || []).some(x => !x.guardada) && !confirm('Se reemplazarán las citas que aún no guardas. ¿Continuar?')) return;
+  const filas = P.rows.map((r, i) => ({ i, t: r.t || 0, speaker: r.speaker || '', text: (r.text || '').replace(/\{\?([^}]*)\}|\[\?([^\]]*)\]/g, '$1$2') })).filter(r => r.text.trim());
+  const bloques = []; let act = [], tam = 0;
+  for (const f of filas) { if (tam + f.text.length > 12000 && act.length) { bloques.push(act); act = []; tam = 0; } act.push(f); tam += f.text.length + 20; }
+  if (act.length) bloques.push(act);
+  RV_CORRIENDO = true; document.activeElement && document.activeElement.blur();
+  const guardadas = (R.props || []).filter(x => x.guardada), nuevas = [];
+  pintaRepoVoces();
+  let fallos = 0;
+  for (let k = 0; k < bloques.length; k++) {
+    if (est()) est().textContent = `Buscando citas… bloque ${k + 1} de ${bloques.length}`;
+    let r = null;
+    for (let intento = 0; intento < 3 && !r; intento++) {
+      try { r = await window.TRK.api('repoVoces', { bloque: bloques[k] }, 300000); }
+      catch (e) { if (e && (e.error === 'invalid' || e.error === 'forbidden')) { RV_CORRIENDO = false; pintaRepoVoces(); if (est()) est().innerHTML = '<span class="mal">' + esc(e.message) + '</span>'; return; } await espera(8000 * (intento + 1)); }
+    }
+    if (!r) { fallos++; continue; }
+    for (const x of r.propuestas) if (!nuevas.concat(guardadas).some(y => y.indicador === x.indicador && y.cita === x.cita)) nuevas.push(Object.assign(x, { sel: x.textual !== false }));
+  }
+  R.props = guardadas.concat(nuevas.sort((a, b) => (a.t || 0) - (b.t || 0)));
+  RV_CORRIENDO = false; autosave(); pintaRepoVoces();
+  if (est()) est().innerHTML = (nuevas.length ? `Encontré ${nuevas.length} ${nuevas.length === 1 ? 'cita' : 'citas'}. Revísalas y guarda las que sirvan.` : 'No encontré citas relacionadas con los indicadores.') + (fallos ? ` <span class="mal">${fallos} ${fallos === 1 ? 'bloque no respondió' : 'bloques no respondieron'} (Gemini saturado); vuelve a buscar más tarde.</span>` : '');
+}
+async function rvGuardar() {
+  const P = PROJ, R = P.repo, m = R.meta, info = window.TRK.info();
+  const lista = R.props.filter(x => x.sel && !x.guardada); if (!lista.length) return;
+  const doc = (info.herr.vox || []).find(v => v.titulo === P.title);
+  const dia = rvFecha(m.dia), anio = m.dia ? m.dia.slice(0, 4) : '';
+  const citas = lista.map(x => ({ origen: 'voces', categoria: m.categoria || 'Sin categoría', indicador: x.indicador, cita: x.cita.trim(), entrevista: m.entrevista, lugar: m.lugar, proyecto: m.proyecto, dia, hora: m.hora, anio,
+    pagina: x.t != null ? hms(x.t) : '', comentarios: x.speaker ? 'Hablante: ' + x.speaker : '', publicacion: 'Transcripción de entrevista (Voces)', link: doc ? doc.url : '', poblacion: '' }));
+  const b = $('#repoVoces [data-rv="guardar"]'), res = $('#repoVoces .rv-res'); b.disabled = true; res.textContent = 'Guardando…';
+  try {
+    const r = await window.TRK.api('repoBulk', { citas });
+    lista.forEach(x => { x.guardada = true; x.sel = false; }); autosave(); pintaRepoVoces();
+    const out = $('#repoVoces .rv-res') || $('#repoVoces .rv-est'); if (out) out.textContent = `${r.agregadas} ${r.agregadas === 1 ? 'cita guardada' : 'citas guardadas'} en el repositorio bibliográfico del proyecto.`;
+    window.TRK.toast('Citas guardadas en el repositorio');
+  } catch (e) { b.disabled = false; res.innerHTML = '<span class="mal">' + esc(e.message || 'No se pudo guardar.') + '</span>'; }
+}
 
 /* ================================================================== inicio */
 if (!window.TRK) { document.querySelector('main').innerHTML = '<div class="card" style="margin-top:20px"><h3>Voces</h3><p>Esta herramienta se abre desde la Caja de herramientas de Sintropía Track, dentro de un proyecto.</p></div>'; }

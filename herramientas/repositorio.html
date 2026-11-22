@@ -66,8 +66,9 @@ mark{background:rgba(255,107,26,.18);color:var(--orange-dark);border-radius:3px;
   <h3 id="mCitaT">Agregar cita</h3>
   <div class="grid2">
     <div><label>Categoría</label><select id="fCat"></select></div>
-    <div><label>Indicador o tema</label><input type="text" id="fInd" maxlength="200"></div>
+    <div><label>Indicador</label><input type="text" id="fInd" maxlength="200" list="indList" placeholder="Elige o escribe"></div>
   </div>
+  <datalist id="indList"></datalist>
   <label>Cita textual *</label><textarea id="fCita" maxlength="6000" style="min-height:110px"></textarea>
   <div class="grid4">
     <div><label>Autoría</label><input type="text" id="fAut" maxlength="300" placeholder="Apellido, N."></div>
@@ -75,6 +76,13 @@ mark{background:rgba(255,107,26,.18);color:var(--orange-dark);border-radius:3px;
     <div><label>Página</label><input type="text" id="fPag" maxlength="30"></div>
     <div><label>Población</label><input type="text" id="fPob" maxlength="300"></div>
   </div>
+  <div class="grid4">
+    <div><label>Entrevista</label><input type="text" id="fEnt" maxlength="200" placeholder="Ej. Entrevista con Juana"></div>
+    <div><label>Lugar</label><input type="text" id="fLug" maxlength="200"></div>
+    <div><label>Día</label><input type="text" id="fDia" maxlength="40" placeholder="22 de noviembre de 2026"></div>
+    <div><label>Hora</label><input type="text" id="fHora" maxlength="20" placeholder="10:30"></div>
+  </div>
+  <label>Proyecto</label><input type="text" id="fProy" maxlength="200">
   <label>Publicación (título, revista o editorial)</label><input type="text" id="fPub" maxlength="400">
   <label>Referencia en APA <span class="note">(se arma sola si la dejas vacía)</span></label><input type="text" id="fApa" maxlength="1500">
   <div class="grid2">
@@ -105,7 +113,7 @@ mark{background:rgba(255,107,26,.18);color:var(--orange-dark);border-radius:3px;
       <div><label>Año</label><input type="text" id="pAnio"></div>
       <div><label>Publicación</label><input type="text" id="pPub"></div>
       <div><label>Categoría</label><select id="pCat"></select></div>
-      <div><label>Indicador o tema</label><input type="text" id="pInd"></div>
+      <div><label>Indicador</label><input type="text" id="pInd" list="indList"></div>
       <div><label>Población</label><input type="text" id="pPob"></div>
     </div>
     <div class="row" style="margin-top:10px"><input type="search" id="pQ" placeholder="Palabra o frase a buscar" style="flex:1"><button class="btn primary" onclick="pBuscar()">Buscar</button></div>
@@ -122,23 +130,25 @@ const escRx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const safe=u=>/^https:\/\//i.test(String(u||''))?u:'';
 const SIN='Sin categoría';
 const B=(()=>{ try{ return window.parent!==window&&window.parent.TrackBridge&&window.parent.TrackBridge.info()?window.parent.TrackBridge:null; }catch(e){ return null; } })();
-let INFO=null, CATS=[], CITAS=[], F={cat:'',ind:'',aut:'',anio:'',q:''}, editId='', PUEDE=false;
+let INFO=null, CATS=[], CITAS=[], IND=[], PROY='', F={cat:'',ind:'',aut:'',anio:'',ent:'',lug:'',q:''}, editId='', PUEDE=false;
 
 function fuera(){ $('app').innerHTML='<h2>Repositorio bibliográfico</h2><p class="msg err">Esta herramienta se abre desde la Caja de herramientas de Sintropía Track, dentro de un proyecto.</p>'; }
 async function cargar(){
   if(!B) return fuera();
   INFO=B.info();
-  try{ const r=await B.api('repoList'); CATS=r.cats; CITAS=r.citas; PUEDE=!!r.puede; pintar(); }
+  try{ const r=await B.api('repoList'); aplicar(r); PUEDE=!!r.puede; pintar(); }
   catch(e){ $('app').innerHTML='<p class="msg err">'+esc(e.message||'No se pudo abrir el repositorio.')+'</p>'; }
 }
-function aplicar(r){ if(r.cats) CATS=r.cats; if(r.citas) CITAS=r.citas; }
+function aplicar(r){ if(r.cats) CATS=r.cats; if(r.citas) CITAS=r.citas; if(r.indicadores) IND=r.indicadores; if(r.proyecto) PROY=r.proyecto; $('indList').innerHTML=IND.map(n=>`<option value="${esc(n)}">`).join(''); }
 function catsVisibles(){ const n=CATS.map(c=>c.nombre); if(CITAS.some(c=>c.categoria===SIN)) n.push(SIN); return n; }
 function pasa(c,omit){
   if(omit!=='cat'&&F.cat&&c.categoria!==F.cat) return false;
   if(omit!=='ind'&&F.ind&&c.indicador!==F.ind) return false;
   if(omit!=='aut'&&F.aut&&c.autor!==F.aut) return false;
   if(omit!=='anio'&&F.anio&&c.anio!==F.anio) return false;
-  if(F.q){ const t=(c.cita+' '+c.autor+' '+c.publicacion+' '+c.indicador+' '+c.comentarios+' '+c.poblacion).toLowerCase(); if(!F.q.toLowerCase().split(/\s+/).every(w=>t.includes(w))) return false; }
+  if(omit!=='ent'&&F.ent&&c.entrevista!==F.ent) return false;
+  if(omit!=='lug'&&F.lug&&c.lugar!==F.lug) return false;
+  if(F.q){ const t=(c.cita+' '+c.autor+' '+c.publicacion+' '+c.indicador+' '+c.comentarios+' '+c.poblacion+' '+(c.entrevista||'')+' '+(c.lugar||'')).toLowerCase(); if(!F.q.toLowerCase().split(/\s+/).every(w=>t.includes(w))) return false; }
   return true;
 }
 const filtradas=()=>CITAS.filter(c=>pasa(c));
@@ -161,15 +171,17 @@ function pintar(){
   <div class="cats"><button class="cat ${F.cat?'':'on'}" onclick="F.cat='';pintar()">Todas<span class="n">${CITAS.filter(c=>pasa(c,'cat')).length}</span></button>${vis.map(n=>`<button class="cat ${F.cat===n?'on':''}" onclick="F.cat=${esc(JSON.stringify(n))};pintar()">${esc(n)}<span class="n">${cuenta(n)}</span></button>`).join('')}</div>
   <div class="grid4" style="margin-top:4px">
     <div><label>Buscar</label><input type="search" id="q" value="${esc(F.q)}" placeholder="Palabras de la cita, autoría…"></div>
-    ${sel('fI','indicador','ind','Indicador o tema')}${sel('fA','autor','aut','Autoría')}${sel('fY','anio','anio','Año','num')}
+    ${sel('fI','indicador','ind','Indicador')}${sel('fE','entrevista','ent','Entrevista')}${sel('fL','lugar','lug','Lugar')}
   </div>
-  ${(F.cat||F.ind||F.aut||F.anio||F.q)?`<div class="row" style="margin-top:8px"><span class="note">${lista.length} de ${CITAS.length}</span><button class="btn sm" onclick="F={cat:'',ind:'',aut:'',anio:'',q:''};pintar()">Limpiar filtros</button></div>`:''}
-  <div id="lista">${lista.length?lista.map(c=>`<div class="cita"><div class="row"><span class="chip ${c.categoria===SIN?'or':''}">${esc(c.categoria)}</span>${c.indicador?`<span class="note">${esc(c.indicador)}</span>`:''}</div>
+  <div class="grid4" style="margin-top:4px">${sel('fA','autor','aut','Autoría')}${sel('fY','anio','anio','Año','num')}</div>
+  ${(F.cat||F.ind||F.aut||F.anio||F.ent||F.lug||F.q)?`<div class="row" style="margin-top:8px"><span class="note">${lista.length} de ${CITAS.length}</span><button class="btn sm" onclick="F={cat:'',ind:'',aut:'',anio:'',ent:'',lug:'',q:''};pintar()">Limpiar filtros</button></div>`:''}
+  <div id="lista">${lista.length?lista.map(c=>`<div class="cita"><div class="row"><span class="chip ${c.categoria===SIN?'or':''}">${esc(c.categoria)}</span>${c.indicador?`<span class="chip ok">Indicador: ${esc(c.indicador)}</span>`:''}${c.origen==='voces'?'<span class="chip or">Voces</span>':''}</div>
      <q style="margin-top:6px">${hl(c.cita)}</q>
-     <div class="meta">${esc([c.autor,c.anio,c.publicacion,c.pagina?'p. '+c.pagina:'',c.poblacion?'Población: '+c.poblacion:''].filter(Boolean).join(' · '))}</div>
+     ${c.entrevista||c.lugar||c.dia?`<div class="meta"><b>${esc(c.entrevista||'')}</b>${esc([c.lugar,c.proyecto,c.dia,c.hora?c.hora+' h':'',c.origen==='voces'&&c.pagina?'minuto '+c.pagina:''].filter(Boolean).map(x=>' · '+x).join(''))}</div>`:''}
+     <div class="meta">${esc([c.autor,c.anio,c.publicacion,c.pagina&&c.origen!=='voces'?'p. '+c.pagina:'',c.poblacion?'Población: '+c.poblacion:''].filter(Boolean).join(' · '))}</div>
      ${c.comentarios?`<div class="meta">${esc(c.comentarios)}</div>`:''}
      ${c.apa?`<div class="apa">${esc(c.apa)}</div>`:''}
-     <div class="acts">${c.apa?`<button class="btn sm" onclick="copiar(${esc(JSON.stringify(c.apa))},this)">Copiar APA</button>`:''}<button class="btn sm" onclick="copiar(${esc(JSON.stringify('“'+c.cita+'” ('+[c.autor,c.anio,c.pagina?'p. '+c.pagina:''].filter(Boolean).join(', ')+')'))},this)">Copiar cita</button>${safe(c.link)?`<a class="btn sm" href="${esc(c.link)}" target="_blank" rel="noopener">Fuente</a>`:''}${PUEDE?`<button class="btn sm" onclick="abrirCita('${c.id}')">Editar</button><button class="btn sm danger" onclick="quitar('${c.id}')">Quitar</button>`:''}</div></div>`).join('')
+     <div class="acts">${c.apa?`<button class="btn sm" onclick="copiar(${esc(JSON.stringify(c.apa))},this)">Copiar APA</button>`:''}<button class="btn sm" onclick="copiar(${esc(JSON.stringify('“'+c.cita+'” ('+(c.origen==='voces'?[c.entrevista,c.lugar,c.dia]:[c.autor,c.anio,c.pagina?'p. '+c.pagina:'']).filter(Boolean).join(', ')+')'))},this)">Copiar cita</button>${safe(c.link)?`<a class="btn sm" href="${esc(c.link)}" target="_blank" rel="noopener">Fuente</a>`:''}${PUEDE?`<button class="btn sm" onclick="abrirCita('${c.id}')">Editar</button><button class="btn sm danger" onclick="quitar('${c.id}')">Quitar</button>`:''}</div></div>`).join('')
     :`<p class="empty">${CITAS.length?'Ninguna cita coincide con los filtros.':(PUEDE?'Aún no hay citas. Agrega la primera o búscalas en un PDF.':'Aún no hay citas en este repositorio.')}</p>`}</div>`;
   const q=$('q'); q.oninput=()=>{ clearTimeout(q._t); q._t=setTimeout(()=>{ F.q=q.value.trim(); const pos=q.selectionStart; pintar(); const n=$('q'); n.focus(); try{ n.setSelectionRange(pos,pos); }catch(e){} },250); };
 }
@@ -180,11 +192,13 @@ function optsCat(v){ return CATS.map(c=>`<option ${v===c.nombre?'selected':''}>$
 function abrirCita(id){
   const c=id?CITAS.find(x=>x.id===id):{categoria:F.cat||(CATS[0]?CATS[0].nombre:SIN)}; editId=id||'';
   $('mCitaT').textContent=id?'Editar cita':'Agregar cita'; $('fCat').innerHTML=optsCat(c.categoria);
-  [['fInd','indicador'],['fCita','cita'],['fAut','autor'],['fAnio','anio'],['fPag','pagina'],['fPob','poblacion'],['fPub','publicacion'],['fApa','apa'],['fLink','link'],['fCom','comentarios']].forEach(([i,k])=>$(i).value=c[k]||'');
+  [['fInd','indicador'],['fCita','cita'],['fAut','autor'],['fAnio','anio'],['fPag','pagina'],['fPob','poblacion'],['fPub','publicacion'],['fApa','apa'],['fLink','link'],['fCom','comentarios'],['fEnt','entrevista'],['fLug','lugar'],['fDia','dia'],['fHora','hora'],['fProy','proyecto']].forEach(([i,k])=>$(i).value=c[k]||'');
+  if(!id) $('fProy').value=PROY||INFO.name;
   $('fMsg').innerHTML=''; $('mCita').classList.remove('hidden'); verFrame(); $('fCita').focus();
 }
 $('fGo').onclick=async()=>{
-  const cita={id:editId,categoria:$('fCat').value,indicador:$('fInd').value,cita:$('fCita').value.trim(),autor:$('fAut').value,anio:$('fAnio').value,pagina:$('fPag').value,poblacion:$('fPob').value,publicacion:$('fPub').value,apa:$('fApa').value,link:$('fLink').value.trim(),comentarios:$('fCom').value};
+  const prev=editId?CITAS.find(x=>x.id===editId)||{}:{};
+  const cita={id:editId,origen:prev.origen||'manual',entrevista:$('fEnt').value,lugar:$('fLug').value,dia:$('fDia').value,hora:$('fHora').value,proyecto:$('fProy').value,categoria:$('fCat').value,indicador:$('fInd').value,cita:$('fCita').value.trim(),autor:$('fAut').value,anio:$('fAnio').value,pagina:$('fPag').value,poblacion:$('fPob').value,publicacion:$('fPub').value,apa:$('fApa').value,link:$('fLink').value.trim(),comentarios:$('fCom').value};
   if(!cita.cita){ $('fMsg').innerHTML='<div class="msg err">Escribe la cita.</div>'; return; }
   if(cita.link&&!safe(cita.link)){ $('fMsg').innerHTML='<div class="msg err">La liga debe empezar con https://</div>'; return; }
   const b=$('fGo'); b.disabled=true;
@@ -244,7 +258,7 @@ function pBuscar(){
   $('pGo').classList.toggle('hidden',!out.length);
 }
 async function pAgregar(){
-  const base={autor:$('pAut').value,anio:$('pAnio').value,publicacion:$('pPub').value,categoria:$('pCat').value,indicador:$('pInd').value,poblacion:$('pPob').value};
+  const base={origen:'pdf',autor:$('pAut').value,anio:$('pAnio').value,publicacion:$('pPub').value,categoria:$('pCat').value,indicador:$('pInd').value,poblacion:$('pPob').value};
   const citas=PRES.map((r,i)=>$('pr'+i).checked?Object.assign({},base,{cita:$('pt'+i).value.trim(),pagina:String(r.page)}):null).filter(Boolean);
   if(!citas.length){ B.toast('Marca al menos una coincidencia.',true); return; }
   const b=$('pGo'); b.disabled=true;
@@ -262,17 +276,17 @@ function descargar(){
   linea('Repositorio bibliográfico',{b:true,s:17,c:[107,33,245],after:1}); linea(INFO.name+' · '+lista.length+' citas · '+new Date().toLocaleDateString('es-MX'),{s:9.5,c:[107,104,120],after:5});
   catsVisibles().forEach(cat=>{ const cs=lista.filter(c=>c.categoria===cat); if(!cs.length) return;
     y+=2; linea(cat+' ('+cs.length+')',{b:true,s:12.5,after:2});
-    cs.forEach(c=>{ linea('“'+c.cita+'”',{i:true,s:10,ind:3,after:0.8}); linea([c.autor,c.anio,c.pagina?'p. '+c.pagina:'',c.indicador].filter(Boolean).join(' · '),{s:8.5,c:[107,104,120],ind:3,after:0.5}); if(c.apa) linea(c.apa,{s:8.5,ind:3,after:3}); else y+=2; }); });
+    cs.forEach(c=>{ linea('“'+c.cita+'”',{i:true,s:10,ind:3,after:0.8}); linea((c.origen==='voces'?[c.entrevista,c.lugar,c.proyecto,c.dia,c.hora?c.hora+' h':'',c.pagina?'minuto '+c.pagina:'',c.indicador?'Indicador: '+c.indicador:'']:[c.autor,c.anio,c.pagina?'p. '+c.pagina:'',c.indicador?'Indicador: '+c.indicador:'']).filter(Boolean).join(' · '),{s:8.5,c:[107,104,120],ind:3,after:0.5}); if(c.apa) linea(c.apa,{s:8.5,ind:3,after:3}); else y+=2; }); });
   const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150); doc.text('Sintropía Track - Repositorio bibliográfico',X,290); doc.text(i+' / '+n,X+W,290,{align:'right'}); }
   doc.save('repositorio_'+INFO.slug+'.pdf');
 }
 function aReporte(){
-  const lista=filtradas(), filtro=!!(F.cat||F.ind||F.aut||F.anio||F.q);
+  const lista=filtradas(), filtro=!!(F.cat||F.ind||F.aut||F.anio||F.ent||F.lug||F.q);
   const porCat=catsVisibles().map(n=>[n,CITAS.filter(c=>c.categoria===n).length]).filter(x=>x[1]);
   const refs=[...new Set((filtro?lista:CITAS).map(c=>c.apa).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).slice(0,60);
   B.addToReport({tool:'repo',ref:'repo',titulo:'Repositorio bibliográfico del proyecto',
     resumen:CITAS.length+' citas en '+CATS.length+' categorías'+(filtro?' · referencias de la selección filtrada ('+lista.length+' citas)':''),
-    lineas:porCat.map(x=>x[0]+': '+x[1]+(x[1]===1?' cita':' citas')).concat(refs.length?['Referencias:']:[]).concat(refs)}).then(()=>pintar());
+    lineas:porCat.map(x=>x[0]+': '+x[1]+(x[1]===1?' cita':' citas')).concat(IND.length?['Citas por indicador:'].concat(IND.map(n=>'  '+n+': '+CITAS.filter(c=>c.indicador===n).length)):[]).concat(refs.length?['Referencias:']:[]).concat(refs)}).then(()=>pintar());
 }
 cargar();
 </script>

@@ -377,6 +377,7 @@
   .herr-sw{width:11px;height:11px;border-radius:3px;display:inline-block;}
   .herr-sub{font-family:'Montserrat',sans-serif;font-size:15px;margin:22px 0 4px;}
   @media (max-width:700px){ .herr-row2{grid-template-columns:1fr;} .herr-frame{height:85vh;} }
+  .lk-box{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;} .lk-val{font-size:11.5px;color:var(--purple);word-break:break-all;} .lk-meta{font-size:10.5px;color:var(--grey);}
 </style>
 </head>
 <body>
@@ -457,10 +458,7 @@
       <div class="report-box">
         <div style="flex:1; min-width:200px;"><div class="rtitle">Informe / reporte final</div><div class="rnote" id="reportNote"></div></div>
         <a class="dl-btn" id="reportDlBtn" href="#" target="_blank" rel="noopener">Descargar reporte final</a>
-        <div id="reportAdminControls" class="hidden" style="display:flex; gap:8px;">
-          <input type="text" id="reportLinkInput" placeholder="Pegar liga del informe final" style="width:240px;">
-          <button class="btn primary small" onclick="setReportLink()">Guardar</button>
-        </div>
+        <div id="reportAdminControls" class="hidden" style="display:flex; gap:8px;"></div>
       </div>
       <div id="deliverables"></div>
       <div class="toolbar-row"><button class="add-row-btn hidden" id="addDelivBtn" onclick="addDeliverable()">Agregar entregable</button><button class="btn small hidden" id="sortDelivBtn" onclick="sortByDate()">Ordenar por fecha</button></div>
@@ -1076,6 +1074,7 @@ function renderProject(){
   $('pOverview').classList.toggle('hidden',!hasTrack());
   if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">Sugerir un cambio</button>`;
   if(role==='super') tb+=`<button class="btn" onclick="manageProject('${esc(p.slug)}')">Gestionar proyecto</button>`;
+  if(role==='super'||role==='admin') tb+=`<button class="btn" onclick="openHistorial()">Historial de cambios</button>`;
   $('pToolbar').innerHTML=tb;
   $('delivDesc').textContent = canEdit() ? 'Cada entregable se abre en sus actividades. Puedes modificar nombres, fechas, estatus y ligas de evidencia.' : (canDates() ? 'Cada entregable se abre en sus actividades. Puedes cambiar las fechas; para otros cambios envía una sugerencia.' : 'Cada entregable se abre en sus actividades.');
   $('logDesc').textContent = canEdit() ? 'Registra, edita o elimina sesiones. Cualquier persona con acceso puede consultarlas y descargarlas.' : 'Consulta y descarga las sesiones registradas.';
@@ -1208,9 +1207,40 @@ function renderReport(){
   const r=project.data.reportFinal; const has=!!(r.link&&r.link.trim());
   $('reportNote').textContent=has?'Informe disponible para descarga.':(canEdit()?'Pega la liga del informe final para habilitar la descarga.':'El informe final estará disponible aquí cuando se publique.');
   const btn=$('reportDlBtn'); btn.href=has?r.link:'#'; btn.classList.toggle('disabled',!has);
-  $('reportLinkInput').value=r.link||'';
+  $('reportAdminControls').innerHTML=canEdit()?lockedLink('rep',r,'Pegar liga del informe final',240):'';
 }
-function setReportLink(){ const v=$('reportLinkInput').value.trim(); project.data.reportFinal.link=v; project.data.reportFinal.status=v?'entregado':'pendiente'; persist(); renderReport(); }
+const HIST_ACC={drv_carpeta:'Creó carpeta en Drive',instr_subir:'Subió instrumento',instr_quitar:'Quitó instrumento',repo_lote:'Agregó citas al repositorio',repo_categorias:'Cambió categorías del repositorio',ter_guardar:'Guardó mapa territorial',reporte_agregar:'Agregó al reporte final',tl_sala:'Creó sala de Task live'};
+async function openHistorial(){
+  openModal(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div class="modal-title" style="margin:0;">Historial de cambios</div><button class="btn small" onclick="closeModal()">Cerrar</button></div><div class="modal-sub">Quién cambió qué en este proyecto y cuándo.</div><div id="histBody"><p class="empty">Cargando…</p></div>`);
+  try{ const r=await api('projHistory',{slug:project.slug});
+    $('histBody').innerHTML=r.items.length?`<div class="sa-scroll"><table class="smart"><thead><tr><th>Fecha</th><th>Quién</th><th>Qué hizo</th><th>Detalle</th></tr></thead><tbody>${r.items.map(x=>`<tr><td style="white-space:nowrap;">${esc(fmtHora(x.fecha))}</td><td>${esc(x.quien)}</td><td>${esc(HIST_ACC[x.accion]||x.accion)}</td><td>${esc(x.detalle)}</td></tr>`).join('')}</tbody></table></div><p class="herr-note">Se muestran los ${r.items.length} cambios más recientes.</p>`:'<p class="empty">Aún no hay cambios registrados.</p>';
+  }catch(e){ $('histBody').innerHTML='<p class="empty">'+esc(e&&e.error==='bad_request'?'Publica la nueva versión de Code.gs para ver el historial.':(e.message||'No se pudo cargar el historial.'))+'</p>'; }
+}
+/* ---- Campos con "Guardar": una vez guardados quedan fijos y se cambian con "Editar".
+   Cada cambio registra quién lo hizo y cuándo (aquí y en el historial del servidor). ---- */
+let linkEdit={};
+function quien(){ const u=(session&&session.user)||{}; return u.name||u.email||''; }
+function sello(o,campo){ o[campo+'By']=quien(); o[campo+'At']=new Date().toISOString(); }
+function selloTxt(o,campo){ const by=o&&o[campo+'By'], at=o&&o[campo+'At']; if(!by&&!at) return ''; return `<span class="lk-meta">Guardado${by?' por '+esc(by):''}${at?' · '+esc(fmtHora(at)):''}</span>`; }
+function fmtHora(iso){ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
+function lkTarget(key){ if(key==='rep') return project.data.reportFinal; const p=key.split(':'); if(p[0]==='d') return findD(p[1]); if(p[0]==='a') return findA(p[1],p[2]); return null; }
+function lockedLink(key,o,ph,w){
+  const v=(o&&o.link)||'', id='lk_'+key.replace(/[^a-z0-9]/gi,'_');
+  if(v&&!linkEdit[key]) return `<span class="lk-box" onclick="event.stopPropagation()"><a class="lk-val" href="${esc(safeUrl(v))}" target="_blank" rel="noopener" title="${esc(v)}">${esc(v.length>46?v.slice(0,44)+'…':v)}</a><button class="btn small" onclick="event.stopPropagation();lkEdit('${key}')">Editar</button>${selloTxt(o,'link')}</span>`;
+  return `<span class="lk-box" onclick="event.stopPropagation()"><input type="text" id="${id}" placeholder="${esc(ph)}" value="${esc(v)}" style="width:${w||220}px;font-size:11.5px;" onkeydown="if(event.key==='Enter'){event.preventDefault();lkSave('${key}')}"><button class="btn primary small" onclick="event.stopPropagation();lkSave('${key}')">Guardar</button>${v?`<button class="btn small" onclick="event.stopPropagation();lkCancel('${key}')">Cancelar</button>`:''}</span>`;
+}
+function lkEdit(key){ linkEdit[key]=true; renderAll(); const i=$('lk_'+key.replace(/[^a-z0-9]/gi,'_')); if(i){ i.focus(); i.select(); } }
+function lkCancel(key){ delete linkEdit[key]; renderAll(); }
+function lkSave(key){
+  const o=lkTarget(key), i=$('lk_'+key.replace(/[^a-z0-9]/gi,'_')); if(!o||!i) return;
+  const v=i.value.trim();
+  if(v&&!/^https?:\/\//i.test(v)){ toast('La liga debe empezar con https://',true); i.focus(); return; }
+  if(v===(o.link||'')){ delete linkEdit[key]; renderAll(); return; }
+  o.link=v; sello(o,'link');
+  if(key==='rep') o.status=v?'entregado':'pendiente';
+  delete linkEdit[key]; persist(); renderAll(); toast(v?'Liga guardada':'Liga quitada');
+}
+function setReportLink(){ lkSave('rep'); }
 function statusSelect(cur,handler){
   return `<select class="status-edit" onclick="event.stopPropagation()" onchange="${handler}">${ST_OPTS.map(o=>`<option value="${o[0]}" ${cur===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
 }
@@ -1222,9 +1252,10 @@ function renderDeliverables(){
     const head=document.createElement('div'); head.className='deliv-head';
     const nameHtml=E?`<input type="text" class="name-input" value="${esc(d.name)}" onclick="event.stopPropagation()" onchange="setDeliv('${d.id}','name',this.value)">`:`<div class="deliv-name">${esc(d.name)}</div>`;
     const datesHtml=canDates()?`${dateCtl('deliv',d.id,'start',d.start)}<span>a</span>${dateCtl('deliv',d.id,'end',d.end)}`:`<span>${d.start?fmt(d.start):'Sin fecha'}${d.end?' a '+fmt(d.end):''}</span>`;
-    const linkHtml=E?`<div class="deliv-link"><input type="text" placeholder="Liga de evidencia del entregable" value="${esc(d.link||'')}" onclick="event.stopPropagation()" onchange="setDeliv('${d.id}','link',this.value.trim())">${d.link?`<a class="act-link" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia</a>`:''}</div>`:(d.link?`<div class="deliv-link"><a class="act-link" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia del entregable</a></div>`:'');
+    const linkHtml=E?`<div class="deliv-link">${lockedLink('d:'+d.id,d,'Liga de evidencia del entregable',240)}</div>`:(d.link?`<div class="deliv-link"><a class="act-link" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver evidencia del entregable</a>${selloTxt(d,'link')}</div>`:'');
     const statusHtml=E?statusSelect(d.status,`setDeliv('${d.id}','status',this.value)`):`<span class="badge ${stClass(d.status)}">${statusLabel(d.status)}</span>`;
-    head.innerHTML=`<div class="deliv-index">${i+1}</div><div>${nameHtml}<div class="deliv-dates">${datesHtml}</div>${linkHtml}</div>${statusHtml}${E?`<button class="remove-x" onclick="event.stopPropagation(); removeDeliverable('${d.id}')">Eliminar</button>`:'<span></span>'}<span class="chev"></span>`;
+    const ult=(d.editBy||d.editAt)&&(role==='super'||role==='admin')?`<div class="lk-meta" style="margin-top:4px;">Último cambio${d.editBy?' por '+esc(d.editBy):''}${d.editAt?' · '+esc(fmtHora(d.editAt)):''}</div>`:'';
+    head.innerHTML=`<div class="deliv-index">${i+1}</div><div>${nameHtml}<div class="deliv-dates">${datesHtml}</div>${linkHtml}${ult}</div>${statusHtml}${E?`<button class="remove-x" onclick="event.stopPropagation(); removeDeliverable('${d.id}')">Eliminar</button>`:'<span></span>'}<span class="chev"></span>`;
     head.addEventListener('click',ev=>{ if(['SELECT','INPUT','BUTTON'].includes(ev.target.tagName)) return; block.classList.toggle('open'); openBlocks[d.id]=block.classList.contains('open'); });
     const acts=document.createElement('div'); acts.className='activities';
     d.activities.forEach(a=>{
@@ -1233,7 +1264,7 @@ function renderDeliverables(){
         ?`<input type="text" class="name-input" value="${esc(a.name)}" onchange="setAct('${d.id}','${a.id}','name',this.value)"><textarea placeholder="Descripción de la actividad" style="margin-top:4px;font-size:12px;" onchange="setAct('${d.id}','${a.id}','desc',this.value)">${esc(a.desc||'')}</textarea><div class="act-dates">Inicio ${dateCtl('act',a.id,'start',a.start,d.id)} fin o entrega ${dateCtl('act',a.id,'date',a.date,d.id)}</div>`
         :`<div class="act-name">${esc(a.name)}</div><div class="act-desc">${esc(a.desc||'')}</div><div class="act-date">${canDates()?`<div class="act-dates">Inicio ${dateCtl('act',a.id,'start',a.start,d.id)} fin o entrega ${dateCtl('act',a.id,'date',a.date,d.id)}</div>`:((a.start?fmt(a.start)+' a ':'')+(a.date?fmt(a.date):''))}</div>`;
       const st=E?statusSelect(a.status,`setAct('${d.id}','${a.id}','status',this.value)`):`<span class="badge ${stClass(a.status)}">${statusLabel(a.status)}</span>`;
-      const lk=E?`<input type="text" placeholder="Liga de evidencia" style="width:150px;font-size:11.5px;" value="${esc(a.link||'')}" onchange="setAct('${d.id}','${a.id}','link',this.value)">`:(a.link?`<a class="act-link" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver evidencia</a>`:`<span class="act-link disabled">Sin evidencia</span>`);
+      const lk=E?lockedLink('a:'+d.id+':'+a.id,a,'Liga de evidencia',150):(a.link?`<a class="act-link" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver evidencia</a>`:`<span class="act-link disabled">Sin evidencia</span>`);
       row.innerHTML=`<div>${left}</div>${st}${lk}${E?`<button class="remove-x" onclick="removeActivity('${d.id}','${a.id}')">Quitar</button>`:''}`;
       acts.appendChild(row);
     });
@@ -1243,8 +1274,8 @@ function renderDeliverables(){
   const AP=actProgress(); totalAct=AP.tot; doneAct=AP.done;
   $('statTotal').textContent=project.data.deliverables.length; $('statActivities').textContent=totalAct; $('statDoneAct').textContent=doneAct; $('statSessions').textContent=project.data.logs.length;
 }
-function setDeliv(id,f,v){ const d=findD(id); if(f==='start'||f==='end'){ changeDate('deliv',id,f,v); return; } d[f]=v; persist(); renderAll(); }
-function setAct(did,aid,f,v){ findA(did,aid)[f]=v; persist(); renderAll(); }
+function setDeliv(id,f,v){ const d=findD(id); if(f==='start'||f==='end'){ changeDate('deliv',id,f,v); return; } d[f]=v; sello(d,'edit'); persist(); renderAll(); }
+function setAct(did,aid,f,v){ const a=findA(did,aid); a[f]=v; sello(a,'edit'); persist(); renderAll(); }
 // Orden cronológico: lo que tiene fecha primero (por inicio y luego por fin); lo que no tiene fecha, al final y en su orden actual
 const dStart=d=>d.start||d.end||'', aStart=a=>a.start||a.date||'';
 function byDate(get,getEnd){ return (x,y)=>{ const a=get(x),b=get(y); if(!a&&!b) return 0; if(!a) return 1; if(!b) return -1; return a<b?-1:a>b?1:((getEnd(x)||'')<(getEnd(y)||'')?-1:(getEnd(x)||'')>(getEnd(y)||'')?1:0); }; }
@@ -1539,7 +1570,7 @@ async function tlReport(rid){
 
 /* ---- Puente para las páginas de herramientas (mismo sitio, dentro de un iframe) ---- */
 window.TrackBridge={
-  info(){ if(!project) return null; return {slug:project.slug,name:project.name,client:project.client||'',role,canWrite:canHerr(),email:(session&&session.user&&session.user.email)||'',userName:(session&&session.user&&session.user.name)||'',herr:JSON.parse(JSON.stringify(herr()))}; },
+  info(){ if(!project) return null; return {slug:project.slug,name:project.name,client:project.client||'',role,canWrite:canHerr(),email:(session&&session.user&&session.user.email)||'',userName:(session&&session.user&&session.user.name)||'',herr:JSON.parse(JSON.stringify(herr())),indicadores:(project.data.indicators||[]).map(x=>x&&x.nombre).filter(Boolean)}; },
   api(action,body,ms){ return api(action,Object.assign({},body||{},{slug:project.slug}),false,ms).then(r=>{ if(r&&r.herr) herrSet(r.herr); return r; }); },
   addToReport(item){ return herrAddReport(item); },
   inReport(tool,ref){ return herrInReport(tool,ref); },
