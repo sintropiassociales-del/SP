@@ -65,6 +65,9 @@
   .role-chip.admin{background:var(--orange); color:var(--white);}
   .role-chip.coordinacion{background:var(--purple-light); color:var(--purple);}
   .role-chip.seguimiento{background:var(--blue-light); color:var(--blue);}
+  .role-chip.herramientas{background:var(--orange-light); color:var(--orange-dark);}
+  .welcome-card{border:1px solid var(--line); border-left:4px solid var(--orange); border-radius:12px; padding:16px 18px; background:var(--white); margin:14px 0;}
+  .welcome-card h3{margin:0 0 6px; font-size:16px;} .welcome-card ol{margin:8px 0 0 18px; padding:0; font-size:13px; line-height:1.6;}
 
   .btn{font-family:'Montserrat','Open Sans',sans-serif; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:8px; cursor:pointer; border:1px solid var(--line); background:var(--white); color:var(--ink);}
   .btn:hover{border-color:var(--purple); color:var(--purple);}
@@ -502,6 +505,7 @@
     <div class="top-right">
       <button class="btn" id="homeBtn" onclick="goHome()">Mis proyectos</button>
       <div class="user-chip" id="userChip"></div>
+      <button class="btn hidden" id="pwChangeBtn" onclick="openCambiarPw()">Cambiar contraseña</button>
       <button class="btn" onclick="logout()">Cerrar sesión</button>
     </div>
   </header>
@@ -692,7 +696,7 @@ function actProgress(){ let tot=0,done=0; project.data.deliverables.forEach(d=>{
 function avanceProyecto(){ let tot=0,done=0,rev=0,proc=0; const u=s=>{ tot++; if(ST_DONE(s)) done++; else if(s==='revision'||s==='modificacion') rev++; else if(s==='proceso'||s==='seguimiento') proc++; };
   project.data.deliverables.forEach(d=>{ if(d.status==='archivado') return; const acts=d.activities.filter(a=>a.status!=='archivado'); if(acts.length) acts.forEach(a=>u(a.status)); else u(d.status); });
   return {tot,done,rev,proc,pct:tot?Math.round(done/tot*100):0}; }
-function roleLabel(r){ return r==='super'?'Admin general':(r==='admin'?'Admin de proyecto':(r==='seguimiento'?'Responsable de seguimiento':'Coordinación')); }
+function roleLabel(r){ return r==='super'?'Admin general':(r==='admin'?'Admin de proyecto':(r==='seguimiento'?'Responsable de seguimiento':(r==='herramientas'?'Equipo de herramientas':'Coordinación'))); }
 function slugify(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||'proyecto'; }
 function toast(msg,err){ const t=$('toast'); t.textContent=msg; t.className='show'+(err?' err':''); clearTimeout(toast._t); toast._t=setTimeout(()=>t.className='',3200); }
 function copyText(text){
@@ -831,14 +835,32 @@ function showLogin(msg){
   $('loginTitle').textContent=slug?'Entrar al proyecto':'Acceso de administración';
   $('loginSub').textContent=slug?'Escribe el correo y la contraseña que Sintropía Social te asignó para este proyecto.':'Esta entrada es para la administración de Sintropía Social, con su cuenta de Google.';
   $('pwBox').innerHTML=slug?pwFormHtml('lg',''):'';
-  $('adminSep').classList.toggle('hidden',!slug);
+  $('adminSep').classList.add('hidden'); $('gisBtn').innerHTML=''; $('gisBtn').classList.toggle('hidden',!!slug);
   $('loginNote').textContent=slug?'Si no tienes tu contraseña o dejó de funcionar, escribe a Sintropía Social para que te asignen una nueva.':'Si te compartieron la liga de un proyecto, ábrela: ahí entras con tu correo y tu contraseña.';
   if(!gisConfigured()){
     $('loginSetup').innerHTML=`<div class="setup-warn">Falta configurar el ID de cliente de Google en este archivo (GOOGLE_CLIENT_ID). Sigue la guía de configuración y vuelve a publicar la página.</div>`;
-  } else { $('loginSetup').innerHTML=''; renderGisButton($('gisBtn')); }
+  } else { $('loginSetup').innerHTML=''; if(!slug) renderGisButton($('gisBtn')); }
+  if(slug) $('loginSetup').innerHTML='';
 }
 // Al cerrar sesión no queda en el navegador nada de lo que se estaba llenando (formulario y documento del plan).
 function saWipeLocal(){ try{ Object.keys(localStorage).forEach(k=>{ if(k.indexOf('sa_draft_')===0) localStorage.removeItem(k); }); }catch(e){} }
+function openCambiarPw(){
+  openModal(`<div class="modal-title">Cambiar contraseña</div><div class="modal-sub">Escribe tu contraseña actual y la nueva (al menos 8 caracteres). Si olvidaste la actual, pide a Sintropía Social que te asigne una nueva.</div>
+    <label>Contraseña actual</label><input type="password" id="cpActual" autocomplete="current-password">
+    <label style="margin-top:10px;">Contraseña nueva</label><input type="password" id="cpNueva" autocomplete="new-password">
+    <label style="margin-top:10px;">Repite la contraseña nueva</label><input type="password" id="cpNueva2" autocomplete="new-password">
+    <div id="cpMsg"></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="cpBtn" onclick="cambiarPw()">Cambiar contraseña</button></div>`);
+}
+async function cambiarPw(){
+  const a=$('cpActual').value, n=$('cpNueva').value, n2=$('cpNueva2').value, msg=t=>$('cpMsg').innerHTML=`<div class="msg-box" style="margin-top:10px;">${esc(t)}</div>`;
+  if(!a||!n){ msg('Escribe tu contraseña actual y la nueva.'); return; }
+  if(n.length<8){ msg('La contraseña nueva debe tener al menos 8 caracteres.'); return; }
+  if(n!==n2){ msg('La contraseña nueva no coincide en las dos casillas.'); return; }
+  const b=$('cpBtn'); b.disabled=true;
+  try{ const r=await api('changePassword',{actual:a,nueva:n},true); setSession({token:r.token,exp:r.exp,slug:r.slug,email:r.email}); closeModal(); toast('Contraseña cambiada'); }
+  catch(e){ msg(e.message||'No se pudo cambiar la contraseña.'); b.disabled=false; }
+}
 function logout(){
   saWipeLocal();
   const ses=rawSession(), wasPw=authMode==='pw';
@@ -856,6 +878,7 @@ async function afterLogin(){
     const me=await api('me');
     session={user:me.user,isSuper:me.isSuper,projects:me.projects,openTickets:me.openTickets||0};
     session.viaPassword=!!me.viaPassword;
+    $('pwChangeBtn').classList.toggle('hidden',!me.viaPassword);
   }catch(e){
     const pw=authMode==='pw'; setToken(''); setSession(null); authMode='';
     showLogin(e.error==='auth' ? (pw?'Tu sesión expiró. Vuelve a entrar.':'No pudimos validar tu sesión de Google. Intenta de nuevo. Si el problema continúa, revisa que el ID de cliente esté bien configurado.') : (e.message||'No se pudo iniciar sesión.'));
@@ -1000,7 +1023,7 @@ async function manageProject(slug){
 }
 function renderManage(){
   const p=mg.project;
-  const users=mg.users.map((u,i)=>`<div class="user-row v3"><input type="text" value="${esc(u.name)}" placeholder="Nombre" onchange="mg.users[${i}].name=this.value.trim()"><input type="email" value="${esc(u.email)}" placeholder="correo@ejemplo.com" onchange="mg.users[${i}].email=this.value.trim().toLowerCase()"><div class="pw-cell"><input type="text" value="${esc(u.password)}" placeholder="${u.hasPassword?'Guardada. Escribe para cambiarla':'Contraseña (mín. 8)'}" autocomplete="off" oninput="mg.users[${i}].password=this.value"><button class="btn small" title="Generar una contraseña" onclick="mg.users[${i}].password=genPw(); renderManage()">Generar</button></div><select onchange="mg.users[${i}].role=this.value"><option value="admin" ${u.role==='admin'?'selected':''}>Admin de proyecto</option><option value="coordinacion" ${u.role==='coordinacion'?'selected':''}>Coordinación</option><option value="seguimiento" ${u.role==='seguimiento'?'selected':''}>Responsable de seguimiento</option></select><button class="btn small danger" onclick="mg.users.splice(${i},1); renderManage()">Quitar</button></div>`).join('');
+  const users=mg.users.map((u,i)=>`<div class="user-row v3"><input type="text" value="${esc(u.name)}" placeholder="Nombre" onchange="mg.users[${i}].name=this.value.trim(); mg.dirty=true"><input type="email" value="${esc(u.email)}" placeholder="correo@ejemplo.com" onchange="mg.users[${i}].email=this.value.trim().toLowerCase(); mg.dirty=true"><div class="pw-cell"><input type="text" value="${esc(u.password)}" placeholder="${u.hasPassword?'Guardada. Escribe para cambiarla':'Contraseña (mín. 8)'}" autocomplete="off" oninput="mg.users[${i}].password=this.value; mg.dirty=true"><button class="btn small" title="Generar una contraseña" onclick="mg.users[${i}].password=genPw(); mg.dirty=true; renderManage()">Generar</button></div><select onchange="mg.users[${i}].role=this.value; mg.dirty=true"><option value="admin" ${u.role==='admin'?'selected':''}>Admin de proyecto</option><option value="coordinacion" ${u.role==='coordinacion'?'selected':''}>Coordinación</option><option value="seguimiento" ${u.role==='seguimiento'?'selected':''}>Responsable de seguimiento</option><option value="herramientas" ${u.role==='herramientas'?'selected':''}>Equipo de herramientas</option></select><button class="btn small danger" onclick="mgQuitarUsuario(${i})">Quitar</button></div>`).join('');
   const creds=mg.creds.length?`<div class="creds"><b>Accesos listos para compartir.</b> Las contraseñas solo se muestran ahora: después quedan cifradas y no se pueden consultar, solo cambiar.${mg.creds.map((c,i)=>`<div><span>${esc(c.email)} · <code>${esc(c.password)}</code></span><button class="btn small" onclick="copyText(credText(${i}))">Copiar acceso</button></div>`).join('')}</div>`:'';
   openModal(`
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><div class="modal-title">Gestionar proyecto</div><div class="modal-sub" style="margin-bottom:0;">${esc(p.name)}</div></div>${statusChip(p.status)}</div>
@@ -1016,14 +1039,14 @@ function renderManage(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><input type="date" id="mgExp" value="${esc(p.expiresAt)}" style="width:170px;"><button class="btn small primary" onclick="saveMgExp()">Guardar vigencia</button><button class="btn small" onclick="extendMg(30)">Ampliar 30 días</button><button class="btn small" onclick="extendMg(90)">Ampliar 90 días</button></div>
       <div style="margin-top:12px;">${p.closed?`<button class="btn small orange" onclick="toggleCloseMg(false)">Reabrir proyecto</button>`:`<button class="btn small danger" onclick="toggleCloseMg(true)">Cerrar proyecto ahora</button>`}</div></div>
     <div class="section-sep"><h4>Usuarios y roles</h4>
-      <div class="modal-sub" style="margin-bottom:10px;">Asigna a cada persona su correo, su contraseña y su rol para esta liga. <b>Admin de proyecto:</b> ve y descarga todo, cambia fechas, usa Sintro Activities y envía sugerencias que te llegan como ticket. <b>Coordinación:</b> solo ve y descarga. <b>Responsable de seguimiento:</b> revisa entregables, fechas, estatus, avance, ligas y los documentos ya sistematizados, sin modificar nada; puede enviar preguntas y observaciones.</div>
+      <div class="modal-sub" style="margin-bottom:10px;">Asigna a cada persona su correo, su contraseña y su rol para esta liga. <b>Admin de proyecto:</b> ve y descarga todo, cambia fechas, usa Sintro Activities y envía sugerencias que te llegan como ticket. <b>Coordinación:</b> solo ve y descarga. <b>Responsable de seguimiento:</b> revisa entregables, fechas, estatus, avance, ligas y los documentos ya sistematizados, sin modificar nada; puede enviar preguntas y observaciones. <b>Equipo de herramientas:</b> solo usa la Caja de herramientas y las Herramientas de diagnóstico, y puede agregar sus resultados al reporte final.</div>
       ${users||'<p class="empty">Sin usuarios todavía.</p>'}
-      <div style="display:flex;gap:8px;margin-top:6px;"><button class="btn small" onclick="mg.users.push({email:'',role:'coordinacion',name:'',hasPassword:false,password:''}); renderManage()">Agregar usuario</button><button class="btn small primary" onclick="saveMgUsers()">Guardar usuarios</button></div>${creds}</div>
+      <div style="display:flex;gap:8px;margin-top:6px;"><button class="btn small" onclick="mg.users.push({email:'',role:'coordinacion',name:'',hasPassword:false,password:''}); mg.dirty=true; renderManage()">Agregar usuario</button><button class="btn small primary" onclick="saveMgUsers()">Guardar usuarios</button><label style="display:flex;align-items:center;gap:6px;font-size:12px;margin:0;"><input type="checkbox" id="mgEnviar" ${mg.enviar!==false?'checked':''} onchange="mg.enviar=this.checked" style="width:auto;"> Enviar por correo a cada persona su contraseña nueva</label></div>${mg.dirty?'<div class="msg-box" style="margin-top:8px;">Tienes cambios en usuarios sin guardar.</div>':''}${creds}</div>
     <div class="section-sep"><h4>Liga del proyecto</h4>
       <div style="display:flex;gap:8px;"><input type="text" readonly value="${esc(projectLink(p.slug))}" onfocus="this.select()"><button class="btn small" onclick="copyText('${esc(projectLink(p.slug))}')">Copiar</button></div>
       <div class="modal-sub" style="margin:8px 0 0;">Cada liga es independiente: quien la abra entra con el correo y la contraseña de arriba, y solo ve este proyecto con el rol que le asignaste.</div></div>
     ${p.closed?`<div class="section-sep"><h4>Eliminar</h4><div class="modal-sub">Borra el proyecto y sus datos de forma permanente. Solo disponible con el proyecto cerrado.</div><button class="btn small danger" onclick="deleteMg()">Eliminar proyecto</button></div>`:''}
-    <div class="modal-actions"><button class="btn primary" onclick="closeModal(); refreshMe().then(renderHome)">Listo</button></div>`);
+    <div class="modal-actions"><button class="btn primary" onclick="mgListo()">Listo</button></div>`);
   $('modalCard').classList.add('wide');
 }
 async function mgCall(action,body,okMsg){
@@ -1040,13 +1063,27 @@ async function toggleCloseMg(close){
 }
 function genPw(){ const abc='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', a=new Uint32Array(12); crypto.getRandomValues(a); return Array.from(a,n=>abc[n%abc.length]).join(''); }
 function credText(i){ const c=mg.creds[i]; return 'Acceso a '+mg.project.name+' (Sintropía Social)\nLiga: '+projectLink(mg.slug)+'\nCorreo: '+c.email+'\nContraseña: '+c.password; }
-async function saveMgUsers(){
+async function mgQuitarUsuario(i){
+  const u=mg.users[i]; if(!u) return;
+  if(!u.email){ mg.users.splice(i,1); renderManage(); return; }
+  if(!(await askConfirm('Quitar usuario',`${u.name||u.email} ya no podrá entrar a este proyecto. El cambio se guarda en este momento.`,'Quitar',true))){ renderManage(); return; }
+  mg.users.splice(i,1); await saveMgUsers(true);
+}
+// Si se cierra con cambios sin guardar, se pregunta (así un usuario quitado no "reaparece").
+async function mgListo(){
+  if(mg&&mg.dirty){ const g=await askConfirm('Cambios sin guardar','Hiciste cambios en los usuarios que todavía no se guardan. ¿Guardarlos ahora?','Guardar'); if(g){ const ok=await saveMgUsers(); if(!ok){ renderManage(); return; } } }
+  closeModal(); refreshMe().then(renderHome);
+}
+async function saveMgUsers(silencioso){
   const users=mg.users.filter(u=>u.email);
   const sin=users.find(u=>!u.hasPassword&&!u.password); if(sin){ toast('Asigna una contraseña a '+sin.email+'.',true); return; }
   const corta=users.find(u=>u.password&&u.password.length<8); if(corta){ toast('La contraseña de '+corta.email+' debe tener al menos 8 caracteres.',true); return; }
   const sent=users.filter(u=>u.password).map(u=>({email:u.email,password:u.password}));
-  const r=await mgCall('setUsers',{users:users.map(u=>({email:u.email,role:u.role,name:u.name,password:u.password||''}))},'Usuarios guardados');
-  if(r){ mg.users=r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''})); mg.creds=sent; renderManage(); }
+  const enviar=mg.enviar!==false&&sent.length>0;
+  const r=await mgCall('setUsers',{enviar,users:users.map(u=>({email:u.email,role:u.role,name:u.name,password:u.password||''}))},null);
+  if(r){ mg.users=r.users.map(u=>({email:u.email,role:u.role,name:u.name||'',hasPassword:!!u.hasPassword,password:''})); mg.creds=sent; mg.dirty=false; renderManage();
+    toast(silencioso===true?'Usuario quitado y guardado':('Usuarios guardados'+(r.enviados?' · '+r.enviados+(r.enviados===1?' correo enviado':' correos enviados'):''))); return true; }
+  return false;
 }
 async function saveMgTools(reset){
   if(reset && !(await askConfirm('Reiniciar contadores','El equipo del proyecto vuelve a tener disponibles todos sus análisis de documento y sus diagnósticos.','Reiniciar'))){ renderManage(); return; }
@@ -1094,6 +1131,8 @@ const canEdit=()=>role==='super';
 const canDates=()=>role==='super'||role==='admin';
 const canSuggest=()=>role==='admin'||role==='seguimiento';
 const esSeg=()=>role==='seguimiento';
+const esHerr=()=>role==='herramientas';
+const canDX=()=>canSA()||(esHerr()&&hasSA());
 
 function defaultProjectData(){
   return {
@@ -1161,11 +1200,16 @@ function renderProject(){
   if(role==='super' && p.status!=='activo') b+=`<div class="banner warn">${p.status==='cerrado'?'Este proyecto está cerrado.':'La vigencia de este proyecto terminó.'} Solo tú, como Admin general, puedes verlo. Ajusta la vigencia o reábrelo desde Gestionar.</div>`;
   if(role==='admin') b+=`<div class="banner info">Tu rol es Admin de proyecto: ${project.modules==='activities'?'puedes usar Sintro Activities, descargar sus resultados y enviar sugerencias al Admin general.':(project.modules==='track'?'puedes cambiar fechas, descargar la información y enviar sugerencias al Admin general.':'puedes usar Sintro Activities y pasar su resultado al seguimiento, cambiar fechas, descargar la información y enviar sugerencias al Admin general.')}</div>`;
   if(role==='coordinacion') b+=`<div class="banner info">Tu rol es Coordinación: puedes consultar el proyecto y descargar la información.</div>`;
+  if(esHerr()) b+=`<div class="welcome-card"><h3>Bienvenida, bienvenido al Equipo de herramientas</h3><p style="margin:0;font-size:13px;color:var(--grey);">En este proyecto tienes habilitadas las herramientas de trabajo y las herramientas de diagnóstico. Todo lo que hagas puede sumarse al reporte final del proyecto.</p>
+    <ol><li><b>Caja de herramientas:</b> sube instrumentos a Drive y trabájalos aquí, usa el repositorio bibliográfico, Territorio, Voces (transcripción) y Task live (trabajo en equipos).</li>
+    ${hasSA()?'<li><b>Sintro Activities › Herramientas de diagnóstico:</b> elige la herramienta (árbol de problemas, marco lógico, línea base, teoría de cambio…), responde las preguntas y revisa el resultado.</li>':''}
+    <li>Cuando un resultado esté listo, usa <b>«Agregar al reporte final»</b>. Puedes actualizarlo después.</li>
+    <li>Si algo no funciona o necesitas otra herramienta, escríbenos por WhatsApp.</li></ol></div>`;
   if(role==='seguimiento') b+=`<div class="banner info">Tu rol es Responsable de seguimiento: puedes revisar entregables, fechas, estatus, avance y ligas, sin modificarlos. Para preguntas u observaciones usa el botón «Preguntas y observaciones» o escríbenos por WhatsApp.</div>`;
   $('projBanners').innerHTML=b;
   let tb=hasTrack()?`<button class="btn primary" onclick="exportProjectPDF()">Descargar proyecto en PDF</button><button class="btn" onclick="exportProjectWord()">Descargar en Word</button><button class="btn" onclick="exportProjectExcel()">Descargar en Excel</button>`:'';
-  $('pOverview').classList.toggle('hidden',!hasTrack());
-  if(esSeg()) tb='';
+  $('pOverview').classList.toggle('hidden',!hasTrack()||esHerr());
+  if(esSeg()||esHerr()) tb='';
   if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">${esSeg()?'Preguntas y observaciones':'Sugerir un cambio'}</button>`;
   if(role==='super') tb+=`<button class="btn" onclick="manageProject('${esc(p.slug)}')">Gestionar proyecto</button>`;
   if(role==='super'||role==='admin') tb+=`<button class="btn" onclick="openHistorial()">Historial de cambios</button>`;
@@ -1186,7 +1230,7 @@ const hasTrack=()=>project.modules!=='activities';
 const segCaja=()=>(project.data.tools||[]).length>0||((project.data.herr||{}).rep||[]).length>0;
 const hasSA=()=>project.modules!=='track';
 const canSA=()=>(role==='super'||role==='admin')&&hasSA();
-function tabVisible(k){ if(esSeg()) return hasTrack()&&(k==='entregables'||k==='planeacion'||(k==='caja'&&segCaja())); if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
+function tabVisible(k){ if(esHerr()) return (k==='caja'&&hasTrack())||(k==='sintro'&&hasSA()); if(esSeg()) return hasTrack()&&(k==='entregables'||k==='planeacion'||(k==='caja'&&segCaja())); if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
 function renderTabs(){
   const nav=$('projTabs'), vis=TAB_DEFS.filter(t=>tabVisible(t[0]));
   const act=nav.querySelector('.tab.active'); let cur=act?act.dataset.tab:'';
@@ -1481,10 +1525,10 @@ const HERR_DEFS=[
   ['vox','Audio','Voces','Transcripción con protocolo académico, traducción y memoria de lenguas.'],
   ['tl','Sesiones','Task live','Trabajo en equipos sobre copias de un documento durante una videollamada.']
 ];
-const HERR_TOOL_NAME={instr:'Instrumento',repo:'Repositorio bibliográfico',ter:'Territorio',vox:'Voces',tl:'Task live'};
+const HERR_TOOL_NAME={instr:'Instrumento',repo:'Repositorio bibliográfico',ter:'Territorio',vox:'Voces',tl:'Task live',dx:'Diagnóstico'};
 let herrUI={open:'',folders:null,embed:'',form:'',tlPanel:null,busy:false};
 function herr(){ const h=project.data.herr; if(!h||typeof h!=='object') project.data.herr={}; const x=project.data.herr; ['instr','ter','vox','tl','rep'].forEach(k=>{ if(!Array.isArray(x[k])) x[k]=[]; }); if(!x.repo) x.repo={cats:[]}; return x; }
-const canHerr=()=>(role==='super'||role==='admin')&&(role==='super'||project.status==='activo');
+const canHerr=()=>(role==='super'||role==='admin'||role==='herramientas')&&(role==='super'||project.status==='activo');
 function herrSet(h){ if(h) project.data.herr=h; renderHerr(); }
 async function herrCall(action,body,okMsg,ms){
   try{ const r=await api(action,Object.assign({slug:project.slug},body||{}),false,ms); if(r.herr) herrSet(r.herr); if(okMsg) toast(okMsg); (r.avisos||[]).forEach((a,i)=>setTimeout(()=>toast(a,true),600+i*3400)); return r; }
@@ -1848,7 +1892,7 @@ function model(){
   return {name:project.name,client:project.client,vig:fmt(project.expiresAt,true),status:project.status,avance:AP.pct,tot,done,d,generated:fmt(todayIso(),true)};
 }
 function fileBase(){ return slugify(project.name); }
-function repHerr(){ const o=['instr','repo','ter','vox','tl']; return ((project.data.herr||{}).rep||[]).slice().sort((a,b)=>o.indexOf(a.tool)-o.indexOf(b.tool)); }
+function repHerr(){ const o=['dx','instr','repo','ter','vox','tl']; return ((project.data.herr||{}).rep||[]).slice().sort((a,b)=>o.indexOf(a.tool)-o.indexOf(b.tool)); }
 function download(blob,name){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); }
 function pdfSafe(s){ return String(s==null?'':s).replace(/[^ -ÿ–—‘’“”•…\n]/g,'?'); }
 function makePdf(){
@@ -2054,9 +2098,9 @@ function renderSintro(){
   const box=$('saBox'); if(!box) return;
   if(saUI.proj!==project){ saUI={proj:project,area:'plan',mode:'',tab:'lectura',draft:null,docFile:'',docName:'',docMsg:'',docKept:'',run:null,summary:null}; dxReset(); dxUI=dxNew(); box.innerHTML=''; }
   const sa=saData();
-  $('saPanelDesc').textContent=hasTrack()?'Empieza aquí. Sube el documento del proyecto y obtén el panorama general y su secuencia: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Con un botón, todo se reparte en las pestañas que siguen.':'Sube el documento del proyecto y obtén su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo.';
+  $('saPanelDesc').textContent=esHerr()?'Herramientas de diagnóstico: elige la herramienta, responde las preguntas, revisa el resultado y agrégalo al reporte final del proyecto.':hasTrack()?'Empieza aquí. Sube el documento del proyecto y obtén el panorama general y su secuencia: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo. Con un botón, todo se reparte en las pestañas que siguen.':'Sube el documento del proyecto y obtén su arquitectura de trabajo: ejes, actividades estratégicas, subactividades, indicadores, entregables y productos, con observaciones para mejorarlo.';
   if(!tabVisible('sintro')){ box.innerHTML=''; $('saArea').innerHTML=''; return; }
-  const planOk=canSA()||!!(sa&&sa.visible); if(!planOk) saUI.area='dx';
+  const planOk=!esHerr()&&(canSA()||!!(sa&&sa.visible)); if(!planOk) saUI.area='dx';
   $('saArea').innerHTML=(planOk&&(canSA()||project.data.dx.length))?`<div class="sa-switch"><button class="${saUI.area==='plan'?'on':''}" onclick="saSetArea('plan')">Del documento al plan</button><button class="${saUI.area==='dx'?'on':''}" onclick="saSetArea('dx')">Herramientas de diagnóstico${project.data.dx.length?' ('+project.data.dx.length+')':''}</button></div>`:'';
   if(saUI.area==='dx'){ if(!$('dxRoot')||!dxUI.typing) dxRender(); return; }
   const sj=project.data.saJob;
@@ -2524,7 +2568,7 @@ function dxPick(h,keep){
   dxUI.typing=false; $('saBox').innerHTML=''; renderSintro();
 }
 function dxRender(){
-  const box=$('saBox'), E=canSA(), list=project.data.dx;
+  const box=$('saBox'), E=canDX(), list=project.data.dx;
   if(dxUI.view){ box.innerHTML=`<div id="dxRoot">${dxViewHtml()}</div>`; return; }
   let h='<div id="dxRoot">';
   const dr=dxUI.draft;
@@ -2993,7 +3037,7 @@ function dxStatusHtml(v){
     <div class="sa-bar" style="margin:10px 0 2px;" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${ia}"><i style="width:${Math.round(ia/n*100)}%"></i></div>
     <ul>${v.blocks.map((b,i)=>`<li class="${b.estado}"><span class="st">${lab[b.estado]}</span><span>Paso ${i+1}: ${esc(dxBlockNames(b))}${b.estado==='ia'&&b.seg?' · '+b.seg+' s':''}${b.estado==='tuya'?' — la IA terminó, pero conservé lo que corregiste':''}${b.err?' — '+esc(b.err):''}</span>${b.estado==='tuya'&&b.alt?`<button class="btn small" onclick="dxUseAlt(${i})">Usar la versión de la IA</button>`:''}</li>`).join('')}</ul>
     ${v.updated?'<p class="sa-quota">La versión profundizada ya se actualizó en el proyecto.</p>':''}${v.updateErr?`<p class="sa-quota" style="color:var(--red);">${esc(v.updateErr)} Usa «Actualizar en el proyecto».</p>`:''}
-    <div class="toolbar-row" style="margin:10px 0 0;">${run?'<button class="btn small" onclick="dxStop()">Detener la IA</button>':(pend&&canSA()?'<button class="btn small primary" onclick="dxRetry()">Profundizar con IA lo pendiente</button>':'')}</div></div>`;
+    <div class="toolbar-row" style="margin:10px 0 0;">${run?'<button class="btn small" onclick="dxStop()">Detener la IA</button>':(pend&&canDX()?'<button class="btn small primary" onclick="dxRetry()">Profundizar con IA lo pendiente</button>':'')}</div></div>`;
 }
 /* ---- corregir el resultado ahí mismo, antes (o después) de guardarlo ---- */
 function dxSyncMetas(it){
@@ -3003,8 +3047,8 @@ function dxSyncMetas(it){
   it.metas=s.tabla.filas.filter(f=>g(f,'Meta SMART').trim()).map(f=>({prioridad:g(f,'Prioridad'),meta:g(f,'Meta SMART'),responsable:g(f,'Responsable'),horizonte:g(f,'Horizonte')}));
 }
 function dxProjRow(v){
-  const it=v.item, E=canSA(), run=dxJob&&dxJob.view===v;
-  return `<span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${v.colocado&&hasTrack()?`<span style="font-size:12px;color:var(--grey);">Colocado: ${v.colocado.entregables} en Entregables, ${v.colocado.metas} en Planeación, ${v.colocado.indicadores} en Indicadores.</span>`:''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${E&&(v.dirty||(v.blocks&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!run))?`<button class="btn small ${v.dirty?'primary':''}" id="dxAddBtn" onclick="dxAdd()">${v.dirty?'Guardar cambios':'Actualizar en el proyecto'}</button>${v.dirty?'<span style="font-size:12px;color:var(--grey);">Hay correcciones sin guardar.</span>':''}`:''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">${v.borrador?'Guardado como borrador: no se pierde si sales, y tus correcciones se guardan solas.':'Aún no está guardado.'}${run?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${hasTrack()?' Al agregarlo, lo que corresponde llega solo a Entregables, Planeación estratégica e Indicadores.':''}</span>`:'')}`;
+  const it=v.item, E=canDX(), run=dxJob&&dxJob.view===v;
+  return `<span class="lbl">Proyecto</span>${v.saved?`<span class="chip resuelto">Agregado al proyecto</span>${v.colocado&&hasTrack()?`<span style="font-size:12px;color:var(--grey);">Colocado: ${v.colocado.entregables} en Entregables, ${v.colocado.metas} en Planeación, ${v.colocado.indicadores} en Indicadores.</span>`:''}<button class="btn small" id="dxMailBtn" onclick="dxEmail()">Enviarlo a mi correo</button>${canHerr()?`<button class="btn small orange" onclick="dxReporte()">${herrInReport('dx',it.id)?'Actualizar en el reporte final':'Agregar al reporte final'}</button>`:''}${E&&(v.dirty||(v.blocks&&!v.updated&&v.blocks.some(b=>b.estado==='ia')&&!run))?`<button class="btn small ${v.dirty?'primary':''}" id="dxAddBtn" onclick="dxAdd()">${v.dirty?'Guardar cambios':'Actualizar en el proyecto'}</button>${v.dirty?'<span style="font-size:12px;color:var(--grey);">Hay correcciones sin guardar.</span>':''}`:''}`:(E?`<button class="btn primary" id="dxAddBtn" onclick="dxAdd()">Agregar al proyecto</button><span style="font-size:12px;color:var(--grey);">${v.borrador?'Guardado como borrador: no se pierde si sales, y tus correcciones se guardan solas.':'Aún no está guardado.'}${run?' Puedes agregarlo ya: cuando la IA termine, se actualiza solo.':''}${hasTrack()?' Al agregarlo, lo que corresponde llega solo a Entregables, Planeación estratégica e Indicadores.':''}</span>`:'')}`;
 }
 let dxAutoT=null;
 function dxTouch(v){ v.dirty=true; v.updated=false; const r=$('dxProjRow'); if(r) r.innerHTML=dxProjRow(v); if(v.borrador&&!v.saved&&v.started){ clearTimeout(dxAutoT); dxAutoT=setTimeout(()=>dxAutoSave(v),1500); } }
@@ -3013,7 +3057,7 @@ async function dxAutoSave(v){
   try{ dxSyncMetas(v.item); const r=await api('dxSave',{slug,item:v.item,borrador:true}); if(project&&project.slug===slug){ dxTake(r); v.dirty=false; } }catch(e){}
 }
 function dxEdit(el){
-  const v=dxUI.view; if(!v||!canSA()) return; const it=v.item, p=el.dataset.p.split('.'), val=String(el.innerText||'').replace(/\s*\n+\s*/g,' ').replace(/ /g,' ').trim();
+  const v=dxUI.view; if(!v||!canDX()) return; const it=v.item, p=el.dataset.p.split('.'), val=String(el.innerText||'').replace(/\s*\n+\s*/g,' ').replace(/ /g,' ').trim();
   if(p[0]==='t'){ it.titulo=val; it._edT=true; }
   else if(p[0]==='r'){ it.resumen=val; it._edT=true; }
   else if(p[0]==='q'){ it.incognitas[+p[1]]=val; it._edQ=true; }
@@ -3028,7 +3072,7 @@ document.addEventListener('input',e=>{ const el=e.target&&e.target.closest&&e.ta
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.closest&&e.target.closest('#dxRoot [data-p]')){ e.preventDefault(); e.target.blur(); } });
 document.addEventListener('focusout',e=>{ if(e.target&&e.target.closest&&e.target.closest('#dxRoot [data-p]')) setTimeout(()=>{ if(dxUI.pend&&dxUI.view&&!dxEditing()) dxPaint(dxUI.view); },200); });
 function dxDocHtml(v){
-  const it=v.item, E=canSA(), A=(p)=>E?` data-p="${p}" contenteditable="plaintext-only" spellcheck="true"`:'';
+  const it=v.item, E=canDX(), A=(p)=>E?` data-p="${p}" contenteditable="plaintext-only" spellcheck="true"`:'';
   let h=`<h1${A('t')}>${esc(it.titulo)}</h1><div class="accent-rule"><i></i><i></i><i></i></div><p class="sa-dmeta">${esc([it.herramienta||dxName(it.herr),project.name,fmt(String(it.createdAt||todayIso()).slice(0,10),true)].filter(Boolean).join(' · '))}</p>`;
   if(it.resumen||E) h+=`<p${A('r')}>${esc(it.resumen)}</p>`;
   saL(it.secciones).forEach((s,si)=>{ const fijo=s.titulo==='Referencias', a=p=>fijo?'':A(p);
@@ -3065,11 +3109,11 @@ function dxShow(id){
     v.blocks=ia.pasos.map((e,i)=>({estado:e==='ia'?'ia':(e==='tuya'?'tuya':(e==='fallo'?'fallo':'base')),secciones:[it.secciones[ia.off+i]]}));
   }
   dxUI.view=v; dxUI.typing=false; dxRender(); window.scrollTo({top:$('projTabs').offsetTop-10,behavior:'smooth'});
-  if(ia&&ia.estado==='trabajando'&&v.blocks&&canSA()&&!dxJob) dxDeepen(v);       // la IA seguía trabajando: se retoma el seguimiento
+  if(ia&&ia.estado==='trabajando'&&v.blocks&&canDX()&&!dxJob) dxDeepen(v);       // la IA seguía trabajando: se retoma el seguimiento
 }
 function dxBack(){ dxUI.view=null; dxRender(); }   // el resultado sin agregar queda a la mano en la lista de herramientas
 function dxViewHtml(){
-  const v=dxUI.view, E=canSA();
+  const v=dxUI.view, E=canDX();
   return `<div class="toolbar-row" style="margin:0 0 14px;"><button class="btn small" onclick="dxBack()">Volver a las herramientas</button></div>
     <div id="dxStatusBox">${dxStatusHtml(v)}</div>
     <div class="card tint dx-bar">
@@ -3107,6 +3151,11 @@ function dxDownload(k){
     if(k==='docx') return saDocx(dxBlocks(it),false,base+'.docx');
     if(k==='xlsx') return XLSX.writeFile(dxWorkbook(it),base+'.xlsx');
   }catch(e){ console.error(e); toast(e.message||'No se pudo generar el archivo.',true); }
+}
+function dxReporte(){
+  const v=dxUI.view; if(!v||!v.item) return; const it=v.item, L=[];
+  dxBlocks(it).slice(2).forEach(b=>{ if(b.t==='h2') L.push('§ '+b.x); else if(b.t==='p') L.push(String(b.x)); else if(b.t==='li') L.push('• '+b.x); else if(b.t==='tabla') b.filas.slice(0,12).forEach(f=>L.push(b.cols.map((c,i)=>f[i]?c+': '+f[i]:'').filter(Boolean).join(' | '))); });
+  herrAddReport({tool:'dx',ref:it.id,titulo:(it.herramienta||dxName(it.herr))+': '+(it.titulo||''),resumen:it.resumen||'',lineas:L.map(x=>x.length>590?x.slice(0,588)+'…':x).slice(0,80)}).then(()=>{ if(dxUI.view===v) dxRender(); });
 }
 async function dxAdd(){
   const b=$('dxAddBtn'), slug=project.slug; if(b){ b.disabled=true; b.textContent='Agregando…'; }
