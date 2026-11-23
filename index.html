@@ -473,6 +473,21 @@
   .gc-toggle:hover{border-color:var(--purple);} .gc-toggle .gc-cnt{color:var(--grey); font-weight:600; margin-left:6px;}
   .gc-all{display:flex; gap:8px; justify-content:flex-end; margin:-4px 0 10px;}
   .dl-opts{display:flex; gap:16px; flex-wrap:wrap;} .dl-areas{display:grid; gap:6px;} .dl-o{display:flex !important; align-items:center; gap:8px; font-weight:400 !important; font-size:13px; margin:0 !important;} .dl-o input{width:auto !important;}
+  .rt-bar{display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:6px; border:1px solid var(--line); border-bottom:none; border-radius:10px 10px 0 0; background:#FAF8FF;}
+  .rt-g{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .rt-b{border:none; background:#fff; padding:5px 9px; font-size:12px; cursor:pointer; color:var(--ink,#1F1B2E); border-right:1px solid var(--line);} .rt-g .rt-b:last-child{border-right:none;}
+  .rt-b:hover{background:var(--purple-light);} .rt-b.on{background:var(--purple-light); color:var(--purple); font-weight:700;}
+  select.rt-sel{width:auto !important; padding:5px 8px; font-size:12px; border-radius:8px;}
+  .rt-link{display:inline-flex; gap:6px; align-items:center;} .rt-link input{width:220px !important; font-size:12px;}
+  .rt-ed{min-height:150px; max-height:480px; overflow:auto; border:1px solid var(--line); border-radius:0 0 10px 10px; padding:10px 14px; background:#fff; font-size:13.5px; line-height:1.55; outline:none;}
+  .rt-ed:focus{border-color:var(--purple); box-shadow:0 0 0 3px var(--purple-light);}
+  .rt-ed:empty:before{content:attr(data-ph); color:var(--grey);}
+  .rt-view h3{font-size:15px; margin:10px 0 4px; color:var(--ink,#1F1B2E);} .rt-view h4{font-size:13.5px; margin:8px 0 3px;}
+  .rt-view p{margin:0 0 6px;} .rt-view ul,.rt-view ol{margin:2px 0 8px; padding-left:22px;} .rt-view li{margin:2px 0;}
+  .rt-view blockquote{margin:6px 0; padding:4px 12px; border-left:3px solid var(--purple); color:var(--grey); font-style:italic; background:#FAF8FF;}
+  .rt-view hr{border:none; border-top:1px solid var(--line); margin:10px 0;} .rt-view a{color:var(--purple);}
+  .log-notes{margin-top:8px; font-size:13px;}
+  .seg-auth{display:flex !important; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px !important; font-weight:500 !important; margin:0 !important;} .seg-auth input{width:auto !important;}
 </style>
 </head>
 <body>
@@ -565,8 +580,8 @@
       <p class="panel-desc" id="logDesc"></p>
       <div class="toolbar-row" style="margin-top:0; margin-bottom:18px;">
         <button class="btn" onclick="exportLogPDF()">Descargar PDF</button>
-        <button class="btn" onclick="exportLogWord()">Descargar Word</button>
-        <button class="btn" onclick="exportLogExcel()">Descargar Excel</button>
+        <button class="btn" id="logWordBtn" onclick="exportLogWord()">Descargar Word</button>
+        <button class="btn" id="logXlsBtn" onclick="exportLogExcel()">Descargar Excel</button>
         <button class="btn primary hidden" id="editModeBtn" onclick="toggleEditMode()">Registrar sesión</button>
       </div>
       <div class="card hidden" id="logForm">
@@ -579,7 +594,7 @@
             <div class="attendee-row"><input type="text" id="attName" placeholder="Nombre"><input type="text" id="attInst" placeholder="Institución"><button class="btn" onclick="addAttendee()">Agregar</button></div>
             <div id="attendeeChips"></div>
           </div>
-          <div class="full"><label>Acuerdos y observaciones</label><textarea id="logNotes" placeholder="Acuerdos tomados, evidencias, siguientes pasos"></textarea></div>
+          <div class="full"><label>Acuerdos y observaciones</label><div class="rt-bar" id="logNotesBar"></div><div class="rt-ed rt-view" id="logNotesEd" contenteditable="true" data-ph="Acuerdos tomados, evidencias, siguientes pasos. Usa la barra para dar formato o «Plantilla» para empezar con una estructura."></div></div>
         </div>
         <div style="display:flex; gap:10px; margin-top:14px;">
           <button class="btn primary" id="submitLogBtn" onclick="submitLog()">Registrar sesión</button>
@@ -1217,17 +1232,19 @@ function renderProject(){
     ${hasSA()?'<li><b>Sintro Activities › Herramientas de diagnóstico:</b> elige la herramienta (árbol de problemas, marco lógico, línea base, teoría de cambio…), responde las preguntas y revisa el resultado.</li>':''}
     <li>Cuando un resultado esté listo, usa <b>«Agregar al reporte final»</b>. Puedes actualizarlo después.</li>
     <li>Si algo no funciona o necesitas otra herramienta, escríbenos por WhatsApp.</li></ol></div>`;
-  if(role==='seguimiento') b+=`<div class="banner info">Tu rol es Responsable de seguimiento: puedes revisar entregables, fechas, estatus, avance y ligas, sin modificarlos. Para preguntas u observaciones usa el botón «Preguntas y observaciones» o escríbenos por WhatsApp.</div>`;
+  if(role==='seguimiento') b+=`<div class="banner info">Tu rol es Responsable de seguimiento: puedes revisar entregables, fechas, estatus, avance, ligas y la bitácora de sesiones, sin modificarlos, y descargar el avance en PDF. El informe final se habilita cuando la administración autoriza su descarga. Para preguntas u observaciones usa el botón «Preguntas y observaciones» o escríbenos por WhatsApp.</div>`;
   $('projBanners').innerHTML=b;
   let tb=hasTrack()?`<button class="btn primary" onclick="openDescarga('pdf')">Descargar proyecto en PDF</button><button class="btn" onclick="openDescarga('word')">Descargar en Word</button><button class="btn" onclick="openDescarga('excel')">Descargar en Excel</button>`:'';
   $('pOverview').classList.toggle('hidden',!hasTrack()||esHerr());
-  if(esSeg()||esHerr()) tb='';
+  if(esHerr()) tb='';
+  if(esSeg()) tb=hasTrack()?`<button class="btn primary" onclick="openDescarga('pdf')">Descargar avance en PDF</button>`:'';
   if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">${esSeg()?'Preguntas y observaciones':'Sugerir un cambio'}</button>`;
   if(role==='super') tb+=`<button class="btn" onclick="manageProject('${esc(p.slug)}')">Gestionar proyecto</button>`;
   if(role==='super'||role==='admin') tb+=`<button class="btn" onclick="openHistorial()">Historial de cambios</button>`;
   $('pToolbar').innerHTML=tb;
   $('delivDesc').textContent = canEdit() ? 'Cada entregable se abre en sus actividades. Puedes modificar nombres, fechas, estatus y ligas de evidencia.' : (canDates() ? 'Cada entregable se abre en sus actividades. Puedes cambiar las fechas; para otros cambios envía una sugerencia.' : 'Cada entregable se abre en sus actividades.');
-  $('logDesc').textContent = canEdit() ? 'Registra, edita o elimina sesiones. Cualquier persona con acceso puede consultarlas y descargarlas.' : 'Consulta y descarga las sesiones registradas.';
+  ['logWordBtn','logXlsBtn'].forEach(id=>$(id).classList.toggle('hidden',esSeg()));
+  $('logDesc').textContent = esSeg() ? 'Consulta las sesiones registradas y descárgalas en PDF.' : canEdit() ? 'Registra, edita o elimina sesiones. Cualquier persona con acceso puede consultarlas y descargarlas.' : 'Consulta y descarga las sesiones registradas.';
   $('ganttDesc').textContent = canEdit() ? 'Cambia fechas, estatus y la liga del comprobable de cada entregable y actividad; el cronograma y el avance se actualizan solos. Usa «Tablero por estatus» para verlo por columnas.' : (canDates() ? 'Cambia las fechas de cada entregable y actividad; el cronograma se actualiza solo. El color y el avance dependen del estatus.' : 'Consulta el avance, las fechas, los estatus y las ligas de los comprobables. Usa «Tablero por estatus» para verlo por columnas.');
   ['editModeBtn','reportAdminControls','addDelivBtn','sortDelivBtn','addToolBtn','addGoalBtn','addCompBtn'].forEach(id=>$(id).classList.toggle('hidden',!canEdit()));
   if(!canEdit()){ $('logForm').classList.add('hidden'); }
@@ -1242,7 +1259,7 @@ const hasTrack=()=>project.modules!=='activities';
 const segCaja=()=>(project.data.tools||[]).length>0||((project.data.herr||{}).rep||[]).length>0;
 const hasSA=()=>project.modules!=='track';
 const canSA=()=>(role==='super'||role==='admin')&&hasSA();
-function tabVisible(k){ if(esHerr()) return (k==='caja'&&hasTrack())||(k==='sintro'&&hasSA()); if(esSeg()) return hasTrack()&&(k==='entregables'||k==='planeacion'||(k==='caja'&&segCaja())); if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
+function tabVisible(k){ if(esHerr()) return (k==='caja'&&hasTrack())||(k==='sintro'&&hasSA()); if(esSeg()) return hasTrack()&&(k==='entregables'||k==='bitacora'||k==='planeacion'||(k==='caja'&&segCaja())); if(k==='sintro') return hasSA()&&(canSA()||!!(saData()&&project.data.sa.visible)||project.data.dx.length>0); return hasTrack(); }
 function renderTabs(){
   const nav=$('projTabs'), vis=TAB_DEFS.filter(t=>tabVisible(t[0]));
   const act=nav.querySelector('.tab.active'); let cur=act?act.dataset.tab:'';
@@ -1373,10 +1390,12 @@ $('modalBg').addEventListener('mousedown',e=>{ if(e.target===$('modalBg') && !re
    ENTREGABLES
 ========================================================= */
 function renderReport(){
-  const r=project.data.reportFinal; const has=!!(r.link&&r.link.trim());
-  $('reportNote').textContent=has?'Informe disponible para descarga.':(canEdit()?'Pega la liga del informe final para habilitar la descarga.':'El informe final estará disponible aquí cuando se publique.');
-  const btn=$('reportDlBtn'); btn.href=has?r.link:'#'; btn.classList.toggle('disabled',!has);
-  $('reportAdminControls').innerHTML=canEdit()?lockedLink('rep',r,'Pegar liga del informe final',240):'';
+  const r=project.data.reportFinal; const has=!!(r.link&&r.link.trim())&&(!esSeg()||!!r.segOk), adm=canEdit()||role==='admin';
+  $('reportNote').textContent=esSeg()?(has?'Informe disponible para descarga.':(r.pendiente?'El informe final ya está listo. La descarga se habilitará cuando la administración la autorice.':'El informe final estará disponible aquí cuando se publique y la administración autorice su descarga.'))
+    :has?'Informe disponible para descarga.':(canEdit()?'Pega la liga del informe final para habilitar la descarga.':'El informe final estará disponible aquí cuando se publique.');
+  const btn=$('reportDlBtn'); btn.href=has?safeUrl(r.link):'#'; btn.classList.toggle('disabled',!has);
+  const box=$('reportAdminControls'); box.classList.toggle('hidden',!adm); box.style.display=adm?'flex':'none';
+  box.innerHTML=(canEdit()?lockedLink('rep',r,'Pegar liga del informe final',240):'')+(adm?`<label class="seg-auth" title="Mientras no se autorice, el Responsable de seguimiento ve el aviso pero no puede descargar el informe."><input type="checkbox" ${r.segOk?'checked':''} onchange="setReportSeg(this.checked)"> Autorizar la descarga al Responsable de seguimiento${r.segOkBy?`<span class="lk-meta">${r.segOk?'Autorizado':'Retirado'} por ${esc(r.segOkBy)}${r.segOkAt?' · '+esc(fmtHora(r.segOkAt)):''}</span>`:''}</label>`:'');
 }
 const HIST_ACC={drv_carpeta:'Creó carpeta en Drive',instr_subir:'Subió instrumento',instr_quitar:'Quitó instrumento',repo_lote:'Agregó citas al repositorio',repo_categorias:'Cambió categorías del repositorio',ter_guardar:'Guardó mapa territorial',reporte_agregar:'Agregó al reporte final',tl_sala:'Creó sala de Task live'};
 async function openHistorial(){
@@ -1462,18 +1481,18 @@ async function removeActivity(did,aid){ if(!(await askConfirm('Eliminar activida
 /* =========================================================
    BITÁCORA
 ========================================================= */
-function toggleEditMode(){ editModeOn=!editModeOn; $('logForm').classList.toggle('hidden',!editModeOn); $('editModeBtn').textContent=editModeOn?'Ocultar formulario':'Registrar sesión'; if(!editModeOn) cancelLogEdit(); }
+function toggleEditMode(){ rtInit(); editModeOn=!editModeOn; $('logForm').classList.toggle('hidden',!editModeOn); $('editModeBtn').textContent=editModeOn?'Ocultar formulario':'Registrar sesión'; if(!editModeOn) cancelLogEdit(); }
 function onAttendeeToggle(){ const on=$('attendeeToggle').checked; $('simpleAttendWrap').classList.toggle('hidden',on); $('detailedAttendWrap').classList.toggle('hidden',!on); }
 function addAttendee(){ const n=$('attName').value.trim(), i=$('attInst').value.trim(); if(!n) return; attendeesDraft.push({name:n,inst:i}); $('attName').value=''; $('attInst').value=''; renderChips(); }
 function renderChips(){ $('attendeeChips').innerHTML=attendeesDraft.map((a,i)=>`<span class="attendee-chip">${esc(a.name)}${a.inst?' · '+esc(a.inst):''} <a href="#" style="color:inherit;" onclick="attendeesDraft.splice(${i},1); renderChips(); return false;">quitar</a></span>`).join(''); }
-function resetLogForm(){ ['logDate','logDyn','logNotes','logAttend'].forEach(id=>$(id).value=''); attendeesDraft=[]; renderChips(); $('attendeeToggle').checked=false; onAttendeeToggle(); }
+function resetLogForm(){ ['logDate','logDyn','logAttend'].forEach(id=>$(id).value=''); $('logNotesEd').innerHTML=''; attendeesDraft=[]; renderChips(); $('attendeeToggle').checked=false; onAttendeeToggle(); }
 function submitLog(){
   if(!canEdit()) return;
-  const date=$('logDate').value, dyn=$('logDyn').value.trim(), notes=$('logNotes').value.trim(), detailed=$('attendeeToggle').checked;
+  const date=$('logDate').value, dyn=$('logDyn').value.trim(), notesHtml=rtClean($('logNotesEd').innerHTML), notes=rtText(notesHtml), detailed=$('attendeeToggle').checked;
   if(!date||!dyn){ toast('Indica al menos la fecha y la actividad aplicada.',true); return; }
   let payload;
-  if(detailed){ if(!attendeesDraft.length){ toast('Agrega al menos una persona asistente.',true); return; } payload={date,mode:'detailed',attendCount:attendeesDraft.length,attendees:[...attendeesDraft],dyn,notes}; }
-  else payload={date,mode:'simple',attendCount:parseInt($('logAttend').value)||0,attendees:[],dyn,notes};
+  if(detailed){ if(!attendeesDraft.length){ toast('Agrega al menos una persona asistente.',true); return; } payload={date,mode:'detailed',attendCount:attendeesDraft.length,attendees:[...attendeesDraft],dyn,notes,notesHtml}; }
+  else payload={date,mode:'simple',attendCount:parseInt($('logAttend').value)||0,attendees:[],dyn,notes,notesHtml};
   if(editingLogId){ const i=project.data.logs.findIndex(l=>l.id===editingLogId); if(i>-1) project.data.logs[i]=Object.assign({id:editingLogId},payload); editingLogId=null; $('submitLogBtn').textContent='Registrar sesión'; $('cancelEditBtn').classList.add('hidden'); }
   else { payload.id=uid(); project.data.logs.push(payload); }
   resetLogForm(); persist(); renderAll();
@@ -1481,7 +1500,7 @@ function submitLog(){
 function editLog(id){
   const l=project.data.logs.find(x=>x.id===id); if(!l) return;
   editModeOn=true; $('logForm').classList.remove('hidden'); $('editModeBtn').textContent='Ocultar formulario'; editingLogId=id;
-  $('logDate').value=l.date; $('logDyn').value=l.dyn; $('logNotes').value=l.notes||'';
+  $('logDate').value=l.date; $('logDyn').value=l.dyn; rtInit(); $('logNotesEd').innerHTML=notasHtml(l);
   if(l.mode==='detailed'){ $('attendeeToggle').checked=true; attendeesDraft=[...(l.attendees||[])]; renderChips(); } else { $('attendeeToggle').checked=false; $('logAttend').value=l.attendCount||''; }
   onAttendeeToggle(); $('submitLogBtn').textContent='Guardar cambios'; $('cancelEditBtn').classList.remove('hidden');
   window.scrollTo({top:$('logForm').offsetTop-90,behavior:'smooth'});
@@ -1494,7 +1513,7 @@ function renderLogs(){
   if(!project.data.logs.length){ w.innerHTML='<p class="empty">Aún no hay sesiones registradas.</p>'; return; }
   [...project.data.logs].sort((a,b)=>a.date<b.date?1:-1).forEach(l=>{
     const el=document.createElement('div'); el.className='log-entry';
-    el.innerHTML=`<div style="flex:1;"><div class="log-date">${esc(l.date)}</div><div class="log-title">${esc(l.dyn)}</div><div class="log-detail">${esc(attendText(l))}${l.notes?'<br>'+esc(l.notes):''}</div></div>${canEdit()?`<div class="log-actions"><button class="btn small" onclick="editLog('${l.id}')">Editar</button><button class="btn small danger" onclick="deleteLog('${l.id}')">Eliminar</button></div>`:''}`;
+    el.innerHTML=`<div style="flex:1;"><div class="log-date">${esc(fmt(l.date,true))}</div><div class="log-title">${esc(l.dyn)}</div><div class="log-detail">${esc(attendText(l))}</div>${(l.notesHtml||l.notes)?`<div class="log-notes rt-view">${notasHtml(l)}</div>`:''}</div>${canEdit()?`<div class="log-actions"><button class="btn small" onclick="editLog('${l.id}')">Editar</button><button class="btn small danger" onclick="deleteLog('${l.id}')">Eliminar</button></div>`:''}`;
     w.appendChild(el);
   });
 }
@@ -1937,11 +1956,173 @@ function makePdf(){
   };
   return api;
 }
+/* =========================================================
+   EDITOR DE TEXTO DE LA BITÁCORA (formato enriquecido)
+   Se guarda HTML depurado (notesHtml) y una versión en texto (notes).
+========================================================= */
+const RT_BLOCK={P:'p',DIV:'p',H1:'h3',H2:'h3',H3:'h3',H4:'h4',H5:'h4',H6:'h4',BLOCKQUOTE:'blockquote',UL:'ul',OL:'ol',LI:'li'};
+const RT_INL={B:'b',STRONG:'b',I:'i',EM:'i',U:'u',S:'s',STRIKE:'s',DEL:'s'};
+const RT_COLOR=/^(#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*[\d.]+\s*)?\))$/i;
+const RT_COLORES=[['#1F1B2E','Tinta'],['#6B21F5','Morado'],['#FF6B1A','Naranja'],['#1F9D6B','Verde'],['#C62828','Rojo'],['#2F6FD6','Azul'],['#6B6878','Gris']];
+const RT_RESALTES=[['#FFF3B0','Amarillo'],['#F2ECFE','Lila'],['#E6F6EE','Verde claro'],['#FFE7D6','Durazno'],['','Sin resaltado']];
+function rtClean(html){
+  const src=new DOMParser().parseFromString('<body>'+String(html||'')+'</body>','text/html').body;
+  const out=document.createElement('div');
+  const walk=(n,par)=>{ [...n.childNodes].forEach(c=>{
+    if(c.nodeType===3){ par.appendChild(document.createTextNode(c.nodeValue)); return; }
+    if(c.nodeType!==1) return;
+    const t=c.tagName;
+    if(/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|TEMPLATE|SVG|MATH|NOSCRIPT|HEAD|TITLE|META|LINK|BUTTON|INPUT|SELECT|TEXTAREA|IMG|VIDEO|AUDIO|FORM)$/.test(t)) return;
+    if(t==='BR'){ par.appendChild(document.createElement('br')); return; }
+    if(t==='HR'){ par.appendChild(document.createElement('hr')); return; }
+    const st=c.style||{}; let el=null;
+    if(RT_BLOCK[t]) el=document.createElement(RT_BLOCK[t]);
+    else if(RT_INL[t]) el=document.createElement(RT_INL[t]);
+    else if(t==='A'){ const h=(c.getAttribute('href')||'').trim(); if(/^(https?:\/\/|mailto:)/i.test(h)){ el=document.createElement('a'); el.setAttribute('href',h); el.setAttribute('target','_blank'); el.setAttribute('rel','noopener'); } }
+    else if(t==='SPAN'||t==='FONT'||t==='MARK') el=document.createElement('span');
+    let inner=el;
+    if(el){
+      const css=[], tag=el.tagName;
+      const col=((t==='FONT'&&c.getAttribute('color'))||st.color||'').trim(); if(col&&RT_COLOR.test(col)) css.push('color:'+col);
+      const bg=(st.backgroundColor||(t==='MARK'?'#FFF3B0':'')).trim(); if(bg&&RT_COLOR.test(bg)&&!/rgba\([^)]*,\s*0\s*\)/.test(bg)) css.push('background-color:'+bg);
+      const al=st.textAlign||c.getAttribute('align')||''; if(/^(P|H3|H4|LI|BLOCKQUOTE)$/.test(tag)&&/^(left|center|right|justify)$/.test(al)) css.push('text-align:'+al);
+      if(css.length) el.setAttribute('style',css.join(';'));
+      if(tag==='SPAN'||tag==='P'){ // negritas, cursivas y subrayado que vienen como estilo (p. ej. al pegar)
+        const w=st.fontWeight; if(w==='bold'||+w>=600){ const b=document.createElement('b'); el.appendChild(b); inner=b; }
+        if(st.fontStyle==='italic'){ const i=document.createElement('i'); inner.appendChild(i); inner=i; }
+        if(/underline/.test(st.textDecoration||st.textDecorationLine||'')){ const u=document.createElement('u'); inner.appendChild(u); inner=u; }
+      }
+      if(tag==='SPAN'&&!css.length&&inner===el){ walk(c,par); return; }
+      par.appendChild(el); walk(c,inner); return;
+    }
+    walk(c,par);
+  }); };
+  walk(src,out);
+  return out.textContent.trim()?out.innerHTML:'';
+}
+function rtText(html){
+  const root=document.createElement('div'); root.innerHTML=rtClean(html); let s='';
+  const walk=(n,pre)=>{ [...n.childNodes].forEach(c=>{
+    if(c.nodeType===3){ let t=c.nodeValue.replace(/\s+/g,' '); if(!s||/[\n ]$/.test(s)) t=t.replace(/^ /,''); s+=t; return; }
+    const t=c.tagName;
+    if(t==='BR'){ s+='\n'; return; } if(t==='HR'){ s+='\n———\n'; return; }
+    if(t==='UL'||t==='OL'){ let k=0; [...c.children].forEach(li=>{ k++; s=s.replace(/[ ]+$/,''); if(s&&!s.endsWith('\n')) s+='\n'; s+=pre+(t==='OL'?k+'. ':'• '); walk(li,pre+'   '); }); if(!s.endsWith('\n')) s+='\n'; return; }
+    if(/^(P|H3|H4|BLOCKQUOTE|LI)$/.test(t)){ if(s&&!s.endsWith('\n')) s+='\n'; walk(c,pre); if(!s.endsWith('\n')) s+='\n'; return; }
+    walk(c,pre);
+  }); };
+  walk(root,''); return s.replace(/\n{3,}/g,'\n\n').trim();
+}
+const txtHtml=t=>esc(t||'').replace(/\n/g,'<br>');
+const notasHtml=l=>l.notesHtml?rtClean(l.notesHtml):txtHtml(l.notes);
+let rtRange=null;
+function rtSave(){ const s=window.getSelection(), ed=$('logNotesEd'); if(s&&s.rangeCount&&ed&&ed.contains(s.anchorNode)) rtRange=s.getRangeAt(0).cloneRange(); }
+function rtRestore(){ const ed=$('logNotesEd'); ed.focus(); if(rtRange){ const s=window.getSelection(); s.removeAllRanges(); s.addRange(rtRange); } }
+function rtCmd(c,v){ rtRestore(); if(c==='hiliteColor'){ document.execCommand('styleWithCSS',false,true); document.execCommand('hiliteColor',false,v||'transparent'); document.execCommand('styleWithCSS',false,false); }
+  else document.execCommand(c,false,v==null?null:v); rtSave(); rtState(); }
+function rtBlock(v){ if(!v) return; rtCmd('formatBlock',v==='p'?'<p>':v==='blockquote'?'<blockquote>':'<'+v+'>'); }
+function rtLink(){ rtSave(); const b=$('rtLinkBox'); b.classList.toggle('hidden'); if(!b.classList.contains('hidden')) $('rtLinkUrl').focus(); }
+function rtLinkApply(){ const u=$('rtLinkUrl').value.trim(); if(!/^(https?:\/\/|mailto:)/i.test(u)){ toast('Escribe una liga que empiece con https://',true); return; }
+  rtRestore(); const s=window.getSelection(); if(s.isCollapsed) document.execCommand('insertHTML',false,`<a href="${esc(u)}">${esc(u)}</a>`); else document.execCommand('createLink',false,u);
+  $('rtLinkUrl').value=''; $('rtLinkBox').classList.add('hidden'); rtSave(); }
+function rtPlantilla(){ rtRestore(); document.execCommand('insertHTML',false,'<h3>Acuerdos</h3><ol><li><br></li></ol><h3>Siguientes pasos y responsables</h3><ul><li><br></li></ul><h3>Evidencias</h3><p><br></p>'); rtSave(); }
+function rtState(){ document.querySelectorAll('#logNotesBar [data-st]').forEach(b=>{ let on=false; try{ on=document.queryCommandState(b.dataset.st); }catch(e){} b.classList.toggle('on',on); }); }
+function rtPaste(e){ const cd=e.clipboardData; if(!cd) return; e.preventDefault(); const h=cd.getData('text/html'); document.execCommand('insertHTML',false,h?rtClean(h):txtHtml(cd.getData('text/plain'))); }
+function rtBarHtml(){
+  const B=(c,lbl,tit,st,extra)=>`<button type="button" class="rt-b" title="${tit}" ${st?`data-st="${st}"`:''} onmousedown="event.preventDefault()" onclick="${extra||`rtCmd('${c}')`}">${lbl}</button>`;
+  return `<select class="rt-sel" title="Estilo de párrafo" onchange="rtBlock(this.value); this.value=''"><option value="">Estilo</option><option value="p">Párrafo</option><option value="h3">Título</option><option value="h4">Subtítulo</option><option value="blockquote">Cita destacada</option></select>
+    <span class="rt-g">${B('bold','<b>N</b>','Negrita','bold')}${B('italic','<i>K</i>','Cursiva','italic')}${B('underline','<u>S</u>','Subrayado','underline')}${B('strikeThrough','<s>abc</s>','Tachado','strikeThrough')}</span>
+    <select class="rt-sel" title="Color del texto" onchange="if(this.value) rtCmd('foreColor',this.value); this.value=''"><option value="">Color</option>${RT_COLORES.map(c=>`<option value="${c[0]}" style="color:${c[0]}">● ${c[1]}</option>`).join('')}</select>
+    <select class="rt-sel" title="Resaltar" onchange="if(this.value!=='-') rtCmd('hiliteColor',this.value); this.value='-'"><option value="-">Resaltar</option>${RT_RESALTES.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select>
+    <span class="rt-g">${B('insertUnorderedList','• Lista','Lista con viñetas','insertUnorderedList')}${B('insertOrderedList','1. Lista','Lista numerada','insertOrderedList')}${B('outdent','⇤','Reducir sangría')}${B('indent','⇥','Aumentar sangría')}</span>
+    <span class="rt-g">${B('justifyLeft','≡ Izq.','Alinear a la izquierda','justifyLeft')}${B('justifyCenter','≡ Centro','Centrar','justifyCenter')}${B('justifyRight','≡ Der.','Alinear a la derecha','justifyRight')}</span>
+    <span class="rt-g">${B('','Liga','Insertar liga','','rtLink()')}${B('insertHorizontalRule','— Línea','Línea divisoria')}${B('','Plantilla','Insertar estructura: acuerdos, siguientes pasos y evidencias','','rtPlantilla()')}${B('removeFormat','Quitar formato','Quitar formato')}</span>
+    <span class="rt-g">${B('undo','↶','Deshacer')}${B('redo','↷','Rehacer')}</span>
+    <span id="rtLinkBox" class="hidden rt-link"><input type="text" id="rtLinkUrl" placeholder="https://…" onkeydown="if(event.key==='Enter'){event.preventDefault();rtLinkApply()}"><button type="button" class="btn small primary" onmousedown="event.preventDefault()" onclick="rtLinkApply()">Aplicar</button></span>`;
+}
+function rtInit(){ const bar=$('logNotesBar'); if(bar&&!bar.dataset.ok){ bar.innerHTML=rtBarHtml(); bar.dataset.ok='1'; const ed=$('logNotesEd'); ['keyup','mouseup','input','focus'].forEach(ev=>ed.addEventListener(ev,()=>{ rtSave(); rtState(); })); ed.addEventListener('paste',rtPaste); try{ document.execCommand('defaultParagraphSeparator',false,'p'); }catch(e){} } }
+
+/* ---- Bitácora en PDF con el formato del texto ---- */
+function rgbArr(s){ s=String(s||'').trim(); let m=s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})/i); if(m){ let h=m[1]; if(h.length===3) h=h.split('').map(x=>x+x).join(''); return [0,2,4].map(i=>parseInt(h.substr(i,2),16)); } m=s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/); return m?[+m[1],+m[2],+m[3]]:null; }
+function rtBlocks(html){
+  const root=document.createElement('div'); root.innerHTML=rtClean(html); const blocks=[]; let cur=null;
+  const start=(type,o)=>{ cur=Object.assign({type,runs:[],align:'left',indent:0,prefix:''},o||{}); blocks.push(cur); };
+  const walk=(n,sty,ind)=>{ [...n.childNodes].forEach(c=>{
+    if(c.nodeType===3){ const t=c.nodeValue.replace(/\s+/g,' '); if(!t.trim()&&(!cur||!cur.runs.length)) return; if(!cur) start('p',{indent:ind}); cur.runs.push(Object.assign({t},sty)); return; }
+    if(c.nodeType!==1) return; const tg=c.tagName.toLowerCase(), al=c.style.textAlign||'left';
+    if(tg==='br'){ if(!cur) start('p',{indent:ind}); cur.runs.push({t:'\n'}); return; }
+    if(tg==='hr'){ start('hr'); cur=null; return; }
+    if(tg==='p'||tg==='h3'||tg==='h4'||tg==='blockquote'){ start(tg==='blockquote'?'quote':tg,{indent:ind,align:al}); walk(c,sty,ind); cur=null; return; }
+    if(tg==='ul'||tg==='ol'){ cur=null; let k=0; [...c.childNodes].forEach(li=>{ if(li.nodeType!==1) return; if(li.tagName==='LI'){ k++; start('li',{indent:ind+1,prefix:tg==='ol'?k+'.':'•',align:li.style.textAlign||'left'}); walk(li,sty,ind+1); cur=null; } else walk({childNodes:[li]},sty,ind+1); }); cur=null; return; }
+    if(tg==='li'){ start('li',{indent:ind+1,prefix:'•',align:al}); walk(c,sty,ind+1); cur=null; return; }
+    const s2=Object.assign({},sty);
+    if(tg==='b') s2.b=1; else if(tg==='i') s2.i=1; else if(tg==='u') s2.u=1; else if(tg==='s') s2.s=1; else if(tg==='a') s2.href=c.getAttribute('href');
+    const col=rgbArr(c.style.color), bg=rgbArr(c.style.backgroundColor); if(col) s2.color=col; if(bg) s2.bg=bg;
+    walk(c,s2,ind);
+  }); };
+  walk(root,{},0);
+  return blocks.filter(b=>b.type==='hr'||b.runs.some(r=>r.t.trim()));
+}
+function pdfRich(P,html,x,w,base){
+  base=base||{}; const {doc,C}=P, SZ={p:9,li:9,quote:9,h3:11.5,h4:10};
+  rtBlocks(html).forEach(bk=>{
+    if(bk.type==='hr'){ P.ensure(4); doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(x,P.y+1,x+w,P.y+1); P.y+=3.5; return; }
+    const sz=SZ[bk.type]||9, LH=sz*0.46, q=bk.type==='quote'?4:0, ind=Math.max(0,bk.indent-1)*4.5+(bk.indent?1:0), bx=x+ind+q, px=bk.prefix?(bk.prefix.length>2?6:4.5):0, maxW=w-ind-q-px;
+    const head=bk.type==='h3'||bk.type==='h4';
+    const setF=r=>{ const b=(r&&r.b)||head, it=(r&&r.i)||bk.type==='quote'; doc.setFont('helvetica',b&&it?'bolditalic':b?'bold':it?'italic':'normal'); doc.setFontSize(sz); };
+    const pcs=[]; bk.runs.forEach(r=>{ if(r.t==='\n'){ pcs.push({br:1}); return; } r.t.split(/(\s+)/).forEach(t=>{ if(t) pcs.push({t:/^\s+$/.test(t)?' ':pdfSafe(t),r}); }); });
+    const L=[]; let ln=[], lw=0;
+    const cierra=()=>{ while(ln.length&&ln[ln.length-1].t===' ') lw-=ln.pop().w; L.push(ln); ln=[]; lw=0; };
+    pcs.forEach(p=>{ if(p.br){ cierra(); return; } setF(p.r); let pw=doc.getTextWidth(p.t);
+      if(p.t===' '){ if(ln.length) { ln.push({t:' ',r:p.r,w:pw}); lw+=pw; } return; }
+      if(lw+pw>maxW&&ln.length) cierra();
+      let t=p.t; while(doc.getTextWidth(t)>maxW&&t.length>1){ let k=t.length; while(k>1&&doc.getTextWidth(t.slice(0,k))>maxW) k--; ln.push({t:t.slice(0,k),r:p.r,w:doc.getTextWidth(t.slice(0,k))}); cierra(); t=t.slice(k); setF(p.r); }
+      pw=doc.getTextWidth(t); ln.push({t,r:p.r,w:pw}); lw+=pw; });
+    if(ln.length) cierra();
+    if(head) P.y+=bk.type==='h3'?2.2:1.2;
+    L.forEach((l,i)=>{ if(head&&i===0) P.ensure(LH*2+2); else P.ensure(LH+0.5); const tw=l.reduce((a,p)=>a+p.w,0); let cx=bx+px;
+      if(bk.align==='center') cx+=(maxW-tw)/2; else if(bk.align==='right') cx+=maxW-tw;
+      const by=P.y+LH*0.76;
+      if(q){ doc.setFillColor(...C.purple); doc.rect(bx-q,P.y-0.4,0.9,LH+0.8,'F'); }
+      if(i===0&&bk.prefix){ setF(null); doc.setTextColor(...C.purple); doc.text(pdfSafe(bk.prefix),bx,by); }
+      l.forEach(p=>{ const r=p.r||{}; setF(r); if(r.bg){ doc.setFillColor(...r.bg); doc.rect(cx,P.y,p.w+0.2,LH,'F'); }
+        const col=r.href?C.purple:(r.color||(bk.type==='quote'?C.grey:(head?C.ink:(base.color||C.ink)))); doc.setTextColor(...col); doc.text(p.t,cx,by);
+        doc.setLineWidth(0.2); doc.setDrawColor(...col);
+        if((r.u||r.href)&&p.t!==' ') doc.line(cx,by+0.7,cx+p.w,by+0.7); if(r.s) doc.line(cx,by-sz*0.11,cx+p.w,by-sz*0.11);
+        if(r.href&&p.t!==' ') doc.link(cx,P.y,p.w,LH,{url:r.href}); cx+=p.w; });
+      P.y+=LH; });
+    P.y+=bk.type==='li'?0.7:1.8;
+  });
+}
+function pdfBitacora(P,logs){
+  const {doc,C,font,lines,X,W}=P;
+  if(!logs.length){ font(false,9,C.grey); doc.text('Aún no hay sesiones registradas.',X,P.y); P.y+=6; return; }
+  [...logs].sort((a,b)=>a.date<b.date?-1:1).forEach(l=>{
+    P.ensure(26);
+    const fe=pdfSafe(fmt(l.date,true)); font(true,8,C.purple); const fw=doc.getTextWidth(fe)+6; doc.setFillColor(...C.plight); doc.roundedRect(X,P.y,fw,5.6,2.6,2.6,'F'); doc.text(fe,X+3,P.y+3.9);
+    font(true,11,C.ink); const tl=lines(l.dyn||'',W-fw-4); tl.forEach((t,i)=>{ doc.text(t,X+fw+4,P.y+4.1+i*4.8); }); P.y+=Math.max(6.5,tl.length*4.8+1.8);
+    font(false,8.4,C.grey); lines(attendText(l),W).forEach(t=>{ P.ensure(4); doc.text(t,X,P.y+3); P.y+=3.8; }); P.y+=1.8;
+    if(l.notesHtml||l.notes){ font(true,8,C.grey); doc.text('ACUERDOS Y OBSERVACIONES',X,P.y+2.6); P.y+=4.6; pdfRich(P,l.notesHtml||txtHtml(l.notes),X,W); }
+    P.y+=1.5; doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.setLineDashPattern([1.2,1.2],0); doc.line(X,P.y,X+W,P.y); doc.setLineDashPattern([],0); P.y+=5;
+  });
+}
+function setReportSeg(ok){
+  const r=project.data.reportFinal;
+  if(canEdit()){ r.segOk=ok; r.segOkBy=quien(); r.segOkAt=new Date().toISOString(); persist(); renderReport(); toast(ok?'Descarga autorizada al Responsable de seguimiento.':'Se retiró la autorización de descarga.'); return; }
+  setSync('saving');
+  api('updateDates',{slug:project.slug,patch:{reportSeg:ok}}).then(x=>{ project.data=normalizeData(x.project.data); project.rev=x.project.rev; setSync('ok'); renderReport(); toast(ok?'Descarga autorizada al Responsable de seguimiento.':'Se retiró la autorización de descarga.'); })
+    .catch(e=>{ setSync('err',e.message); toast(e.message||'No se pudo guardar la autorización.',true); renderReport(); });
+}
 function exportLogPDF(){
-  try{ const m=model(), w=makePdf(); w.title('Bitácora de sesiones',m.name+(m.client?' - '+m.client:'')+'\nGenerado el '+m.generated);
-    if(!m.d.logs.length) w.p('Aún no hay sesiones registradas.');
-    [...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).forEach(l=>{ w.p(fmt(l.date,true)+' - '+l.dyn,{bold:true,after:0.5}); w.p(attendText(l),{size:9.5,color:[107,104,120],after:0.5}); if(l.notes) w.p(l.notes,{size:9.5}); w.p('',{after:2}); });
-    w.save(fileBase()+'_bitacora.pdf'); }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
+  const prev=DL; DL={orient:'v',areas:new Set(['bitacora'])};
+  try{ const m=model(), P=pdfProyecto(), {doc,C,font,lines,X,W}=P;
+    font(true,8,C.orange); doc.text('SINTROPÍA SOCIAL · SINTROPÍA TRACK',X,P.y); P.y+=7;
+    font(true,18,C.ink); doc.text('Bitácora de sesiones',X,P.y); P.y+=7.2;
+    doc.setFillColor(...C.purple); doc.rect(X,P.y-3.5,14,1.1,'F'); doc.setFillColor(...C.orange); doc.rect(X+15.5,P.y-3.5,2.6,1.1,'F'); doc.setFillColor(...C.purple); doc.rect(X+19.6,P.y-3.5,6,1.1,'F'); P.y+=2;
+    font(true,10.5,C.ink); lines(m.name,W).forEach(l=>{ doc.text(l,X,P.y); P.y+=4.8; });
+    font(false,8.6,C.grey); doc.text(pdfSafe([m.client?'Cliente: '+m.client:'',m.d.logs.length+' '+(m.d.logs.length===1?'sesión registrada':'sesiones registradas'),'Generado el '+m.generated].filter(Boolean).join('   ·   ')),X,P.y+1); P.y+=9;
+    pdfBitacora(P,m.d.logs);
+    P.save(fileBase()+'_bitacora.pdf'); }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
+  finally{ DL=prev; }
 }
 /* =========================================================
    PDF DEL PROYECTO con el mismo diseño de la plataforma:
@@ -1993,11 +2174,11 @@ function pdfProyecto(){
 /* ---- Ventana de descarga: formato, orientación y áreas ---- */
 const DL_AREAS=[['resumen','Resumen y avance del proyecto (números, avance e informe final)'],['entregables','Entregables y cronograma'],['bitacora','Bitácora de sesiones'],['caja','Caja de herramientas (materiales y herramientas de trabajo)'],['planeacion','Planeación estratégica'],['competencias','Evaluación de competencias'],['indicadores','Indicadores']];
 let dlPref={fmt:'pdf',orient:'h',areas:null};
-function dlAreasVisibles(){ return DL_AREAS.filter(a=>{ if(esSeg()) return ['resumen','entregables','planeacion'].includes(a[0])||(a[0]==='caja'&&segCaja()); if(esHerr()) return a[0]==='caja'; if(a[0]==='bitacora'||a[0]==='competencias') return tabVisible(a[0]==='bitacora'?'bitacora':'competencias'); return true; }); }
+function dlAreasVisibles(){ return DL_AREAS.filter(a=>{ if(esSeg()) return ['resumen','entregables','bitacora','planeacion'].includes(a[0])||(a[0]==='caja'&&segCaja()); if(esHerr()) return a[0]==='caja'; if(a[0]==='bitacora'||a[0]==='competencias') return tabVisible(a[0]==='bitacora'?'bitacora':'competencias'); return true; }); }
 function openDescarga(f){
-  dlPref.fmt=f||dlPref.fmt; const vis=dlAreasVisibles(); const sel=dlPref.areas||new Set(vis.map(a=>a[0]));
+  dlPref.fmt=esSeg()?'pdf':(f||dlPref.fmt); const vis=dlAreasVisibles(); const sel=dlPref.areas||new Set(vis.map(a=>a[0]));
   openModal(`<div class="modal-title">Descargar el proyecto</div><div class="modal-sub">Elige el formato, la orientación y las áreas que quieres incluir.</div>
-    <label>Formato</label><div class="dl-opts">${[['pdf','PDF'],['word','Word'],['excel','Excel']].map(o=>`<label class="dl-o"><input type="radio" name="dlFmt" value="${o[0]}" ${dlPref.fmt===o[0]?'checked':''} onchange="dlPref.fmt=this.value; $('dlOrientBox').classList.toggle('hidden',this.value==='excel')"> ${o[1]}</label>`).join('')}</div>
+    <label class="${esSeg()?'hidden':''}">Formato</label><div class="dl-opts ${esSeg()?'hidden':''}">${[['pdf','PDF'],['word','Word'],['excel','Excel']].map(o=>`<label class="dl-o"><input type="radio" name="dlFmt" value="${o[0]}" ${dlPref.fmt===o[0]?'checked':''} onchange="dlPref.fmt=this.value; $('dlOrientBox').classList.toggle('hidden',this.value==='excel')"> ${o[1]}</label>`).join('')}</div>
     <div id="dlOrientBox" class="${dlPref.fmt==='excel'?'hidden':''}"><label style="margin-top:12px;">Orientación</label><div class="dl-opts">
       <label class="dl-o"><input type="radio" name="dlOr" value="h" ${dlPref.orient==='h'?'checked':''} onchange="dlPref.orient='h'"> Horizontal <span class="lk-meta">(recomendada para el cronograma)</span></label>
       <label class="dl-o"><input type="radio" name="dlOr" value="v" ${dlPref.orient==='v'?'checked':''} onchange="dlPref.orient='v'"> Vertical <span class="lk-meta">(para imprimir o adjuntar)</span></label></div></div>
@@ -2081,11 +2262,10 @@ function exportProjectPDF(){
       });
     }
     // ---- resto en tablas
-    if(hasTrack()&&!esSeg()&&!esHerr()&&inc('bitacora')){
-      P.section('Bitácora de sesiones');
-      P.table([{t:'Fecha',w:12,f:l=>fmt(l.date,true)},{t:'Actividad',w:26,k:'dyn',bold:true},{t:'Asistencia',w:24,f:l=>attendText(l)},{t:'Acuerdos y observaciones',w:50,f:l=>l.notes||''}],[...d.logs].sort((a,b)=>a.date<b.date?-1:1));
+    if(hasTrack()&&!esHerr()&&inc('bitacora')){
+      P.section('Bitácora de sesiones'); pdfBitacora(P,d.logs);
     }
-    if(hasTrack()&&!esSeg()&&!esHerr()&&inc('caja')){
+    if(hasTrack()&&!esHerr()&&inc('caja')&&(!esSeg()||segCaja())){
       P.section('Caja de herramientas');
       P.table([{t:'Herramienta',w:30,k:'name',bold:true},{t:'Categoría',w:14,k:'tag'},{t:'Estatus',w:12,f:t=>t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'},{t:'Fecha estimada',w:12,f:t=>t.due?fmt(t.due,true):''},{t:'Nota / materiales',w:44,f:t=>[t.note||''].concat((t.subitems||[]).map(s=>'• '+s.name+(s.status==='disponible'?' (disponible)':''))).filter(Boolean).join('\n')}],d.tools);
     }
@@ -2102,7 +2282,7 @@ function exportProjectPDF(){
 }
 function wordDoc(title,body,horizontal){ return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1F1B2E} h1{color:#6B21F5;font-size:20pt;margin-bottom:2pt} h2{color:#1F1B2E;font-size:14pt;border-bottom:1px solid #E7E2F3;padding-bottom:2pt;margin-top:18pt} th{background:#6B21F5;color:#fff;text-align:left} td,th{padding:4pt 6pt;border:1px solid #D8D2EA;vertical-align:top} table{border-collapse:collapse;width:100%} .m{color:#6B6878;font-size:10pt}${horizontal?'@page WordSection1{size:841.9pt 595.3pt;mso-page-orientation:landscape;margin:42pt 42pt 42pt 42pt;}':'@page WordSection1{size:595.3pt 841.9pt;margin:56pt 50pt 56pt 50pt;}'} div.WordSection1{page:WordSection1;}</style></head><body><div class="WordSection1">${body}</div></body></html>`; }
 function exportLogWord(){
-  try{ const m=model(); const rows=[...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${esc(l.notes||'')}</td></tr>`).join('');
+  try{ const m=model(); const rows=[...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${notasHtml(l)}</td></tr>`).join('');
     download(new Blob(['﻿',wordDoc('Bitácora',`<h1>Bitácora de sesiones</h1><p class="m">${esc(m.name)}${m.client?' - '+esc(m.client):''}<br>Generado el ${esc(m.generated)}</p><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>${rows||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>'}</table>`)],{type:'application/msword'}),fileBase()+'_bitacora.doc'); }catch(e){ toast('No se pudo generar el documento Word.',true); }
 }
 function exportProjectWord(){
@@ -2113,7 +2293,7 @@ function exportProjectWord(){
     if(inc('entregables')) b+='<h2>Entregables y actividades</h2>'+sortDelivs(d.deliverables).map((x,i)=>`<table style="margin-top:12pt;"><tr><td style="background:#F2ECFE;border:1px solid #E7E2F3;padding:6pt 8pt;"><b style="font-size:12pt;">${i+1}. ${esc(x.name)}</b> &nbsp; ${chip(x.status)}<br><span style="color:#6B6878;font-size:9.5pt;">${x.start||x.end?esc(fmt(x.start,true))+' a '+esc(fmt(x.end,true)):'Sin fechas'}</span>${x.link?` · <a href="${esc(safeUrl(x.link))}">Comprobable del entregable</a>`:' · <span style="color:#6B6878;">Sin comprobable</span>'}</td></tr></table>`
       +(x.activities.length?`<table style="table-layout:fixed"><tr><th style="width:42%">Actividad</th><th style="width:22%">Fechas y horas</th><th style="width:14%">Estatus</th><th style="width:22%">Comprobable</th></tr>${sortActs(x.activities).map(a=>`<tr><td>${esc(a.name)}${a.desc?`<br><span style="color:#6B6878;font-size:9pt;">${esc(a.desc)}</span>`:''}</td><td style="font-size:9.5pt;">${a.start||a.date?`Inicio: ${fh(a.start,a.horaIni)}<br>Fin: ${fh(a.date,a.horaFin)}${a.horaIni||a.horaFin?'':'<br><span style="color:#6B6878;">Sin hora</span>'}`:'<span style="color:#6B6878;">Sin fechas</span>'}</td><td style="background:rgb(${stRgb(a.status)[1].join(',')});color:rgb(${stRgb(a.status)[0].join(',')});font-weight:bold;font-size:9.5pt;">${esc(statusLabel(a.status))}</td><td style="font-size:9.5pt;">${a.noLink?'<span style="color:#6B6878;">Sin link entregable</span>':(a.link?`<a href="${esc(safeUrl(a.link))}">${esc(a.link.length>60?a.link.slice(0,58)+'…':a.link)}</a>`:'<span style="color:#6B6878;">Sin comprobable</span>')}</td></tr>`).join('')}</table>`:'')
       +((d.ganttObs[x.id]||{}).text?`<p style="background:#F2ECFE;padding:4pt 8pt;font-size:10pt;">${d.ganttObs[x.id].required?'<b>Requiere atención.</b> ':''}${esc(d.ganttObs[x.id].text)}</p>`:'')).join('')+(d.reportFinal.link?`<p><b>Informe final:</b> <a href="${esc(safeUrl(d.reportFinal.link))}">${esc(d.reportFinal.link)}</a></p>`:'');
-    if(inc('bitacora')) b+='<h2>Bitácora de sesiones</h2><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>'+([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${esc(l.notes||'')}</td></tr>`).join('')||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>')+'</table>';
+    if(inc('bitacora')) b+='<h2>Bitácora de sesiones</h2><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>'+([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${notasHtml(l)}</td></tr>`).join('')||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>')+'</table>';
     if(inc('caja')) b+='<h2>Caja de herramientas</h2><table><tr><th>Herramienta</th><th>Categoría</th><th>Estatus</th><th>Fecha estimada</th><th>Nota</th></tr>'+d.tools.map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.tag)}</td><td>${t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'}</td><td>${esc(fmt(t.due,true))}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>';
     if(inc('planeacion')) b+='<h2>Planeación estratégica</h2><table><tr><th>Prioridad</th><th>Meta SMART</th><th>Responsable</th><th>Horizonte</th></tr>'+d.goals.map(g=>`<tr><td>${esc(g.area)}</td><td>${esc(g.meta)}</td><td>${esc(g.resp)}</td><td>${esc(g.horizonte)}</td></tr>`).join('')+'</table>';
     if(inc('competencias')) b+='<h2>Evaluación de competencias</h2><table><tr><th>Competencia</th><th>Antes</th><th>Después</th></tr>'+d.comps.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.pre}%</td><td>${c.post}%</td></tr>`).join('')+'</table>';
