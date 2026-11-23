@@ -409,6 +409,7 @@
   .ga-track .gantt-bar{border-radius:5px; padding:0; font-size:0;}
   .ga-track .gantt-ms{top:0;}
   .ga-ev{font-size:11.5px; min-width:0;}
+  .ga-hora{display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; background:var(--purple-light); color:var(--purple); font-size:11px; font-weight:600; white-space:nowrap;}
   .ga-dl{display:flex; align-items:center; gap:6px;} .ga-dl b{font-weight:600; width:38px; font-size:11px;}
   .ga-dates{flex-direction:column; align-items:flex-start; gap:4px;}
   .ga-ev .lk-box{flex-wrap:nowrap; width:100%;} .ga-ev .lk-box input{flex:1; min-width:0 !important;}
@@ -1833,7 +1834,8 @@ function renderGantt(){
     if(acts.length&&abierto){
       const box=document.createElement('div'); box.className='gc-acts';
       acts.forEach(a=>{
-        const f=DT?`<span class="ga-dl"><b>Inicio</b>${dateCtl('act',a.id,'start',a.start,d.id)}${timeCtl(a.id,'horaIni',a.horaIni,d.id)}</span><span class="ga-dl"><b>Fin</b>${dateCtl('act',a.id,'date',a.date,d.id)}${timeCtl(a.id,'horaFin',a.horaFin,d.id)}</span>`:esc(rangoAct(a));
+        const hc=v=>horaTxt(v)?`<span class="ga-hora">${horaTxt(v)}</span>`:'';
+        const f=DT?`<span class="ga-dl"><b>Inicio</b>${dateCtl('act',a.id,'start',a.start,d.id)}${hc(a.horaIni)}</span><span class="ga-dl"><b>Fin</b>${dateCtl('act',a.id,'date',a.date,d.id)}${hc(a.horaFin)}</span>`:(!a.start&&!a.date?'Sin fechas':`<span class="ga-dl"><b>Inicio</b>${a.start?fmt(a.start):'—'}${hc(a.horaIni)}</span><span class="ga-dl"><b>Fin</b>${a.date?fmt(a.date):'—'}${hc(a.horaFin)}</span>`);
         const s2=E?statusSelect(a.status,`setAct('${d.id}','${a.id}','status',this.value)`):stChip(a.status);
         const e2=a.noLink?'<span class="lk-meta">Sin link entregable</span>':E?lockedLink('a:'+d.id+':'+a.id,a,'Liga del comprobable',160,'g'):(a.link?`<a class="act-link" href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener">Ver comprobable</a>`:'<span class="lk-meta">Sin comprobable</span>');
         let mk='';
