@@ -471,6 +471,7 @@
   .gc-toggle{display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:7px 12px; border:1px solid var(--line); border-radius:8px; background:var(--white);}
   .gc-toggle:hover{border-color:var(--purple);} .gc-toggle .gc-cnt{color:var(--grey); font-weight:600; margin-left:6px;}
   .gc-all{display:flex; gap:8px; justify-content:flex-end; margin:-4px 0 10px;}
+  .dl-opts{display:flex; gap:16px; flex-wrap:wrap;} .dl-areas{display:grid; gap:6px;} .dl-o{display:flex !important; align-items:center; gap:8px; font-weight:400 !important; font-size:13px; margin:0 !important;} .dl-o input{width:auto !important;}
 </style>
 </head>
 <body>
@@ -1217,7 +1218,7 @@ function renderProject(){
     <li>Si algo no funciona o necesitas otra herramienta, escríbenos por WhatsApp.</li></ol></div>`;
   if(role==='seguimiento') b+=`<div class="banner info">Tu rol es Responsable de seguimiento: puedes revisar entregables, fechas, estatus, avance y ligas, sin modificarlos. Para preguntas u observaciones usa el botón «Preguntas y observaciones» o escríbenos por WhatsApp.</div>`;
   $('projBanners').innerHTML=b;
-  let tb=hasTrack()?`<button class="btn primary" onclick="exportProjectPDF()">Descargar proyecto en PDF</button><button class="btn" onclick="exportProjectWord()">Descargar en Word</button><button class="btn" onclick="exportProjectExcel()">Descargar en Excel</button>`:'';
+  let tb=hasTrack()?`<button class="btn primary" onclick="openDescarga('pdf')">Descargar proyecto en PDF</button><button class="btn" onclick="openDescarga('word')">Descargar en Word</button><button class="btn" onclick="openDescarga('excel')">Descargar en Excel</button>`:'';
   $('pOverview').classList.toggle('hidden',!hasTrack()||esHerr());
   if(esSeg()||esHerr()) tb='';
   if(canSuggest()) tb+=`<button class="btn orange" onclick="openSuggest()">${esSeg()?'Preguntas y observaciones':'Sugerir un cambio'}</button>`;
@@ -1917,13 +1918,12 @@ function removeComp(id){ project.data.comps=project.data.comps.filter(c=>c.id!==
    DESCARGAS (todos los roles)
 ========================================================= */
 function model(){
-  const d=project.data, AP=actProgress(), tot=AP.tot, done=AP.done;
+  const d=project.data, AP=avanceProyecto(), tot=AP.tot, done=AP.done;
   return {name:project.name,client:project.client,vig:fmt(project.expiresAt,true),status:project.status,avance:AP.pct,tot,done,d,generated:fmt(todayIso(),true)};
 }
 function fileBase(){ return slugify(project.name); }
 function repHerr(){ const o=['dx','instr','repo','ter','vox','tl']; return ((project.data.herr||{}).rep||[]).slice().sort((a,b)=>o.indexOf(a.tool)-o.indexOf(b.tool)); }
 function download(blob,name){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); }
-function pdfSafe(s){ return String(s==null?'':s).replace(/[^ -ÿ–—‘’“”•…\n]/g,'?'); }
 function makePdf(){
   const {jsPDF}=window.jspdf; const doc=new jsPDF(); let y=18; const X=16, W=178;
   const ensure=h=>{ if(y+h>283){ doc.addPage(); y=18; } };
@@ -1941,39 +1941,183 @@ function exportLogPDF(){
     [...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).forEach(l=>{ w.p(fmt(l.date,true)+' - '+l.dyn,{bold:true,after:0.5}); w.p(attendText(l),{size:9.5,color:[107,104,120],after:0.5}); if(l.notes) w.p(l.notes,{size:9.5}); w.p('',{after:2}); });
     w.save(fileBase()+'_bitacora.pdf'); }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
 }
-function exportProjectPDF(){
-  try{ const m=model(), w=makePdf();
-    w.title(m.name,(m.client?m.client+'\n':'')+'Vigencia hasta '+m.vig+' - Avance general '+m.avance+'% ('+m.done+' de '+m.tot+' actividades entregadas)\nGenerado el '+m.generated);
-    w.h('Entregables y actividades');
-    m.d.deliverables.forEach((d,i)=>{ w.p((i+1)+'. '+d.name+'  ['+statusLabel(d.status)+']'+(d.start||d.end?'  '+fmt(d.start,true)+' a '+fmt(d.end,true):''),{bold:true,after:0.5});
-      if(d.link) w.p('Evidencia del entregable: '+d.link,{size:9.5,indent:4,after:0.5});
-      d.activities.forEach(a=>{ w.p('- '+a.name+' ('+statusLabel(a.status)+(a.start?', '+fmt(a.start,true)+' a':'')+(a.date?(a.start?' ':', ')+fmt(a.date,true):'')+')'+(a.desc?': '+a.desc:'')+(a.link?'\n  Evidencia: '+a.link:''),{size:9.5,indent:4,after:0.5}); }); w.p('',{after:1.5}); });
-    if(m.d.reportFinal.link) w.p('Informe final: '+m.d.reportFinal.link,{size:9.5});
-    w.h('Bitácora de sesiones'); if(!m.d.logs.length) w.p('Sin sesiones registradas.',{size:9.5});
-    [...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).forEach(l=>{ w.p(fmt(l.date,true)+' - '+l.dyn,{bold:true,after:0.5,size:10}); w.p(attendText(l)+(l.notes?'\n'+l.notes:''),{size:9.5,indent:4}); });
-    w.h('Caja de herramientas'); m.d.tools.forEach(t=>{ const del=t.status==='disponible'||t.status==='entregado'; w.p('- '+t.name+' ('+(del?'Disponible':'Pendiente'+(t.due?', estimado '+fmt(t.due,true):''))+')'+(t.note?': '+t.note:''),{size:9.5,after:0.5}); t.subitems.forEach(s=>w.p('. '+s.name+' ('+(s.status==='disponible'?'Disponible':'Pendiente')+')',{size:9,indent:6,after:0.3})); });
-    w.h('Planeación estratégica'); m.d.goals.filter(g=>g.area||g.meta).forEach(g=>w.p('- '+g.area+': '+g.meta+(g.resp?' (Responsable: '+g.resp+')':'')+(g.horizonte?' - '+g.horizonte:''),{size:9.5,after:0.8}));
-    const ob=m.d.deliverables.filter(d=>m.d.ganttObs[d.id]&&m.d.ganttObs[d.id].text); if(ob.length){ w.p('Observaciones del cronograma',{bold:true,after:0.5}); ob.forEach(d=>{ const o=m.d.ganttObs[d.id]; w.p('- '+d.name+(o.required?' [Requiere atención]':'')+': '+o.text,{size:9.5,after:0.5}); }); }
-    w.h('Evaluación de competencias'); m.d.comps.forEach(c=>w.p('- '+c.name+': '+c.pre+'% antes, '+c.post+'% después',{size:9.5,after:0.5}));
-    if(m.d.indicators.length){ w.h('Indicadores'); m.d.indicators.forEach(x=>w.p('- '+x.nombre+' | Línea base: '+(x.linea_base||'-')+' | Meta: '+(x.meta||'-')+' | Valor actual: '+(x.valor||'-')+(x.obs?' | '+x.obs:''),{size:9.5,after:0.8})); }
-    const hr=repHerr(); if(hr.length){ w.h('Herramientas de trabajo'); hr.forEach(x=>{ w.p((HERR_TOOL_NAME[x.tool]||'')+' - '+x.titulo,{bold:true,after:0.5}); if(x.resumen) w.p(x.resumen,{size:9.5,indent:4,after:0.5}); (x.lineas||[]).forEach(l=>w.p('- '+l,{size:9.5,indent:4,after:0.3})); if(x.url) w.p('Liga: '+x.url,{size:9,indent:4,color:[107,104,120]}); w.p('',{after:1.5}); }); }
-    w.save(fileBase()+'_proyecto.pdf'); }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
+/* =========================================================
+   PDF DEL PROYECTO con el mismo diseño de la plataforma:
+   tarjetas por entregable, estatus con su color, fechas y horas,
+   liga del comprobable, barras del cronograma y tablas.
+========================================================= */
+const ST_RGB={pendiente:[[110,106,124],[241,240,244],[183,178,198]],proceso:[[107,33,245],[242,236,254],[107,33,245]],revision:[[184,74,12],[255,239,229],[255,107,26]],modificacion:[[173,20,87],[252,228,239],[194,24,91]],
+  seguimiento:[[47,111,214],[232,240,252],[47,111,214]],pausa:[[150,100,10],[252,242,226],[214,158,46]],entregado:[[31,157,107],[230,246,238],[31,157,107]],terminado:[[46,125,50],[228,244,229],[46,125,50]],
+  aprobado:[[11,110,71],[215,240,227],[11,110,71]],archivado:[[110,106,124],[236,235,239],[110,106,124]]};
+function stRgb(s){ return ST_RGB[stClass(s)]||ST_RGB.pendiente; }
+function pdfSafe(s){ return String(s==null?'':s).normalize('NFC').replace(/[→⇒]/g,'->').replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[   ]/g,' ').replace(/[^\n -ÿ–—‘’“”•…€]/g,'?'); }
+let DL=null; // opciones de la descarga: {areas:Set, orient:'h'|'v'}
+const inc=k=>!DL||DL.areas.has(k);
+function pdfProyecto(){
+  const V=DL&&DL.orient==='v'; const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:V?'portrait':'landscape',unit:'mm',format:'a4'});
+  const PW=V?210:297, PH=V?297:210, X=14, W=PW-28, BOTTOM=PH-14; let y=14;
+  const C={ink:[31,27,46],grey:[107,104,120],line:[231,226,243],purple:[107,33,245],plight:[242,236,254],orange:[255,107,26],track:[241,240,244]};
+  const font=(b,sz,col)=>{ doc.setFont('helvetica',b?'bold':'normal'); doc.setFontSize(sz); doc.setTextColor(...(col||C.ink)); };
+  const lines=(t,w)=>doc.splitTextToSize(pdfSafe(t),w);
+  const lh=sz=>sz*0.42;
+  let pageHook=null;
+  const newPage=()=>{ doc.addPage(); y=14; if(pageHook) pageHook(); };
+  const ensure=h=>{ if(y+h>BOTTOM) newPage(); };
+  const pill=(txt,s,x,yy,align)=>{ const [fg,bg]=stRgb(s); font(true,7.5,fg); const tw=doc.getTextWidth(pdfSafe(txt))+5; const x0=align==='right'?x-tw:x; doc.setFillColor(...bg); doc.roundedRect(x0,yy-3.4,tw,4.8,2.4,2.4,'F'); doc.text(pdfSafe(txt),x0+2.5,yy); return tw; };
+  const link=(txt,url,x,yy,maxW)=>{ let t=pdfSafe(txt); font(false,8,C.purple); while(doc.getTextWidth(t)>maxW&&t.length>8) t=t.slice(0,-2); if(t!==pdfSafe(txt)) t=t.slice(0,-1)+'…'; if(url&&/^https?:\/\//i.test(url)) doc.textWithLink(t,x,yy,{url}); else doc.text(t,x,yy); };
+  const section=t=>{ ensure(30); y+=4; font(true,13,C.ink); doc.text(pdfSafe(t),X,y); y+=2.2; doc.setFillColor(...C.purple); doc.rect(X,y,14,0.9,'F'); doc.setFillColor(...C.orange); doc.rect(X+15.5,y,2.4,0.9,'F'); doc.setFillColor(...C.purple); doc.rect(X+19.4,y,6,0.9,'F'); y+=6; };
+  // tabla genérica: cols=[{t,w,k|f}] (w en proporción)
+  const table=(cols,rows,opt)=>{
+    opt=opt||{}; const tot=cols.reduce((a,c)=>a+c.w,0), ws=cols.map(c=>c.w/tot*W), sz=opt.size||8.2;
+    const head=()=>{ font(true,7.8,[255,255,255]); const hl=cols.map((c,i)=>lines(c.t,ws[i]-3)); const hh=Math.max(7,Math.max(...hl.map(l=>l.length))*3.4+3.6); doc.setFillColor(...C.purple); doc.rect(X,y,W,hh,'F'); font(true,7.8,[255,255,255]); let x=X; hl.forEach((ls,i)=>{ ls.forEach((l,k)=>doc.text(l,x+1.8,y+4.5+k*3.4)); x+=ws[i]; }); y+=hh; };
+    ensure(16); head();
+    if(!rows.length){ font(false,8.5,C.grey); doc.text('Sin registros.',X+2,y+5); y+=8; return; }
+    rows.forEach((r,ri)=>{
+      const cells=cols.map((c,i)=>{ const v=c.f?c.f(r):r[c.k]; font(!!c.bold,sz); return {v, ls: (c.pill? [] : lines(v==null||v===''?'—':String(v),ws[i]-4))}; });
+      font(false,sz); const hgt=Math.max(7,...cells.map(c=>c.ls.length*lh(sz)+3.4));
+      if(y+hgt>BOTTOM){ newPage(); head(); }
+      if(ri%2){ doc.setFillColor(250,248,255); doc.rect(X,y,W,hgt,'F'); }
+      let x=X; cells.forEach((c,i)=>{ const col=cols[i];
+        if(col.pill){ if(c.v) pill(statusLabel(c.v),c.v,x+2,y+4.6); }
+        else { font(!!col.bold,sz,col.color||C.ink); c.ls.forEach((l,li)=>doc.text(l,x+2,y+4.2+li*lh(sz))); }
+        x+=ws[i]; });
+      doc.setDrawColor(...C.line); doc.line(X,y+hgt,X+W,y+hgt); y+=hgt;
+    });
+    y+=3;
+  };
+  return {doc,C,font,lines,lh,pill,link,section,table,ensure,newPage,X,W,PW,PH,BOTTOM,V,get y(){return y;},set y(v){y=v;},setHook(f){pageHook=f;},
+    save(n){ const pages=doc.getNumberOfPages(); for(let i=1;i<=pages;i++){ doc.setPage(i); font(false,7.5,[150,150,160]); doc.text(pdfSafe('Sintropía Social · Sintropía Track · '+project.name),X,PH-7); doc.text(i+' / '+pages,X+W,PH-7,{align:'right'}); } doc.save(n); } };
 }
-function wordDoc(title,body){ return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1F1B2E} h1{color:#6B21F5;font-size:20pt;margin-bottom:2pt} h2{color:#1F1B2E;font-size:14pt;border-bottom:1px solid #E7E2F3;padding-bottom:2pt;margin-top:18pt} th{background:#6B21F5;color:#fff;text-align:left} td,th{padding:4pt 6pt;border:1px solid #D8D2EA;vertical-align:top} table{border-collapse:collapse;width:100%} .m{color:#6B6878;font-size:10pt}</style></head><body>${body}</body></html>`; }
+/* ---- Ventana de descarga: formato, orientación y áreas ---- */
+const DL_AREAS=[['resumen','Resumen y avance del proyecto (números, avance e informe final)'],['entregables','Entregables y cronograma'],['bitacora','Bitácora de sesiones'],['caja','Caja de herramientas (materiales y herramientas de trabajo)'],['planeacion','Planeación estratégica'],['competencias','Evaluación de competencias'],['indicadores','Indicadores']];
+let dlPref={fmt:'pdf',orient:'h',areas:null};
+function dlAreasVisibles(){ return DL_AREAS.filter(a=>{ if(esSeg()) return ['resumen','entregables','planeacion'].includes(a[0])||(a[0]==='caja'&&segCaja()); if(esHerr()) return a[0]==='caja'; if(a[0]==='bitacora'||a[0]==='competencias') return tabVisible(a[0]==='bitacora'?'bitacora':'competencias'); return true; }); }
+function openDescarga(f){
+  dlPref.fmt=f||dlPref.fmt; const vis=dlAreasVisibles(); const sel=dlPref.areas||new Set(vis.map(a=>a[0]));
+  openModal(`<div class="modal-title">Descargar el proyecto</div><div class="modal-sub">Elige el formato, la orientación y las áreas que quieres incluir.</div>
+    <label>Formato</label><div class="dl-opts">${[['pdf','PDF'],['word','Word'],['excel','Excel']].map(o=>`<label class="dl-o"><input type="radio" name="dlFmt" value="${o[0]}" ${dlPref.fmt===o[0]?'checked':''} onchange="dlPref.fmt=this.value; $('dlOrientBox').classList.toggle('hidden',this.value==='excel')"> ${o[1]}</label>`).join('')}</div>
+    <div id="dlOrientBox" class="${dlPref.fmt==='excel'?'hidden':''}"><label style="margin-top:12px;">Orientación</label><div class="dl-opts">
+      <label class="dl-o"><input type="radio" name="dlOr" value="h" ${dlPref.orient==='h'?'checked':''} onchange="dlPref.orient='h'"> Horizontal <span class="lk-meta">(recomendada para el cronograma)</span></label>
+      <label class="dl-o"><input type="radio" name="dlOr" value="v" ${dlPref.orient==='v'?'checked':''} onchange="dlPref.orient='v'"> Vertical <span class="lk-meta">(para imprimir o adjuntar)</span></label></div></div>
+    <label style="margin-top:12px;">Áreas a incluir</label><div class="dl-areas">${vis.map(a=>`<label class="dl-o"><input type="checkbox" class="dlArea" value="${a[0]}" ${sel.has(a[0])?'checked':''}> ${a[1]}</label>`).join('')}</div>
+    <div style="margin-top:6px;"><button class="btn small" onclick="document.querySelectorAll('.dlArea').forEach(c=>c.checked=true)">Marcar todas</button> <button class="btn small" onclick="document.querySelectorAll('.dlArea').forEach(c=>c.checked=false)">Quitar todas</button></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="dlGo" onclick="hacerDescarga()">Descargar</button></div>`);
+}
+function hacerDescarga(){
+  const areas=new Set([...document.querySelectorAll('.dlArea:checked')].map(c=>c.value));
+  if(!areas.size){ toast('Elige al menos un área.',true); return; }
+  dlPref.areas=areas; closeModal();
+  DL={areas,orient:dlPref.orient};
+  try{ if(dlPref.fmt==='pdf') exportProjectPDF(); else if(dlPref.fmt==='word') exportProjectWord(); else exportProjectExcel(); } finally { DL=null; }
+}
+function exportProjectPDF(){
+  try{
+    const m=model(), d=m.d, P=pdfProyecto(), {doc,C,font,lines,lh,pill,link,X,W,V}=P, AV=avanceProyecto();
+    // ---- encabezado
+    font(true,8,C.orange); doc.text('SINTROPÍA SOCIAL · SINTROPÍA TRACK',X,P.y); P.y+=7;
+    font(true,18,C.ink); lines(m.name,W).forEach(l=>{ doc.text(l,X,P.y); P.y+=7.2; });
+    doc.setFillColor(...C.purple); doc.rect(X,P.y-3.5,14,1.1,'F'); doc.setFillColor(...C.orange); doc.rect(X+15.5,P.y-3.5,2.6,1.1,'F'); doc.setFillColor(...C.purple); doc.rect(X+19.6,P.y-3.5,6,1.1,'F'); P.y+=2;
+    font(false,9,C.grey); doc.text(pdfSafe([m.client?'Cliente: '+m.client:'','Vigencia: hasta el '+m.vig,'Generado el '+m.generated].filter(Boolean).join('   ·   ')),X,P.y); P.y+=6;
+    if(inc('resumen')){
+    // ---- números
+    const stats=[[String(d.deliverables.length),'Entregables'],[String(d.deliverables.reduce((a,x)=>a+x.activities.length,0)),'Actividades totales'],[AV.done+' de '+AV.tot,'Terminados'],[String(d.logsCount!=null?d.logsCount:d.logs.length),'Sesiones registradas']];
+    const bw=W/4; doc.setDrawColor(...C.line); doc.roundedRect(X,P.y,W,17,2.5,2.5,'S');
+    stats.forEach((s,i)=>{ const x=X+i*bw; if(i) doc.line(x,P.y,x,P.y+17); font(true,15,C.purple); doc.text(pdfSafe(s[0]),x+5,P.y+8); font(false,8,C.grey); doc.text(pdfSafe(s[1]),x+5,P.y+13.2); });
+    P.y+=22;
+    // ---- avance
+    font(true,9.5,C.ink); doc.text('Avance general del proyecto',X,P.y); doc.text(AV.pct+'%',X+W,P.y,{align:'right'}); P.y+=2.5;
+    doc.setFillColor(...C.track); doc.roundedRect(X,P.y,W,3,1.5,1.5,'F'); if(AV.pct){ doc.setFillColor(...C.purple); doc.roundedRect(X,P.y,Math.max(3,W*AV.pct/100),3,1.5,1.5,'F'); }
+    P.y+=7; font(false,8,C.grey); doc.text(pdfSafe(AV.tot?`${AV.done} de ${AV.tot} entregables y actividades terminados (entregado, terminado o aprobado)${AV.rev?' · '+AV.rev+' en revisión o modificación':''}${AV.proc?' · '+AV.proc+' en proceso':''}`:'Sin entregables todavía.'),X,P.y); P.y+=4;
+    if(d.reportFinal&&d.reportFinal.link){ P.y+=3; font(true,8.5,C.ink); doc.text('Informe / reporte final:',X,P.y); link(d.reportFinal.link,d.reportFinal.link,X+38,P.y,W-40); P.y+=3; }
+    }
+    // ---- entregables y cronograma
+    if(inc('entregables')&&d.deliverables.length){
+      P.section('Entregables y cronograma');
+      const r=ganttRange(); let TX=X, TW=W, pos=null, hoy=null;
+      if(r){ const total=dayOffset(r.end,r.base)||1; pos=v=>TX+TW*Math.min(1,Math.max(0,dayOffset(v,r.base)/total)); hoy=pos(todayIso()); }
+      const meses=()=>{ if(!r) return; const MN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; const cur=parseIso(r.base); cur.setDate(1); const fin=parseIso(r.end); font(false,7,C.grey);
+        while(cur<=fin){ const x=pos(isoOf(cur)); if(x<TX+TW-8) doc.text(MN[cur.getMonth()]+' '+String(cur.getFullYear()).slice(2),Math.max(TX,x),P.y); cur.setMonth(cur.getMonth()+1); } P.y+=2.5; };
+      const barra=(s,a,b,yy,h)=>{ doc.setFillColor(...C.track); doc.roundedRect(TX,yy,TW,h,h/2,h/2,'F'); if(!pos) return; const col=stRgb(s)[2];
+        if(a&&b&&b>=a){ const x1=pos(a), x2=Math.max(pos(b),x1+1.6); doc.setFillColor(...col); doc.roundedRect(x1,yy,x2-x1,h,h/2,h/2,'F'); }
+        else if(a||b){ doc.setFillColor(...col); doc.circle(pos(b||a),yy+h/2,h/2+0.3,'F'); }
+        doc.setDrawColor(90,86,104); doc.setLineWidth(0.35); doc.line(hoy,yy-0.8,hoy,yy+h+0.8); doc.setLineWidth(0.2); };
+      meses();
+      // columnas de actividad
+      const cN=X+2, wN=W*(V?0.36:0.40), cF=X+W*(V?0.38:0.42), cS=X+W*(V?0.61:0.60), cL=X+W*(V?0.75:0.72), wL=W*(V?0.25:0.28)-2, fS=V?7.4:8.2;
+      sortDelivs(d.deliverables).forEach((dv,i)=>{
+        font(true,11); const nl=lines(dv.name,W-62); const hh=Math.max(15,nl.length*5.2+11);
+        P.ensure(hh+16);
+        doc.setFillColor(...C.plight); doc.roundedRect(X,P.y,W,hh,2.5,2.5,'F');
+        doc.setFillColor(255,255,255); doc.circle(X+6,P.y+6,3.4,'F'); font(true,8.5,C.purple); doc.text(String(i+1),X+6,P.y+7.2,{align:'center'});
+        font(true,11,C.ink); nl.forEach((l,k)=>doc.text(l,X+12,P.y+7+k*5.2));
+        pill(statusLabel(dv.status),dv.status,X+W-3,P.y+7,'right');
+        const yy=P.y+7+nl.length*5.2+1; font(false,8.5,C.grey);
+        const fe=dv.start||dv.end?fmt(dv.start,true)+' a '+fmt(dv.end,true):'Sin fechas'; doc.text(pdfSafe(fe),X+12,yy);
+        const fw=doc.getTextWidth(pdfSafe(fe));
+        if(dv.link) link('Comprobable: '+dv.link,dv.link,X+16+fw,yy,W-fw-24); else { font(false,8,C.grey); doc.text('Sin comprobable',X+16+fw,yy); }
+        P.y+=hh+2; barra(dv.status,dv.start,dv.end,P.y,3.2); P.y+=6;
+        const acts=sortActs(dv.activities);
+        if(acts.length){ P.ensure(10); font(true,7,C.grey); doc.text('ACTIVIDAD',cN,P.y); doc.text('FECHAS Y HORAS',cF,P.y); doc.text('ESTATUS',cS,P.y); doc.text('COMPROBABLE',cL,P.y); P.y+=2; doc.setDrawColor(...C.line); doc.line(X,P.y,X+W,P.y); P.y+=4; }
+        acts.forEach(a=>{
+          font(false,9); const an=lines(a.name,wN); font(false,7.5); const ad=a.desc?lines(a.desc,wN):[];
+          const f1=a.start?fmt(a.start,true)+(a.horaIni?' · '+a.horaIni+' h':''):'—', f2=a.date?fmt(a.date,true)+(a.horaFin?' · '+a.horaFin+' h':''):'—';
+          const h=Math.max(an.length*4.1+ad.length*3.3, 9)+7;
+          P.ensure(h);
+          font(false,9,C.ink); an.forEach((l,k)=>doc.text(l,cN,P.y+k*4.1));
+          font(false,7.5,C.grey); ad.forEach((l,k)=>doc.text(l,cN,P.y+an.length*4.1+k*3.3));
+          font(false,fS,C.ink); if(!a.start&&!a.date){ font(false,fS,C.grey); doc.text('Sin fechas',cF,P.y); } else { doc.text(pdfSafe('Inicio: '+f1),cF,P.y); doc.text(pdfSafe('Fin: '+f2),cF,P.y+4.2); } if(!a.horaIni&&!a.horaFin&&(a.start||a.date)){ font(false,7,C.grey); doc.text('Sin hora',cF,P.y+8.2); }
+          pill(statusLabel(a.status),a.status,cS,P.y);
+          if(a.noLink){ font(false,8,C.grey); doc.text('Sin link entregable',cL,P.y); }
+          else if(a.link){ link(a.link,a.link,cL,P.y,wL); }
+          else { font(false,8,C.grey); doc.text('Sin comprobable',cL,P.y); }
+          const by=P.y+Math.max(an.length*4.1+ad.length*3.3,10)+1; barra(a.status,a.start,a.date,by,1.8);
+          P.y=by+4; doc.setDrawColor(...C.line); doc.setLineDashPattern([0.8,0.8],0); doc.line(X,P.y-1.5,X+W,P.y-1.5); doc.setLineDashPattern([],0); P.y+=2;
+        });
+        const ob=d.ganttObs&&d.ganttObs[dv.id];
+        if(ob&&ob.text){ const ol=lines((ob.required?'[Requiere atención] ':'')+ob.text,W-8); const oh=ol.length*4+5; P.ensure(oh+2); doc.setFillColor(...C.plight); doc.roundedRect(X,P.y-1,W,oh,2,2,'F'); font(false,8.3,C.ink); ol.forEach((l,k)=>doc.text(l,X+4,P.y+3+k*4)); P.y+=oh+1; }
+        P.y+=5;
+      });
+    }
+    // ---- resto en tablas
+    if(hasTrack()&&!esSeg()&&!esHerr()&&inc('bitacora')){
+      P.section('Bitácora de sesiones');
+      P.table([{t:'Fecha',w:12,f:l=>fmt(l.date,true)},{t:'Actividad',w:26,k:'dyn',bold:true},{t:'Asistencia',w:24,f:l=>attendText(l)},{t:'Acuerdos y observaciones',w:50,f:l=>l.notes||''}],[...d.logs].sort((a,b)=>a.date<b.date?-1:1));
+    }
+    if(hasTrack()&&!esSeg()&&!esHerr()&&inc('caja')){
+      P.section('Caja de herramientas');
+      P.table([{t:'Herramienta',w:30,k:'name',bold:true},{t:'Categoría',w:14,k:'tag'},{t:'Estatus',w:12,f:t=>t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'},{t:'Fecha estimada',w:12,f:t=>t.due?fmt(t.due,true):''},{t:'Nota / materiales',w:44,f:t=>[t.note||''].concat((t.subitems||[]).map(s=>'• '+s.name+(s.status==='disponible'?' (disponible)':''))).filter(Boolean).join('\n')}],d.tools);
+    }
+    if(inc('planeacion')){ P.section('Planeación estratégica');
+    P.table([{t:'Prioridad de incidencia',w:16,k:'area',bold:true},{t:'Meta SMART',w:44,k:'meta'},{t:'Responsable',w:20,k:'resp'},{t:'Horizonte',w:20,k:'horizonte'}],d.goals.filter(g=>g.area||g.meta)); }
+    if(inc('competencias')&&!esSeg()&&!esHerr()&&(d.comps||[]).length){ P.section('Evaluación de competencias'); P.table([{t:'Competencia',w:60,k:'name',bold:true},{t:'Antes',w:15,f:c=>c.pre+'%'},{t:'Después',w:15,f:c=>c.post+'%'},{t:'Cambio',w:15,f:c=>(c.post-c.pre>0?'+':'')+(c.post-c.pre)+' pts'}],d.comps); }
+    if(inc('indicadores')&&(d.indicators||[]).length&&!esSeg()){ P.section('Indicadores'); P.table(IND_COLS.map(c=>({t:c[1],w:{nombre:20,actividad:12,medio:14,obs:14}[c[0]]||9,k:c[0],bold:c[0]==='nombre'})),d.indicators,{size:V?6.8:7.6}); }
+    const hr=inc('caja')?repHerr():[]; if(hr.length){ P.section('Herramientas de trabajo');
+      hr.forEach(x=>{ const tl=lines((HERR_TOOL_NAME[x.tool]||'')+' · '+x.titulo,W-6), rl=x.resumen?lines(x.resumen,W-6):[], ll=[]; (x.lineas||[]).forEach(l=>lines('• '+l,W-10).forEach(z=>ll.push(z)));
+        P.ensure(tl.length*5+12); font(true,10,C.ink); tl.forEach(l=>{ doc.text(l,X,P.y); P.y+=5; }); if(rl.length){ font(false,8.6,C.grey); rl.forEach(l=>{ P.ensure(5); doc.text(l,X,P.y); P.y+=3.9; }); }
+        font(false,8.3,C.ink); ll.forEach(l=>{ P.ensure(5); doc.text(l,X+3,P.y); P.y+=3.8; }); if(x.url){ P.ensure(5); link('Abrir: '+x.url,x.url,X+3,P.y,W-6); P.y+=4; } P.y+=4; }); }
+    P.save(fileBase()+'_proyecto'+(V?'_vertical':'_horizontal')+'.pdf');
+  }catch(e){ console.error(e); toast('No se pudo generar el PDF en este navegador.',true); }
+}
+function wordDoc(title,body,horizontal){ return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1F1B2E} h1{color:#6B21F5;font-size:20pt;margin-bottom:2pt} h2{color:#1F1B2E;font-size:14pt;border-bottom:1px solid #E7E2F3;padding-bottom:2pt;margin-top:18pt} th{background:#6B21F5;color:#fff;text-align:left} td,th{padding:4pt 6pt;border:1px solid #D8D2EA;vertical-align:top} table{border-collapse:collapse;width:100%} .m{color:#6B6878;font-size:10pt}${horizontal?'@page WordSection1{size:841.9pt 595.3pt;mso-page-orientation:landscape;margin:42pt 42pt 42pt 42pt;}':'@page WordSection1{size:595.3pt 841.9pt;margin:56pt 50pt 56pt 50pt;}'} div.WordSection1{page:WordSection1;}</style></head><body><div class="WordSection1">${body}</div></body></html>`; }
 function exportLogWord(){
   try{ const m=model(); const rows=[...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${esc(l.notes||'')}</td></tr>`).join('');
     download(new Blob(['﻿',wordDoc('Bitácora',`<h1>Bitácora de sesiones</h1><p class="m">${esc(m.name)}${m.client?' - '+esc(m.client):''}<br>Generado el ${esc(m.generated)}</p><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>${rows||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>'}</table>`)],{type:'application/msword'}),fileBase()+'_bitacora.doc'); }catch(e){ toast('No se pudo generar el documento Word.',true); }
 }
 function exportProjectWord(){
-  try{ const m=model(), d=m.d; let b=`<h1>${esc(m.name)}</h1><p class="m">${m.client?esc(m.client)+'<br>':''}Vigencia hasta ${esc(m.vig)} - Avance general ${m.avance}% (${m.done} de ${m.tot} actividades entregadas)<br>Generado el ${esc(m.generated)}</p>`;
-    b+='<h2>Entregables y actividades</h2>'+d.deliverables.map((x,i)=>`<p><b>${i+1}. ${esc(x.name)}</b> - ${statusLabel(x.status)}${x.start||x.end?' - '+esc(fmt(x.start,true))+' a '+esc(fmt(x.end,true)):''}${x.link?' - Evidencia: '+esc(x.link):''}</p><table><tr><th>Actividad</th><th>Descripción</th><th>Fecha</th><th>Estatus</th><th>Evidencia</th></tr>${x.activities.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.desc||'')}</td><td>${a.start?esc(fmt(a.start,true))+' a ':''}${esc(fmt(a.date,true))}</td><td>${statusLabel(a.status)}</td><td>${esc(a.link||'')}</td></tr>`).join('')||'<tr><td colspan="5">Sin actividades.</td></tr>'}</table>`).join('')+(d.reportFinal.link?`<p>Informe final: ${esc(d.reportFinal.link)}</p>`:'');
-    b+='<h2>Bitácora de sesiones</h2><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>'+([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${esc(l.notes||'')}</td></tr>`).join('')||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>')+'</table>';
-    b+='<h2>Caja de herramientas</h2><table><tr><th>Herramienta</th><th>Categoría</th><th>Estatus</th><th>Fecha estimada</th><th>Nota</th></tr>'+d.tools.map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.tag)}</td><td>${t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'}</td><td>${esc(fmt(t.due,true))}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>';
-    b+='<h2>Planeación estratégica</h2><table><tr><th>Prioridad</th><th>Meta SMART</th><th>Responsable</th><th>Horizonte</th></tr>'+d.goals.map(g=>`<tr><td>${esc(g.area)}</td><td>${esc(g.meta)}</td><td>${esc(g.resp)}</td><td>${esc(g.horizonte)}</td></tr>`).join('')+'</table>';
-    b+='<h2>Evaluación de competencias</h2><table><tr><th>Competencia</th><th>Antes</th><th>Después</th></tr>'+d.comps.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.pre}%</td><td>${c.post}%</td></tr>`).join('')+'</table>';
-    if(d.indicators.length) b+='<h2>Indicadores</h2><table><tr><th>Actividad</th><th>Indicador</th><th>Línea base</th><th>Meta</th><th>Valor actual</th><th>Observación</th></tr>'+d.indicators.map(x=>`<tr><td>${esc(x.actividad)}</td><td>${esc(x.nombre)}</td><td>${esc(x.linea_base)}</td><td>${esc(x.meta)}</td><td>${esc(x.valor)}</td><td>${esc(x.obs)}</td></tr>`).join('')+'</table>';
-    const hr=repHerr(); if(hr.length) b+='<h2>Herramientas de trabajo</h2>'+hr.map(x=>`<p><b>${esc(HERR_TOOL_NAME[x.tool]||'')} — ${esc(x.titulo)}</b>${x.resumen?'<br>'+esc(x.resumen):''}</p>${(x.lineas||[]).length?'<ul>'+x.lineas.map(l=>`<li>${esc(l)}</li>`).join('')+'</ul>':''}${x.url?`<p class="m">Liga: ${esc(x.url)}</p>`:''}`).join('');
-    download(new Blob(['﻿',wordDoc(m.name,b)],{type:'application/msword'}),fileBase()+'_proyecto.doc'); }catch(e){ console.error(e); toast('No se pudo generar el documento Word.',true); }
+  try{ const m=model(), d=m.d; let b=inc('resumen')?`<h1>${esc(m.name)}</h1><p class="m">${m.client?esc(m.client)+'<br>':''}Vigencia hasta ${esc(m.vig)} - Avance general ${m.avance}% (${m.done} de ${m.tot} entregables y actividades terminados)<br>Generado el ${esc(m.generated)}</p>`:`<h1>${esc(m.name)}</h1><p class="m">${m.client?esc(m.client)+' · ':''}Generado el ${esc(m.generated)}</p>`;
+    const hx=a=>{ const c=stRgb(a); return 'rgb('+c.join(',')+')'; };
+    const chip=s=>{ const [fg,bg]=stRgb(s); return `<span style="background:rgb(${bg.join(',')});color:rgb(${fg.join(',')});font-weight:bold;font-size:9pt;padding:1pt 6pt;">${esc(statusLabel(s))}</span>`; };
+    const fh=(f,h)=>f?esc(fmt(f,true))+(h?' · '+esc(h)+' h':''):'—';
+    if(inc('entregables')) b+='<h2>Entregables y actividades</h2>'+sortDelivs(d.deliverables).map((x,i)=>`<table style="margin-top:12pt;"><tr><td style="background:#F2ECFE;border:1px solid #E7E2F3;padding:6pt 8pt;"><b style="font-size:12pt;">${i+1}. ${esc(x.name)}</b> &nbsp; ${chip(x.status)}<br><span style="color:#6B6878;font-size:9.5pt;">${x.start||x.end?esc(fmt(x.start,true))+' a '+esc(fmt(x.end,true)):'Sin fechas'}</span>${x.link?` · <a href="${esc(safeUrl(x.link))}">Comprobable del entregable</a>`:' · <span style="color:#6B6878;">Sin comprobable</span>'}</td></tr></table>`
+      +(x.activities.length?`<table style="table-layout:fixed"><tr><th style="width:42%">Actividad</th><th style="width:22%">Fechas y horas</th><th style="width:14%">Estatus</th><th style="width:22%">Comprobable</th></tr>${sortActs(x.activities).map(a=>`<tr><td>${esc(a.name)}${a.desc?`<br><span style="color:#6B6878;font-size:9pt;">${esc(a.desc)}</span>`:''}</td><td style="font-size:9.5pt;">${a.start||a.date?`Inicio: ${fh(a.start,a.horaIni)}<br>Fin: ${fh(a.date,a.horaFin)}${a.horaIni||a.horaFin?'':'<br><span style="color:#6B6878;">Sin hora</span>'}`:'<span style="color:#6B6878;">Sin fechas</span>'}</td><td style="background:rgb(${stRgb(a.status)[1].join(',')});color:rgb(${stRgb(a.status)[0].join(',')});font-weight:bold;font-size:9.5pt;">${esc(statusLabel(a.status))}</td><td style="font-size:9.5pt;">${a.noLink?'<span style="color:#6B6878;">Sin link entregable</span>':(a.link?`<a href="${esc(safeUrl(a.link))}">${esc(a.link.length>60?a.link.slice(0,58)+'…':a.link)}</a>`:'<span style="color:#6B6878;">Sin comprobable</span>')}</td></tr>`).join('')}</table>`:'')
+      +((d.ganttObs[x.id]||{}).text?`<p style="background:#F2ECFE;padding:4pt 8pt;font-size:10pt;">${d.ganttObs[x.id].required?'<b>Requiere atención.</b> ':''}${esc(d.ganttObs[x.id].text)}</p>`:'')).join('')+(d.reportFinal.link?`<p><b>Informe final:</b> <a href="${esc(safeUrl(d.reportFinal.link))}">${esc(d.reportFinal.link)}</a></p>`:'');
+    if(inc('bitacora')) b+='<h2>Bitácora de sesiones</h2><table><tr><th>Fecha</th><th>Actividad</th><th>Asistencia</th><th>Acuerdos y observaciones</th></tr>'+([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${esc(fmt(l.date,true))}</td><td>${esc(l.dyn)}</td><td>${esc(attendText(l))}</td><td>${esc(l.notes||'')}</td></tr>`).join('')||'<tr><td colspan="4">Sin sesiones registradas.</td></tr>')+'</table>';
+    if(inc('caja')) b+='<h2>Caja de herramientas</h2><table><tr><th>Herramienta</th><th>Categoría</th><th>Estatus</th><th>Fecha estimada</th><th>Nota</th></tr>'+d.tools.map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.tag)}</td><td>${t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente'}</td><td>${esc(fmt(t.due,true))}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>';
+    if(inc('planeacion')) b+='<h2>Planeación estratégica</h2><table><tr><th>Prioridad</th><th>Meta SMART</th><th>Responsable</th><th>Horizonte</th></tr>'+d.goals.map(g=>`<tr><td>${esc(g.area)}</td><td>${esc(g.meta)}</td><td>${esc(g.resp)}</td><td>${esc(g.horizonte)}</td></tr>`).join('')+'</table>';
+    if(inc('competencias')) b+='<h2>Evaluación de competencias</h2><table><tr><th>Competencia</th><th>Antes</th><th>Después</th></tr>'+d.comps.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.pre}%</td><td>${c.post}%</td></tr>`).join('')+'</table>';
+    if(inc('indicadores')&&d.indicators.length) b+='<h2>Indicadores</h2><table><tr><th>Actividad</th><th>Indicador</th><th>Línea base</th><th>Meta</th><th>Valor actual</th><th>Observación</th></tr>'+d.indicators.map(x=>`<tr><td>${esc(x.actividad)}</td><td>${esc(x.nombre)}</td><td>${esc(x.linea_base)}</td><td>${esc(x.meta)}</td><td>${esc(x.valor)}</td><td>${esc(x.obs)}</td></tr>`).join('')+'</table>';
+    const hr=inc('caja')?repHerr():[]; if(hr.length) b+='<h2>Herramientas de trabajo</h2>'+hr.map(x=>`<p><b>${esc(HERR_TOOL_NAME[x.tool]||'')} — ${esc(x.titulo)}</b>${x.resumen?'<br>'+esc(x.resumen):''}</p>${(x.lineas||[]).length?'<ul>'+x.lineas.map(l=>`<li>${esc(l)}</li>`).join('')+'</ul>':''}${x.url?`<p class="m">Liga: ${esc(x.url)}</p>`:''}`).join('');
+    download(new Blob(['﻿',wordDoc(m.name,b,DL&&DL.orient==='h')],{type:'application/msword'}),fileBase()+'_proyecto'+(DL?(DL.orient==='h'?'_horizontal':'_vertical'):'')+'.doc'); }catch(e){ console.error(e); toast('No se pudo generar el documento Word.',true); }
 }
 function exportLogExcel(){
   try{ const m=model(); const rows=[...m.d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>({Fecha:l.date,Actividad:l.dyn,Asistencia:l.attendCount,Asistentes:l.mode==='detailed'?(l.attendees||[]).map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join('; '):'',Notas:l.notes||''}));
@@ -1981,16 +2125,17 @@ function exportLogExcel(){
 }
 function exportProjectExcel(){
   try{ const m=model(), d=m.d; const wb=XLSX.utils.book_new(); const add=(rows,name,empty)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[empty]),name);
-    add([{Concepto:'Proyecto',Valor:m.name},{Concepto:'Cliente',Valor:m.client||''},{Concepto:'Vigencia hasta',Valor:project.expiresAt},{Concepto:'Estatus del proyecto',Valor:m.status},{Concepto:'Avance general (%)',Valor:m.avance},{Concepto:'Actividades entregadas',Valor:m.done+' de '+m.tot},{Concepto:'Informe final',Valor:d.reportFinal.link||''},{Concepto:'Generado el',Valor:todayIso()}],'Resumen',{});
-    const acts=[]; d.deliverables.forEach((x,i)=>{ if(!x.activities.length) acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,'Evidencia del entregable':x.link||'',Actividad:'',Descripción:'','Inicio actividad':'',Fecha:'',Estatus:'',Evidencia:''}); x.activities.forEach(a=>acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,'Evidencia del entregable':x.link||'',Actividad:a.name,Descripción:a.desc||'','Inicio actividad':a.start||'',Fecha:a.date,Estatus:statusLabel(a.status),Evidencia:a.link||''})); });
-    add(acts,'Entregables',{});
-    add([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>({Fecha:l.date,Actividad:l.dyn,Asistencia:l.attendCount,Asistentes:l.mode==='detailed'?(l.attendees||[]).map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join('; '):'',Notas:l.notes||''})),'Bitacora',{Fecha:'Sin sesiones'});
+    if(inc('resumen')) add([{Concepto:'Proyecto',Valor:m.name},{Concepto:'Cliente',Valor:m.client||''},{Concepto:'Vigencia hasta',Valor:project.expiresAt},{Concepto:'Estatus del proyecto',Valor:m.status},{Concepto:'Avance general (%)',Valor:m.avance},{Concepto:'Actividades entregadas',Valor:m.done+' de '+m.tot},{Concepto:'Informe final',Valor:d.reportFinal.link||''},{Concepto:'Generado el',Valor:todayIso()}],'Resumen',{});
+    const acts=[]; d.deliverables.forEach((x,i)=>{ if(!x.activities.length) acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,'Evidencia del entregable':x.link||'',Actividad:'',Descripción:'','Inicio actividad':'','Hora inicio':'',Fecha:'','Hora fin':'',Estatus:'',Evidencia:''}); x.activities.forEach(a=>acts.push({Entregable:x.name,'Estatus entregable':statusLabel(x.status),Inicio:x.start,Fin:x.end,'Evidencia del entregable':x.link||'',Actividad:a.name,Descripción:a.desc||'','Inicio actividad':a.start||'','Hora inicio':a.horaIni||'',Fecha:a.date,'Hora fin':a.horaFin||'',Estatus:statusLabel(a.status),Evidencia:a.noLink?'Sin link entregable':(a.link||'')})); });
+    if(inc('entregables')) add(acts,'Entregables',{});
+    if(inc('bitacora')) add([...d.logs].sort((a,b)=>a.date<b.date?-1:1).map(l=>({Fecha:l.date,Actividad:l.dyn,Asistencia:l.attendCount,Asistentes:l.mode==='detailed'?(l.attendees||[]).map(a=>a.name+(a.inst?' ('+a.inst+')':'')).join('; '):'',Notas:l.notes||''})),'Bitacora',{Fecha:'Sin sesiones'});
     const tools=[]; d.tools.forEach(t=>{ tools.push({Herramienta:t.name,Categoría:t.tag,Material:'',Estatus:t.status==='disponible'||t.status==='entregado'?'Disponible':'Pendiente','Fecha estimada':t.due,Liga:t.link||'',Nota:t.note||''}); t.subitems.forEach(s=>tools.push({Herramienta:t.name,Categoría:t.tag,Material:s.name,Estatus:s.status==='disponible'?'Disponible':'Pendiente','Fecha estimada':'',Liga:s.link||'',Nota:''})); });
-    add(tools,'Herramientas',{});
-    add(d.goals.map(g=>({Prioridad:g.area,'Meta SMART':g.meta,Responsable:g.resp,Horizonte:g.horizonte})),'Planeacion',{});
-    add(d.comps.map(c=>({Competencia:c.name,'Antes (%)':c.pre,'Después (%)':c.post})),'Competencias',{});
-    if(d.indicators.length) add(d.indicators.map(x=>({Actividad:x.actividad,Indicador:x.nombre,Tipo:x.tipo,'Línea base':x.linea_base,Meta:x.meta,Frecuencia:x.frecuencia,'Medio de verificación':x.medio,'Valor actual':x.valor,Observación:x.obs})),'Indicadores',{});
-    const hr=repHerr(); if(hr.length) add(hr.map(x=>({Herramienta:HERR_TOOL_NAME[x.tool]||x.tool,'Título':x.titulo,Resumen:x.resumen||'',Detalle:(x.lineas||[]).join('\n'),Liga:x.url||'',Fecha:x.fecha||''})),'Herramientas de trabajo',{});
+    if(inc('caja')) add(tools,'Herramientas',{});
+    if(inc('planeacion')) add(d.goals.map(g=>({Prioridad:g.area,'Meta SMART':g.meta,Responsable:g.resp,Horizonte:g.horizonte})),'Planeacion',{});
+    if(inc('competencias')) add(d.comps.map(c=>({Competencia:c.name,'Antes (%)':c.pre,'Después (%)':c.post})),'Competencias',{});
+    if(inc('indicadores')&&d.indicators.length) add(d.indicators.map(x=>({Actividad:x.actividad,Indicador:x.nombre,Tipo:x.tipo,'Línea base':x.linea_base,Meta:x.meta,Frecuencia:x.frecuencia,'Medio de verificación':x.medio,'Valor actual':x.valor,Observación:x.obs})),'Indicadores',{});
+    const hr=inc('caja')?repHerr():[]; if(hr.length) add(hr.map(x=>({Herramienta:HERR_TOOL_NAME[x.tool]||x.tool,'Título':x.titulo,Resumen:x.resumen||'',Detalle:(x.lineas||[]).join('\n'),Liga:x.url||'',Fecha:x.fecha||''})),'Herramientas de trabajo',{});
+    if(!wb.SheetNames.length) add([],'Proyecto',{Proyecto:m.name});
     XLSX.writeFile(wb,fileBase()+'_proyecto.xlsx'); }catch(e){ console.error(e); toast('No se pudo generar el archivo Excel.',true); }
 }
 
