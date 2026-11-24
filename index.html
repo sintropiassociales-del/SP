@@ -494,6 +494,7 @@
   .ml-field{display:flex; align-items:flex-start; gap:10px; margin-top:6px;} .ml-lbl{width:42px; font-size:12px; font-weight:700; color:var(--grey); padding-top:10px;}
   .ml-chips{flex:1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:6px; background:#fff; min-height:40px;}
   .ml-chips input{flex:1; min-width:180px; border:none !important; box-shadow:none !important; padding:4px !important; margin:0 !important;}
+  .ml-chips input.ml-bad{color:#C62828;}
   .ml-chip{display:inline-flex; align-items:center; gap:6px; background:var(--purple-light); color:var(--purple); border-radius:999px; padding:3px 6px 3px 10px; font-size:12.5px;}
   .ml-chip button{border:none; background:transparent; color:var(--purple); cursor:pointer; font-size:15px; line-height:1; padding:0 4px;}
   .ml-prev{max-width:640px; border:1px solid #E7E2F3; border-radius:16px; overflow:hidden; background:#fff; font-family:Arial,Helvetica,sans-serif;}
@@ -1011,15 +1012,14 @@ async function renderCorreos(){
     <select id="mlProj" onchange="mlProyecto(this.value)"><option value="">Elige un proyecto…</option>${projs.map(p=>`<option value="${esc(p.slug)}" ${p.slug===ML.slug?'selected':''}>${esc(p.name)}${p.client?' · '+esc(p.client):''}</option>`).join('')}</select>
     <div id="mlForm" class="${ML.slug?'':'hidden'}">
       <label style="margin-top:14px;">2. Personas registradas en el proyecto</label>
-      ${gente.length?`<div class="ml-people">${gente.map(u=>`<div class="ml-person"><div><b>${esc(u.name||u.email)}</b><span class="lk-meta">${esc(u.email)} · ${esc(roleLabel(u.role))}</span></div>
-          <div class="ml-pbtns">${['to','cc','bcc'].map(k=>`<button type="button" class="btn small ${ML[k].includes(u.email)?'primary':''}" onclick="mlToggle('${k}','${esc(u.email)}')">${{to:'Para',cc:'CC',bcc:'CCO'}[k]}</button>`).join('')}</div></div>`).join('')}</div>
+      ${gente.length?`<div class="ml-people" id="mlPeople">${mlPeopleHtml()}</div>
         <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button type="button" class="btn small" onclick="mlTodos('to')">Todas en «Para»</button><button type="button" class="btn small" onclick="mlTodos('bcc')">Todas en CCO</button><button type="button" class="btn small" onclick="mlLimpiar()">Quitar todas</button></div>`
         :'<p style="color:var(--grey);font-size:13px;">Este proyecto aún no tiene personas registradas. Puedes escribir cualquier correo abajo.</p>'}
       <label style="margin-top:14px;">3. Destinatarios</label>
-      ${mlCampo('to','Para')}
-      ${mlCampo('cc','CC')}
-      ${mlCampo('bcc','CCO')}
-      <p class="lk-meta" style="margin:4px 0 0;">Puedes escribir cualquier correo, aunque no esté registrado: escríbelo y pulsa Enter o coma. En CCO nadie ve esas direcciones.</p>
+      <div class="ml-field"><span class="ml-lbl">Para</span><div class="ml-chips" id="mlF_to" onclick="if(event.target===this) $('mlIn_to').focus()">${mlCampo('to')}</div></div>
+      <div class="ml-field"><span class="ml-lbl">CC</span><div class="ml-chips" id="mlF_cc" onclick="if(event.target===this) $('mlIn_cc').focus()">${mlCampo('cc')}</div></div>
+      <div class="ml-field"><span class="ml-lbl">CCO</span><div class="ml-chips" id="mlF_bcc" onclick="if(event.target===this) $('mlIn_bcc').focus()">${mlCampo('bcc')}</div></div>
+      <p class="lk-meta" style="margin:4px 0 0;">Puedes escribir o pegar cualquier correo, aunque no esté registrado. Se agrega al pulsar Enter, coma o Tab, o al salir del campo. En CCO nadie ve esas direcciones.</p>
       <label class="dl-o" style="margin-top:10px;" title="Cada persona en «Para» recibe su propio correo y no ve a las demás."><input type="checkbox" id="mlSep" ${ML.separado?'checked':''} onchange="ML.separado=this.checked"> Enviar por separado a cada persona de «Para» (cada quien recibe su propio correo y puedes usar {{nombre}})</label>
       <label style="margin-top:14px;">4. Asunto</label><input type="text" id="mlAsunto" maxlength="200" value="${esc(ML.asunto)}" oninput="ML.asunto=this.value" placeholder="Ej. Avance del proyecto y siguientes pasos">
       <label style="margin-top:14px;">5. Mensaje</label><div class="rt-bar" id="mlBar"></div><div class="rt-ed rt-view" id="mlEd" contenteditable="true" data-ph="Escribe el mensaje. Con «Nombre» insertas el nombre de cada persona cuando envías por separado."></div>
@@ -1032,20 +1032,37 @@ async function renderCorreos(){
     ${(I.historial||[]).length?`<h3 style="font-size:15px;margin:24px 0 12px;">Últimos envíos</h3><div class="sa-scroll"><table class="grid"><thead><tr><th>Fecha</th><th>Proyecto</th><th>Asunto</th><th>Destinatarios</th><th>Adjuntos</th></tr></thead><tbody>${I.historial.map(h=>`<tr><td>${esc(fmtHora(h.fecha))}</td><td>${esc((session.projects.find(p=>p.slug===h.slug)||{}).name||h.slug)}</td><td>${esc(h.asunto)}</td><td style="font-size:12px;">Para: ${esc(h.para)}${h.cc?'<br>CC: '+esc(h.cc):''}${h.cco?'<br>CCO: '+esc(h.cco):''}${h.modo==='separado'?'<br><span class="lk-meta">Enviado por separado</span>':''}</td><td style="font-size:12px;">${esc(h.adjuntos||'—')}</td></tr>`).join('')}</tbody></table></div>`:''}`;
   if(ML.slug){ const keep=ML.html||''; rtInit('mlBar','mlEd','<button type="button" class="rt-b" title="Insertar el nombre de cada persona (al enviar por separado)" onmousedown="event.preventDefault()" onclick="rtRestore(); document.execCommand(\'insertText\',false,\'{{nombre}}\')">Nombre</button>'); $('mlEd').innerHTML=keep; $('mlEd').addEventListener('input',()=>{ ML.html=$('mlEd').innerHTML; }); }
 }
-function mlCampo(k,lbl){ return `<div class="ml-field"><span class="ml-lbl">${lbl}</span><div class="ml-chips">${ML[k].map(e=>`<span class="ml-chip">${esc(mlNombre(e))}<button type="button" title="Quitar" onclick="mlQuitar('${k}','${esc(e)}')">×</button></span>`).join('')}<input type="text" id="mlIn_${k}" placeholder="${ML[k].length?'':'correo@ejemplo.org'}" onkeydown="mlTecla(event,'${k}')" onblur="mlAgregar('${k}',this.value)"></div></div>`; }
+function mlCampo(k){ return ML[k].map(e=>`<span class="ml-chip">${esc(mlNombre(e))}<button type="button" title="Quitar" onmousedown="event.preventDefault()" onclick="mlQuitar('${k}','${esc(e)}')">×</button></span>`).join('')+`<input type="text" id="mlIn_${k}" autocomplete="off" placeholder="${ML[k].length?'':'correo@ejemplo.org'}" onkeydown="mlTecla(event,'${k}')" onpaste="mlPegar(event,'${k}')" onblur="mlSalir('${k}',this,event)">`; }
+function mlPeopleHtml(){ return ((ML.info&&ML.info.users[ML.slug])||[]).map(u=>`<div class="ml-person"><div><b>${esc(u.name||u.email)}</b><span class="lk-meta">${esc(u.email)} · ${esc(roleLabel(u.role))}</span></div>
+  <div class="ml-pbtns">${['to','cc','bcc'].map(k=>`<button type="button" class="btn small ${ML[k].includes(u.email)?'primary':''}" onmousedown="event.preventDefault()" onclick="mlToggle('${k}','${esc(u.email)}')">${{to:'Para',cc:'CC',bcc:'CCO'}[k]}</button>`).join('')}</div></div>`).join(''); }
+/** Vuelve a dibujar solo los destinatarios: el resto del formulario (asunto, mensaje, adjuntos) no se toca. */
+function mlPintar(foco){ ['to','cc','bcc'].forEach(k=>{ const box=$('mlF_'+k); if(!box) return; const i=$('mlIn_'+k), pend=i?i.value:''; box.innerHTML=mlCampo(k); if(pend&&k!==foco) $('mlIn_'+k).value=pend; });
+  const pp=$('mlPeople'); if(pp) pp.innerHTML=mlPeopleHtml(); if(foco){ const i=$('mlIn_'+foco); i&&i.focus(); } }
+function mlSacar(v){ // acepta "correo", "Nombre <correo>" y listas pegadas
+  const t=String(v||''); const m=t.match(/[^\s<>(),;:"']+@[^\s<>(),;:"']+/g); return { ok:(m||[]).map(x=>x.toLowerCase().replace(/\.$/,'')), resto:t.replace(/[^\s<>(),;:"']+@[^\s<>(),;:"']+/g,'').replace(/[\s,;<>"'()]+/g,' ').trim() }; }
 function mlNombre(e){ const u=((ML.info&&ML.info.users[ML.slug])||[]).find(x=>x.email===e); return u&&u.name?`${u.name} <${e}>`:e; }
 const mlValido=e=>/^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}$/i.test(e);
 function mlGuardaTexto(){ const a=$('mlAsunto'); if(a) ML.asunto=a.value; const ed=$('mlEd'); if(ed) ML.html=ed.innerHTML; }
 function mlProyecto(slug){ mlGuardaTexto(); const val=new Set(((ML.info.users[slug])||[]).map(u=>u.email)); const prev=new Set(((ML.info.users[ML.slug])||[]).map(u=>u.email));
   ['to','cc','bcc'].forEach(k=>{ ML[k]=ML[k].filter(e=>!prev.has(e)||val.has(e)); }); ML.slug=slug; renderCorreos(); }
-function mlToggle(k,e){ mlGuardaTexto(); const on=ML[k].includes(e); ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>y!==e); }); if(!on) ML[k].push(e); renderCorreos(); }
-function mlTodos(k){ mlGuardaTexto(); const all=(ML.info.users[ML.slug]||[]).map(u=>u.email); ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>!all.includes(y)); }); ML[k].push(...all); renderCorreos(); }
-function mlLimpiar(){ mlGuardaTexto(); const all=new Set((ML.info.users[ML.slug]||[]).map(u=>u.email)); ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>!all.has(y)); }); renderCorreos(); }
-function mlQuitar(k,e){ mlGuardaTexto(); ML[k]=ML[k].filter(x=>x!==e); renderCorreos(); }
-function mlAgregar(k,v){ const xs=String(v||'').split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean); if(!xs.length) return true;
-  const malos=xs.filter(x=>!mlValido(x)); if(malos.length){ toast('Correo no válido: '+malos[0],true); return false; }
-  mlGuardaTexto(); xs.forEach(e=>{ ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>y!==e); }); ML[k].push(e); }); renderCorreos(); setTimeout(()=>{ const i=$('mlIn_'+k); i&&i.focus(); },0); return true; }
-function mlTecla(ev,k){ if(ev.key==='Enter'||ev.key===','||ev.key===';'){ ev.preventDefault(); mlAgregar(k,ev.target.value); } else if(ev.key==='Backspace'&&!ev.target.value&&ML[k].length){ mlQuitar(k,ML[k][ML[k].length-1]); } }
+function mlToggle(k,e){ const on=ML[k].includes(e); ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>y!==e); }); if(!on) ML[k].push(e); mlPintar(); }
+function mlTodos(k){ const all=(ML.info.users[ML.slug]||[]).map(u=>u.email); ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>!all.includes(y)); }); ML[k].push(...all); mlPintar(); }
+function mlLimpiar(){ const all=new Set((ML.info.users[ML.slug]||[]).map(u=>u.email)); ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>!all.has(y)); }); mlPintar(); }
+function mlQuitar(k,e){ ML[k]=ML[k].filter(x=>x!==e); mlPintar(k); }
+function mlAgregar(k,v,foco){ const {ok,resto}=mlSacar(v); const buenos=ok.filter(mlValido), malos=ok.filter(x=>!mlValido(x));
+  buenos.forEach(e=>{ ['to','cc','bcc'].forEach(x=>{ ML[x]=ML[x].filter(y=>y!==e); }); ML[k].push(e); });
+  const queda=[...malos,(ok.length?'':resto)].filter(Boolean).join(' ');
+  if(buenos.length) mlPintar(foco?k:null);
+  const i=$('mlIn_'+k); if(i) i.value=queda;
+  if(queda) { toast(ok.length||resto.includes('@')?'Revisa este correo: '+queda:'Escribe un correo completo, por ejemplo nombre@dominio.org',true); i&&i.classList.add('ml-bad'); }
+  else i&&i.classList.remove('ml-bad');
+  return !queda; }
+function mlTecla(ev,k){ const v=ev.target.value; ev.target.classList.remove('ml-bad');
+  if(ev.key==='Enter'||ev.key===','||ev.key===';'||(ev.key==='Tab'&&v.trim())){ if(!v.trim()){ if(ev.key==='Enter') ev.preventDefault(); return; } ev.preventDefault(); mlAgregar(k,v,true); }
+  else if(ev.key==='Backspace'&&!v&&ML[k].length){ ev.preventDefault(); mlQuitar(k,ML[k][ML[k].length-1]); } }
+function mlPegar(ev,k){ const t=(ev.clipboardData||window.clipboardData).getData('text'); if(t&&/[,;\s]/.test(t.trim())){ ev.preventDefault(); mlAgregar(k,(ev.target.value+' '+t),true); } }
+function mlSalir(k,el,ev){ if(!el.value.trim()) return; const rt=ev&&ev.relatedTarget, id=rt&&rt.id; mlAgregar(k,el.value,false);
+  if(id&&rt!==$(id)){ const n=$(id); n&&n.focus(); } }
 function mlFilesHtml(){ if(!ML.files.length) return '<p class="lk-meta" style="margin:0;">Sin archivos adjuntos.</p>'; const tot=ML.files.reduce((a,f)=>a+f.size,0);
   return ML.files.map((f,i)=>`<span class="ml-chip">📎 ${esc(f.name)} <span class="lk-meta">${(f.size/1048576).toFixed(f.size<1048576?2:1)} MB</span><button type="button" title="Quitar" onclick="mlGuardaTexto(); ML.files.splice(${i},1); renderCorreos()">×</button></span>`).join(' ')+`<div class="lk-meta" style="margin-top:4px;">Total: ${(tot/1048576).toFixed(1)} MB</div>`; }
 function mlAdjuntar(list){ mlGuardaTexto(); const fs=[...list]; let tot=ML.files.reduce((a,f)=>a+f.size,0);
@@ -1053,14 +1070,15 @@ function mlAdjuntar(list){ mlGuardaTexto(); const fs=[...list]; let tot=ML.files
   (async()=>{ for(const f of fs){ if(ML.files.length>=10){ toast('Máximo 10 archivos por correo.',true); break; } if(tot+f.size>ML_MAX_MB*1048576){ toast('«'+f.name+'» supera el límite de '+ML_MAX_MB+' MB por correo. Comparte una liga de Drive.',true); continue; }
     try{ ML.files.push({name:f.name,mime:f.type||'application/octet-stream',size:f.size,data:await leer(f)}); tot+=f.size; }catch(e){ toast('No se pudo leer «'+f.name+'».',true); } }
     renderCorreos(); })(); }
-function mlDatos(){ mlGuardaTexto(); ['to','cc','bcc'].forEach(k=>{ const i=$('mlIn_'+k); if(i&&i.value.trim()) mlAgregar(k,i.value); });
-  return {slug:ML.slug,to:ML.to,cc:ML.cc,bcc:ML.bcc,subject:(ML.asunto||'').trim(),html:rtClean(ML.html||''),separado:ML.separado&&ML.to.length>1,files:ML.files.map(f=>({name:f.name,mime:f.mime,data:f.data}))}; }
+function mlDatos(){ mlGuardaTexto(); let pend=false; ['to','cc','bcc'].forEach(k=>{ const i=$('mlIn_'+k); if(i&&i.value.trim()&&!mlAgregar(k,i.value)) pend=true; });
+  return {slug:ML.slug,to:ML.to,cc:ML.cc,bcc:ML.bcc,subject:(ML.asunto||'').trim(),html:rtClean(ML.html||''),pend,separado:ML.separado&&ML.to.length>1,files:ML.files.map(f=>({name:f.name,mime:f.mime,data:f.data}))}; }
 function mlVista(){ const d=mlDatos(); const n=((ML.info.users[ML.slug]||[]).find(u=>u.email===d.to[0])||{}).name||'';
   const c=(d.html||'<p style="color:#6B6878">(sin mensaje)</p>').replace(/\{\{\s*nombre\s*\}\}/gi,esc(d.separado||d.to.length===1?n:'')).replace(/\{\{\s*proyecto\s*\}\}/gi,esc((session.projects.find(p=>p.slug===ML.slug)||{}).name||''));
   $('mlPrev').innerHTML=`<h3 style="font-size:14px;margin:20px 0 10px;">Vista previa</h3><div class="ml-prev"><div class="ml-pv-head">Sintropía <span>Social</span></div><div class="ml-pv-body rt-view">${c}</div><div class="ml-pv-foot"><b>Sintropía <span>Social</span></b><div>Sintropía Social · ${esc(ML.info.remitente)}</div></div></div>
     <p class="lk-meta">Asunto: <b>${esc(d.subject||'(sin asunto)')}</b>${d.files.length?' · '+d.files.length+' adjunto(s)':''}</p>`; }
 async function mlEnviar(){
   const d=mlDatos();
+  if(d.pend) return;
   if(!d.slug){ toast('Elige un proyecto.',true); return; }
   if(!d.to.length){ toast('Agrega al menos una persona en «Para».',true); return; }
   if(!d.subject){ toast('Escribe el asunto.',true); return; }
@@ -1068,6 +1086,7 @@ async function mlEnviar(){
   const tot=d.to.length+d.cc.length+d.bcc.length;
   if(!(await askConfirm('¿Enviar este correo?',`«${d.subject}» a ${tot} ${tot===1?'persona':'personas'}${d.separado?' (un correo por persona en «Para»)':''}${d.files.length?', con '+d.files.length+' adjunto(s)':''}. Sale desde ${ML.info.remitente}.`,'Enviar'))) return;
   const btn=$('mlSend'); btn.disabled=true; btn.textContent='Enviando…';
+  delete d.pend;
   try{ const r=await api('sendMail',d); toast(r.enviados>1?`Se enviaron ${r.enviados} correos.`:'Correo enviado.');
     ML={slug:ML.slug,to:[],cc:[],bcc:[],files:[],info:null,separado:false,asunto:'',html:''}; renderCorreos(); }
   catch(e){ toast(e.message||'No se pudo enviar el correo.',true); btn.disabled=false; btn.textContent='Enviar correo'; }
