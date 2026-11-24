@@ -1057,7 +1057,7 @@ function mlDatos(){ mlGuardaTexto(); ['to','cc','bcc'].forEach(k=>{ const i=$('m
   return {slug:ML.slug,to:ML.to,cc:ML.cc,bcc:ML.bcc,subject:(ML.asunto||'').trim(),html:rtClean(ML.html||''),separado:ML.separado&&ML.to.length>1,files:ML.files.map(f=>({name:f.name,mime:f.mime,data:f.data}))}; }
 function mlVista(){ const d=mlDatos(); const n=((ML.info.users[ML.slug]||[]).find(u=>u.email===d.to[0])||{}).name||'';
   const c=(d.html||'<p style="color:#6B6878">(sin mensaje)</p>').replace(/\{\{\s*nombre\s*\}\}/gi,esc(d.separado||d.to.length===1?n:'')).replace(/\{\{\s*proyecto\s*\}\}/gi,esc((session.projects.find(p=>p.slug===ML.slug)||{}).name||''));
-  $('mlPrev').innerHTML=`<h3 style="font-size:14px;margin:20px 0 10px;">Vista previa</h3><div class="ml-prev"><div class="ml-pv-head">Sintropía <span>Social</span></div><div class="ml-pv-body rt-view">${c}</div><div class="ml-pv-foot"><b>Sintropía <span>Social</span></b><div>Sintropía Social · comunicacion@sintropiasocial.com</div></div></div>
+  $('mlPrev').innerHTML=`<h3 style="font-size:14px;margin:20px 0 10px;">Vista previa</h3><div class="ml-prev"><div class="ml-pv-head">Sintropía <span>Social</span></div><div class="ml-pv-body rt-view">${c}</div><div class="ml-pv-foot"><b>Sintropía <span>Social</span></b><div>Sintropía Social · ${esc(ML.info.remitente)}</div></div></div>
     <p class="lk-meta">Asunto: <b>${esc(d.subject||'(sin asunto)')}</b>${d.files.length?' · '+d.files.length+' adjunto(s)':''}</p>`; }
 async function mlEnviar(){
   const d=mlDatos();
